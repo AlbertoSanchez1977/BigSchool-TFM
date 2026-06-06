@@ -13,7 +13,17 @@
 - Tipo: **INT AUTO_INCREMENT** en todas las tablas
 
 ### Borrado Lógico
-Todas las tablas con datos tienen `IdStatus` (SMALLINT):
+Todas las tablas con datos tienen `IdStatus` (SMALLINT). **Status es un Enum en C#** (no tabla en BD):
+
+```csharp
+public enum EntityStatus : short
+{
+    Pending = 1,
+    Active = 2,
+    Processing = 3,
+    Deleted = 4
+}
+```
 
 | IdStatus | Nombre | Descripción |
 |----------|--------|-------------|
@@ -98,13 +108,24 @@ Todas las tablas con datos tienen `IdStatus` (SMALLINT):
 
 ### Tablas Detalladas
 
-#### Status (tabla de referencia)
-| Campo | Tipo | Restricciones |
-|-------|------|--------------|
-| IdStatus | SMALLINT | PK |
-| Name | VARCHAR(20) | NOT NULL |
+#### Enums en código (NO son tablas en BD)
 
-Valores: 1=Pending, 2=Active, 3=Processing, 4=Deleted
+**EntityStatus** (SMALLINT en BD):
+```csharp
+public enum EntityStatus : short { Pending = 1, Active = 2, Processing = 3, Deleted = 4 }
+```
+
+**MainCategory** (INT en BD):
+```csharp
+public enum MainCategory
+{
+    // EXPENSE
+    GastosNecesarios = 1, Inversion = 2, Ahorro = 3, Donaciones = 4,
+    Lujos = 5, Educacion = 6, Amortizaciones = 7,
+    // INCOME
+    Nomina = 10, Alquileres = 11, Dividendos = 12, Otros = 13
+}
+```
 
 #### Users
 | Campo | Tipo | Restricciones |
@@ -115,45 +136,19 @@ Valores: 1=Pending, 2=Active, 3=Processing, 4=Deleted
 | PasswordSalt | VARCHAR(256) | NOT NULL (Argon2) |
 | FullName | VARCHAR(200) | NOT NULL |
 | LastLoginDate | DATETIME | NULL |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
-
-#### MainCategories (referencia, fija en seed)
-| Campo | Tipo | Restricciones |
-|-------|------|--------------|
-| IdMainCategory | INT | PK |
-| Name | VARCHAR(50) | NOT NULL |
-| Type | ENUM('INCOME','EXPENSE') | NOT NULL |
-
-**Gastos (EXPENSE):**
-| Id | Nombre |
-|----|--------|
-| 1 | Gastos Necesarios |
-| 2 | Inversión |
-| 3 | Ahorro |
-| 4 | Donaciones |
-| 5 | Lujos |
-| 6 | Educación |
-| 7 | Amortizaciones |
-
-**Ingresos (INCOME):**
-| Id | Nombre |
-|----|--------|
-| 10 | Nómina |
-| 11 | Alquileres |
-| 12 | Dividendos |
-| 13 | Otros |
 
 #### SubCategories
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdSubCategory | INT | PK, AUTO_INCREMENT |
-| IdMainCategory | INT | FK → MainCategories, NOT NULL |
+| IdMainCategory | INT | NOT NULL (enum MainCategory) |
 | IdUser | INT | FK → Users, NULL (NULL = predefinida global) |
 | Name | VARCHAR(100) | NOT NULL |
 | IsDefault | BOOLEAN | DEFAULT FALSE |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 
 Subcategorías predefinidas (ejemplos):
@@ -172,14 +167,14 @@ Subcategorías predefinidas (ejemplos):
 | IdTransaction | INT | PK, AUTO_INCREMENT |
 | IdUser | INT | FK → Users, NOT NULL |
 | Type | ENUM('INCOME','EXPENSE') | NOT NULL |
-| IdMainCategory | INT | FK → MainCategories, NOT NULL |
+| IdMainCategory | INT | NOT NULL (enum MainCategory) |
 | IdSubCategory | INT | FK → SubCategories, NULL |
 | Amount | DECIMAL(18,2) | NOT NULL, > 0 |
 | Description | VARCHAR(500) | NULL |
 | Date | DATE | NOT NULL |
 | IsRecurrent | BOOLEAN | DEFAULT FALSE |
 | RecurrencePeriod | ENUM('MONTHLY','QUARTERLY','YEARLY') | NULL |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
@@ -192,7 +187,7 @@ Subcategorías predefinidas (ejemplos):
 | Sector | VARCHAR(100) | NULL |
 | Market | VARCHAR(50) | NULL (NASDAQ, BME, NYSE) |
 | Currency | CHAR(3) | DEFAULT 'EUR' |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
@@ -202,7 +197,7 @@ Subcategorías predefinidas (ejemplos):
 | IdPortfolio | INT | PK, AUTO_INCREMENT |
 | IdUser | INT | FK → Users, NOT NULL |
 | Name | VARCHAR(100) | NOT NULL |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
@@ -216,7 +211,7 @@ Subcategorías predefinidas (ejemplos):
 | AvgBuyPrice | DECIMAL(18,4) | NOT NULL |
 | BuyDate | DATE | NOT NULL |
 | Notes | VARCHAR(500) | NULL |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
@@ -228,7 +223,7 @@ Subcategorías predefinidas (ejemplos):
 | Price | DECIMAL(18,4) | NOT NULL |
 | Date | DATE | NOT NULL |
 | Source | VARCHAR(100) | NULL |
-| IdStatus | SMALLINT | FK → Status, DEFAULT 2 |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 | | | UNIQUE(IdCompany, Date) |
@@ -619,7 +614,7 @@ Backend.sln
 - **Autofac** registra automáticamente: Handlers, Repositories, Services, Profiles, Validators
 - **AutoMapper** mapea entidades ↔ DTOs en cada Profile
 - **Migraciones** con `dotnet ef migrations`
-- **Seed** en migración inicial: Status, MainCategories, SubCategories predefinidas
+- **Seed** en migración inicial: SubCategories predefinidas (Status y MainCategories son enums, no se seedean en BD)
 - **Swagger/OpenAPI** con Swashbuckle
 - **Health check**: `/health`
 - **Global Query Filter** en EF Core: `entity.IdStatus != 4` (soft delete transparente)

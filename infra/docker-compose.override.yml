@@ -1,0 +1,108 @@
+version: "3.8"
+
+services:
+  mysql:
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./docker/mysql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bigschool-network
+
+  qdrant:
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - bigschool-network
+
+  # backend:
+  #   restart: unless-stopped
+  #   environment:
+  #     ASPNETCORE_ENVIRONMENT: Development
+  #     ConnectionStrings__MySQL: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
+  #     Jwt__Secret: ${JWT_SECRET}
+  #     Jwt__Issuer: ${JWT_ISSUER}
+  #     Jwt__Audience: ${JWT_AUDIENCE}
+  #     Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
+  #     RagService__Url: ${RAG_SERVICE_URL}
+  #   ports:
+  #     - "5000:8080"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - bigschool-network
+
+  # rag-service:
+  #   restart: unless-stopped
+  #   environment:
+  #     AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+  #     AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+  #     AZURE_OPENAI_DEPLOYMENT_NAME: ${AZURE_OPENAI_DEPLOYMENT_NAME}
+  #     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${AZURE_OPENAI_EMBEDDING_DEPLOYMENT}
+  #     QDRANT_HOST: ${QDRANT_HOST}
+  #     QDRANT_PORT: ${QDRANT_PORT}
+  #     QDRANT_COLLECTION: ${QDRANT_COLLECTION}
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     qdrant:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - bigschool-network
+
+  # frontend-web:
+  #   restart: unless-stopped
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:5000
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - bigschool-network
+
+  # mcp-server:
+  #   restart: unless-stopped
+  #   environment:
+  #     BACKEND_URL: ${BACKEND_URL}
+  #   ports:
+  #     - "4000:4000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - bigschool-network
