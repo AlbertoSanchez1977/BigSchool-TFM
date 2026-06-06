@@ -48,7 +48,21 @@ frontend-web/
 
 ## Funcionalidades
 
-### Dashboard
+### Landing Page (pública, sin login)
+- Página principal profesional simulando empresa de fintech
+- Descripción del producto y sus funcionalidades
+- Sección "Sobre nosotros" / "Quiénes somos"
+- Sección explicativa del alcance del proyecto (contexto TFM educativo)
+- Formulario de "Contáctanos" (simulado, no envía realmente)
+- Botón de Login / Registro prominente
+- Responsive y atractiva (usar v0.app para diseño)
+
+### Registro y Login
+- Registro con email y contraseña
+- Login con JWT
+- Redirección al Dashboard tras login exitoso
+
+### Dashboard (requiere autenticación)
 - Balance general (ingresos - gastos del mes)
 - Gráfica de evolución mensual
 - Resumen de cartera de inversiones
