@@ -1,5 +1,10 @@
 # AGENTS.md — Infraestructura
 
+## Documentación de Diseño (LEER ANTES DE IMPLEMENTAR)
+- **Modelo de datos (para init.sql/seed.sql)**: `docs/02-backend-design.md`
+- **Visión y alcance funcional**: `docs/00-vision.md`
+- **Decisiones de arquitectura**: `docs/01-arquitectura.md`
+
 ## Tecnología
 - Docker & Docker Compose (desarrollo local)
 - Kubernetes (demostración local con minikube o kind)
