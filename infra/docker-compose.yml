@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bigschool-mysql
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: bigschool-qdrant
+
+  # backend:
+  #   build:
+  #     context: ../src/backend
+  #     dockerfile: ../../infra/docker/backend.Dockerfile
+  #   container_name: bigschool-backend
+
+  # rag-service:
+  #   build:
+  #     context: ../src/rag-service
+  #     dockerfile: ../../infra/docker/rag-service.Dockerfile
+  #   container_name: bigschool-rag
+
+  # frontend-web:
+  #   build:
+  #     context: ../src/frontend-web
+  #     dockerfile: ../../infra/docker/frontend-web.Dockerfile
+  #   container_name: bigschool-frontend
+
+  # mcp-server:
+  #   build:
+  #     context: ../src/mcp-server
+  #     dockerfile: ../../infra/docker/mcp-server.Dockerfile
+  #   container_name: bigschool-mcp
+
+volumes:
+  mysql_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  bigschool-network:
+    driver: bridge

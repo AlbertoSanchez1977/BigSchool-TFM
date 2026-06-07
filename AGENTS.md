@@ -47,6 +47,23 @@ BigSchool-TFM/
 
 Cada módulo en `src/` tiene su propio `AGENTS.md` con instrucciones específicas.
 
+## Documentación de Referencia (Diseños Aprobados)
+
+**IMPORTANTE**: Antes de implementar cualquier módulo, el agente DEBE consultar los documentos de diseño relevantes en `docs/`. Estos contienen decisiones ya consolidadas que no deben contradecirse.
+
+| Documento | Contenido | Aplica a |
+|-----------|-----------|----------|
+| `docs/00-vision.md` | Alcance funcional, módulos, decisiones de alto nivel | Todos los módulos |
+| `docs/01-arquitectura.md` | ADRs (monorepo, RAG separado, stack, comunicación) | Todos los módulos |
+| `docs/02-backend-design.md` | Modelo de datos, convenciones BD, Bounded Contexts, API REST | backend, infra (init.sql) |
+| `docs/diario.md` | Estado actual del proyecto, qué está hecho y qué falta | Planificación |
+
+### Regla para los agentes
+- Si vas a implementar el **backend**: lee `docs/02-backend-design.md` completo antes de escribir código
+- Si vas a crear **seeds o init.sql**: usa el modelo de datos de `docs/02-backend-design.md`
+- Si vas a diseñar un **nuevo módulo**: lee `docs/00-vision.md` para el alcance y `docs/01-arquitectura.md` para restricciones
+- Si dudas del **estado actual**: consulta `docs/diario.md`
+
 ## Convenciones Generales
 
 ### Idioma

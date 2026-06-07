@@ -1,5 +1,10 @@
 # AGENTS.md — Backend API
 
+## Documentación de Diseño (LEER ANTES DE IMPLEMENTAR)
+- **Modelo de datos y convenciones BD**: `docs/02-backend-design.md`
+- **Visión y alcance funcional**: `docs/00-vision.md`
+- **Decisiones de arquitectura**: `docs/01-arquitectura.md`
+
 ## Tecnología
 - .NET 8 C#
 - Clean Architecture (4 capas)

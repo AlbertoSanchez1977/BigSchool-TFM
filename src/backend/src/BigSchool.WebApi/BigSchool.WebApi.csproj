@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup>  <UserSecretsId>981c0afd-2062-4339-996a-c2e94ea4674e</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="$(AutofacVersion)" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="$(AutofacDIVersion)" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="$(SwashbuckleVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(JwtBearerVersion)" />
+    <PackageReference Include="Serilog.AspNetCore" Version="$(SerilogAspNetCoreVersion)" />
+    <PackageReference Include="Serilog.Sinks.File" Version="$(SerilogSinksFileVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BigSchool.Application\BigSchool.Application.csproj" />
+    <ProjectReference Include="..\BigSchool.Infrastructure\BigSchool.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
