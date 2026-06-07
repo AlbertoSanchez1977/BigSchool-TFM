@@ -221,7 +221,7 @@ Create file `src/backend/Directory.Build.props`:
   <!-- Centralized NuGet package versions -->
   <PropertyGroup>
     <MediatRVersion>12.4.1</MediatRVersion>
-    <AutoMapperVersion>13.0.1</AutoMapperVersion>
+    <AutoMapperVersion>15.1.3</AutoMapperVersion>
     <FluentValidationVersion>11.11.0</FluentValidationVersion>
     <DapperVersion>2.1.35</DapperVersion>
     <EFCoreVersion>8.0.11</EFCoreVersion>
@@ -289,7 +289,8 @@ Replace content of `src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastru
     <PackageReference Include="Dapper" Version="$(DapperVersion)" />
     <PackageReference Include="MediatR" Version="$(MediatRVersion)" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="$(Argon2Version)" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="$(EFCoreVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="$(OptionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(OptionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

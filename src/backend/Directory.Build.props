@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Centralized NuGet package versions -->
+  <PropertyGroup>
+    <MediatRVersion>12.4.1</MediatRVersion>
+    <AutoMapperVersion>15.1.3</AutoMapperVersion>
+    <FluentValidationVersion>11.11.0</FluentValidationVersion>
+    <DapperVersion>2.1.35</DapperVersion>
+    <EFCoreVersion>8.0.11</EFCoreVersion>
+    <PomeloVersion>8.0.2</PomeloVersion>
+    <AutofacVersion>8.1.1</AutofacVersion>
+    <AutofacDIVersion>9.0.0</AutofacDIVersion>
+    <Argon2Version>2.0.0</Argon2Version>
+    <SwashbuckleVersion>6.9.0</SwashbuckleVersion>
+    <JwtBearerVersion>8.0.11</JwtBearerVersion>
+    <SerilogVersion>4.1.0</SerilogVersion>
+    <SerilogSinksFileVersion>6.0.0</SerilogSinksFileVersion>
+    <SerilogAspNetCoreVersion>8.0.3</SerilogAspNetCoreVersion>
+    <!-- Test packages -->
+    <xUnitVersion>2.9.2</xUnitVersion>
+    <FluentAssertionsVersion>6.12.2</FluentAssertionsVersion>
+    <MoqVersion>4.20.72</MoqVersion>
+    <TestcontainersVersion>3.10.0</TestcontainersVersion>
+    <MvcTestingVersion>8.0.11</MvcTestingVersion>
+    <!-- Infrastructure -->
+    <OptionsVersion>9.0.0</OptionsVersion>
+  </PropertyGroup>
+</Project>
