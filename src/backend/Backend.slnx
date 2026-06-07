@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BigSchool.Application/BigSchool.Application.csproj" />
+    <Project Path="src/BigSchool.Domain/BigSchool.Domain.csproj" />
+    <Project Path="src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj" />
+    <Project Path="src/BigSchool.WebApi/BigSchool.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj" />
+    <Project Path="tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj" />
+    <Project Path="tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj" />
+  </Folder>
+</Solution>
