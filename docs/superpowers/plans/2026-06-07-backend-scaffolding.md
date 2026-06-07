@@ -12,8 +12,9 @@
 
 ## Key Architectural Decisions (changes from initial design doc)
 
-1. **IUnitOfWork, IRepository<T,Y>, IAggregateRoot, IDomainEvent** → all in **Domain** layer (no MediatR dependency in Domain)
-2. **IAggregateRoot** is a marker interface. Only Aggregate Roots get repositories: `User`, `Transaction`, `RagDocument`, `Portfolio`, `Holding`
+1. **IUnitOfWork, IAggregateRoot, IDomainEvent** → in **Domain** layer (no MediatR dependency in Domain)
+2. **IRepository<T,Y>** → in **Application/Interfaces/** (junto con repos específicos)
+3. **IAggregateRoot** is a marker interface. Only Aggregate Roots get repositories: `User`, `Transaction`, `RagDocument`, `Portfolio`, `Holding`
 3. **IRepository<T, Y>** generic base with `AddAsync`, `AddRangeAsync`, `GetByIdAsync`, `IUnitOfWork UnitOfWork { get; }`
 4. **EFRepository<T, Y>** abstract class in Infrastructure implements the generic base
 5. **Specific repos** (e.g. `IUserRepository : IRepository<User, int>`) live in **Application/Interfaces/**
@@ -48,12 +49,12 @@ src/backend/
 │   │   ├── Events/
 │   │   │   └── IDomainEvent.cs
 │   │   └── Interfaces/
-│   │       ├── IRepository.cs
 │   │       └── IUnitOfWork.cs
 │   │
 │   ├── BigSchool.Application/
 │   │   ├── BigSchool.Application.csproj
 │   │   ├── Interfaces/
+│   │   │   ├── IRepository.cs
 │   │   │   ├── Repositories/
 │   │   │   │   ├── IUserRepository.cs
 │   │   │   │   ├── ITransactionRepository.cs
@@ -426,12 +427,11 @@ git commit -m "feat: añadir Directory.Build.props con versiones centralizadas y
 
 ---
 
-### Task 3: Domain Layer — BaseEntity, IAggregateRoot, IRepository, IUnitOfWork, Enums, IDomainEvent
+### Task 3: Domain Layer — BaseEntity, IAggregateRoot, IUnitOfWork, Enums, IDomainEvent
 
 **Files:**
 - Create: `src/backend/src/BigSchool.Domain/Entities/BaseEntity.cs`
 - Create: `src/backend/src/BigSchool.Domain/Entities/IAggregateRoot.cs`
-- Create: `src/backend/src/BigSchool.Domain/Interfaces/IRepository.cs`
 - Create: `src/backend/src/BigSchool.Domain/Interfaces/IUnitOfWork.cs`
 - Create: `src/backend/src/BigSchool.Domain/Enums/EntityStatus.cs`
 - Create: `src/backend/src/BigSchool.Domain/Enums/TransactionType.cs`
@@ -570,26 +570,7 @@ public interface IUnitOfWork
 }
 ```
 
-- [ ] **Step 7: Implement IRepository<T, Y>**
-
-Create file `src/backend/src/BigSchool.Domain/Interfaces/IRepository.cs`:
-
-```csharp
-using BigSchool.Domain.Entities;
-
-namespace BigSchool.Domain.Interfaces;
-
-public interface IRepository<T, in Y> where T : IAggregateRoot
-{
-    IUnitOfWork UnitOfWork { get; }
-
-    Task<T?> GetByIdAsync(Y id, CancellationToken cancellationToken = default);
-    Task AddAsync(T entity, CancellationToken cancellationToken = default);
-    Task AddRangeAsync(List<T> entities, CancellationToken cancellationToken = default);
-}
-```
-
-- [ ] **Step 8: Implement Enums**
+- [ ] **Step 7: Implement Enums**
 
 Create file `src/backend/src/BigSchool.Domain/Enums/EntityStatus.cs`:
 
@@ -673,6 +654,7 @@ git commit -m "feat: añadir capa Domain con BaseEntity, IAggregateRoot, IReposi
 
 **Files:**
 - Create: `src/backend/src/BigSchool.Application/Interfaces/IDbConnectionFactory.cs`
+- Create: `src/backend/src/BigSchool.Application/Interfaces/IRepository.cs`
 - Create: `src/backend/src/BigSchool.Application/Interfaces/Repositories/IUserRepository.cs`
 - Create: `src/backend/src/BigSchool.Application/Interfaces/Repositories/ITransactionRepository.cs`
 - Create: `src/backend/src/BigSchool.Application/Interfaces/Repositories/IPortfolioRepository.cs`
@@ -697,7 +679,27 @@ public interface IDbConnectionFactory
 }
 ```
 
-- [ ] **Step 2: Create specific repository interfaces (all Aggregate Roots)**
+- [ ] **Step 2: Implement IRepository<T, Y>**
+
+Create file `src/backend/src/BigSchool.Application/Interfaces/IRepository.cs`:
+
+```csharp
+using BigSchool.Domain.Entities;
+
+namespace BigSchool.Application.Interfaces;
+
+public interface IRepository<T, in Y> where T : IAggregateRoot
+{
+    IUnitOfWork UnitOfWork { get; }
+
+    Task<T?> GetByIdAsync(Y id, CancellationToken cancellationToken = default);
+    Task AddAsync(T entity, CancellationToken cancellationToken = default);
+    Task AddRangeAsync(List<T> entities, CancellationToken cancellationToken = default);
+}
+```
+
+
+- [ ] **Step 3: Create specific repository interfaces (all Aggregate Roots)**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/Repositories/IUserRepository.cs`:
 
@@ -766,7 +768,7 @@ public interface IRagDocumentRepository : IRepository<RagDocument, int>
 
 Note: These will not compile until the entities (User, Transaction, etc.) are created. For the scaffolding phase, create **placeholder entities** in Domain so the solution builds. They will be fully implemented in Phase 2 (Finanzas) and Phase 3 (Inversiones).
 
-- [ ] **Step 3: Create placeholder entities in Domain (minimal, just to satisfy compilation)**
+- [ ] **Step 4: Create placeholder entities in Domain (minimal, just to satisfy compilation)**
 
 Create file `src/backend/src/BigSchool.Domain/Entities/User.cs`:
 
@@ -818,7 +820,7 @@ public class RagDocument : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 4: Create IRagServiceClient**
+- [ ] **Step 5: Create IRagServiceClient**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/Services/IRagServiceClient.cs`:
 
@@ -831,7 +833,7 @@ public interface IRagServiceClient
 }
 ```
 
-- [ ] **Step 5: Create DomainEventNotification**
+- [ ] **Step 6: Create DomainEventNotification**
 
 Create file `src/backend/src/BigSchool.Application/Events/DomainEventNotification.cs`:
 
@@ -852,7 +854,7 @@ public class DomainEventNotification<T> : INotification where T : IDomainEvent
 }
 ```
 
-- [ ] **Step 6: Create AppSettings**
+- [ ] **Step 7: Create AppSettings**
 
 Create file `src/backend/src/BigSchool.Application/Configuration/AppSettings.cs`:
 
@@ -884,12 +886,12 @@ public class RagServiceSettings
 }
 ```
 
-- [ ] **Step 7: Verify build**
+- [ ] **Step 8: Verify build**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet build Backend.sln`
 Expected: Build succeeded.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM

@@ -464,6 +464,7 @@ Backend.sln
 │   ├── BigSchool.Domain/
 │   │   ├── Entities/
 │   │   │   ├── BaseEntity.cs           → DomainEvents list + RaiseDomainEvent()
+│   │   │   ├── IAggregateRoot.cs       → Marcador para Aggregate Roots
 │   │   │   ├── User.cs
 │   │   │   ├── Transaction.cs
 │   │   │   ├── MainCategory.cs
@@ -477,20 +478,22 @@ Backend.sln
 │   │   │   ├── TransactionType.cs
 │   │   │   ├── RecurrencePeriod.cs
 │   │   │   └── EntityStatus.cs
-│   │   └── Events/
-│   │       ├── IDomainEvent.cs          → Interfaz propia (sin MediatR)
-│   │       ├── TransactionCreatedEvent.cs
-│   │       ├── HoldingAddedEvent.cs
-│   │       └── DocumentUploadedEvent.cs
+│   │   ├── Events/
+│   │   │   ├── IDomainEvent.cs          → Interfaz propia (sin MediatR)
+│   │   │   ├── TransactionCreatedEvent.cs
+│   │   │   ├── HoldingAddedEvent.cs
+│   │   │   └── DocumentUploadedEvent.cs
+│   │   └── Interfaces/
+│   │       └── IUnitOfWork.cs           → SaveChangesAsync(dispatchEvents = true)
 │   │
 │   ├── BigSchool.Application/
-│   │   ├── DependencyInjection/
-│   │   │   └── ApplicationModule.cs    → Autofac module
 │   │   ├── Interfaces/
-│   │   │   ├── IUnitOfWork.cs
+│   │   │   ├── IRepository.cs          → IRepository<T, Y> where T : IAggregateRoot
+│   │   │   ├── IUserRepository.cs
 │   │   │   ├── ITransactionRepository.cs
 │   │   │   ├── ICompanyRepository.cs
 │   │   │   ├── IPortfolioRepository.cs
+│   │   │   ├── IHoldingRepository.cs
 │   │   │   ├── IRagDocumentRepository.cs
 │   │   │   ├── IRagServiceClient.cs
 │   │   │   └── IDbConnectionFactory.cs → Para Dapper
