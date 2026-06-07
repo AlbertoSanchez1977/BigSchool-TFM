@@ -681,12 +681,12 @@ public interface IDbConnectionFactory
 
 - [ ] **Step 2: Implement IRepository<T, Y>**
 
-Create file `src/backend/src/BigSchool.Domain/Interfaces/IRepository.cs`:
+Create file `src/backend/src/BigSchool.Application/Interfaces/IRepository.cs`:
 
 ```csharp
 using BigSchool.Domain.Entities;
 
-namespace BigSchool.Domain.Interfaces;
+namespace BigSchool.Application.Interfaces;
 
 public interface IRepository<T, in Y> where T : IAggregateRoot
 {
