@@ -20,7 +20,7 @@
 5. **Specific repos** (e.g. `IUserRepository : IRepository<User, int>`) live in **Application/Interfaces/**
 6. **Autofac simplified**: No scattered modules. Single registration point in WebApi `Program.cs` using `RegisterAssemblyTypes(assembly).AsImplementedInterfaces()` per layer
 7. **CustomMediatR**: Sequential event dispatch by default (`SyncContinueOnException`)
-8. **IUnitOfWork.SaveChangesAsync** has `dispatchEvents = true` parameter (false for test seeding)
+8. **IUnitOfWork.SaveChangesAsync** has `dispatchEvents = true` parameter (false for test seeding). **No CancellationToken** to avoid second-degree override ambiguity with EF Core's `SaveChangesAsync(CancellationToken)` which could cause infinite recursion.
 9. **DbConnectionMySqlFactory** with `IOptions<AppSettings>` instead of raw IConfiguration
 10. **Serilog** for structured logging to file
 11. **No appsettings.Development.json** — use `dotnet user-secrets` for local overrides
@@ -66,6 +66,8 @@ src/backend/
 │   │   │   └── IDbConnectionFactory.cs
 │   │   ├── Events/
 │   │   │   └── DomainEventNotification.cs
+│   │   ├── Infrastructure/
+│   │   │   └── CustomMediatR.cs
 │   │   └── Configuration/
 │   │       └── AppSettings.cs
 │   │
@@ -80,9 +82,7 @@ src/backend/
 │   └── BigSchool.WebApi/
 │       ├── BigSchool.WebApi.csproj
 │       ├── Program.cs
-│       ├── appsettings.json
-│       └── Infrastructure/
-│           └── CustomMediatR.cs
+│       └── appsettings.json
 │
 └── tests/
     ├── BigSchool.Domain.Tests/
@@ -566,7 +566,7 @@ namespace BigSchool.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
-    Task<int> SaveChangesAsync(bool dispatchEvents = true, CancellationToken cancellationToken = default);
+    Task<int> SaveChangesAsync(bool dispatchEvents = true);
 }
 ```
 
@@ -976,9 +976,9 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     public DbSet<Holding> Holdings => Set<Holding>();
     public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 
-    public async Task<int> SaveChangesAsync(bool dispatchEvents = true, CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
     {
-        var result = await base.SaveChangesAsync(cancellationToken);
+        var result = await base.SaveChangesAsync(CancellationToken.None);
 
         if (dispatchEvents)
         {
@@ -1063,19 +1063,19 @@ git commit -m "feat: añadir capa Infrastructure con EFRepository, BigSchoolDbCo
 ### Task 6: WebApi — Program.cs with Autofac (simplified), CustomMediatR, Serilog, Swagger, Health Check
 
 **Files:**
-- Create: `src/backend/src/BigSchool.WebApi/Infrastructure/CustomMediatR.cs`
+- Create: `src/backend/src/BigSchool.Application/Infrastructure/CustomMediatR.cs`
 - Create: `src/backend/src/BigSchool.WebApi/Program.cs` (overwrite template)
 - Create: `src/backend/src/BigSchool.WebApi/appsettings.json` (overwrite template)
 
-- [ ] **Step 1: Create CustomMediatR with PublishStrategy**
+- [x] **Step 1: Create CustomMediatR with PublishStrategy**
 
-Create file `src/backend/src/BigSchool.WebApi/Infrastructure/CustomMediatR.cs`:
+Create file `src/backend/src/BigSchool.Application/Infrastructure/CustomMediatR.cs`:
 
 ```csharp
 using MediatR;
 using MediatR.NotificationPublishers;
 
-namespace BigSchool.WebApi.Infrastructure;
+namespace BigSchool.Application.Infrastructure;
 
 public class CustomMediatR : Mediator
 {
@@ -1262,7 +1262,7 @@ public enum PublishStrategy
 }
 ```
 
-- [ ] **Step 2: Write Program.cs (composition root with simplified Autofac)**
+- [x] **Step 2: Write Program.cs (composition root with simplified Autofac)**
 
 Replace content of `src/backend/src/BigSchool.WebApi/Program.cs`:
 
@@ -1271,7 +1271,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using BigSchool.Application.Configuration;
 using BigSchool.Infrastructure.Persistence;
-using BigSchool.WebApi.Infrastructure;
+using BigSchool.Application.Infrastructure;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -1398,7 +1398,7 @@ finally
 public partial class Program { }
 ```
 
-- [ ] **Step 3: Write appsettings.json**
+- [x] **Step 3: Write appsettings.json**
 
 Replace content of `src/backend/src/BigSchool.WebApi/appsettings.json`:
 
@@ -1429,25 +1429,25 @@ Replace content of `src/backend/src/BigSchool.WebApi/appsettings.json`:
 }
 ```
 
-- [ ] **Step 4: Delete appsettings.Development.json if it was auto-generated**
+- [x] **Step 4: Delete appsettings.Development.json if it was auto-generated**
 
 ```powershell
 Remove-Item C:\SourceCode\BigSchool-TFM\src\backend\src\BigSchool.WebApi\appsettings.Development.json -ErrorAction SilentlyContinue
 ```
 
-- [ ] **Step 5: Initialize user-secrets for the WebApi project**
+- [x] **Step 5: Initialize user-secrets for the WebApi project**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend\src\BigSchool.WebApi
 dotnet user-secrets init
 ```
 
-- [ ] **Step 6: Verify build**
+- [x] **Step 6: Verify build**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet build Backend.sln`
 Expected: Build succeeded.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
