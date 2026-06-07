@@ -109,7 +109,7 @@ src/backend/
 - Create: `src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj`
 
-- [ ] **Step 1: Create solution and source projects**
+- [x] **Step 1: Create solution and source projects**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -120,7 +120,7 @@ dotnet new classlib -n BigSchool.Infrastructure -o src/BigSchool.Infrastructure 
 dotnet new webapi -n BigSchool.WebApi -o src/BigSchool.WebApi --framework net8.0 --no-openapi
 ```
 
-- [ ] **Step 2: Create test projects**
+- [x] **Step 2: Create test projects**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -129,7 +129,7 @@ dotnet new xunit -n BigSchool.Application.Tests -o tests/BigSchool.Application.T
 dotnet new xunit -n BigSchool.Integration.Tests -o tests/BigSchool.Integration.Tests --framework net8.0
 ```
 
-- [ ] **Step 3: Add all projects to solution**
+- [x] **Step 3: Add all projects to solution**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -142,7 +142,7 @@ dotnet sln add tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csp
 dotnet sln add tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj
 ```
 
-- [ ] **Step 4: Add project references (Clean Architecture dependency rules)**
+- [x] **Step 4: Add project references (Clean Architecture dependency rules)**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -166,7 +166,7 @@ dotnet add tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj 
 dotnet add tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj reference src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj
 ```
 
-- [ ] **Step 5: Delete auto-generated boilerplate files**
+- [x] **Step 5: Delete auto-generated boilerplate files**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -180,12 +180,12 @@ Remove-Item tests/BigSchool.Application.Tests/UnitTest1.cs -ErrorAction Silently
 Remove-Item tests/BigSchool.Integration.Tests/UnitTest1.cs -ErrorAction SilentlyContinue
 ```
 
-- [ ] **Step 6: Verify solution builds (will have warnings about empty projects, that's fine)**
+- [x] **Step 6: Verify solution builds (will have warnings about empty projects, that's fine)**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet build Backend.sln`
 Expected: Build succeeded.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
@@ -206,7 +206,7 @@ git commit -m "feat: crear solución .NET 8 con proyectos Clean Architecture"
 - Modify: `src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj`
 - Modify: `src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj`
 
-- [ ] **Step 1: Create Directory.Build.props with centralized versions**
+- [x] **Step 1: Create Directory.Build.props with centralized versions**
 
 Create file `src/backend/Directory.Build.props`:
 
@@ -245,7 +245,7 @@ Create file `src/backend/Directory.Build.props`:
 </Project>
 ```
 
-- [ ] **Step 2: Set BigSchool.Domain.csproj (no external NuGet dependencies)**
+- [x] **Step 2: Set BigSchool.Domain.csproj (no external NuGet dependencies)**
 
 Replace content of `src/backend/src/BigSchool.Domain/BigSchool.Domain.csproj`:
 
@@ -256,7 +256,7 @@ Replace content of `src/backend/src/BigSchool.Domain/BigSchool.Domain.csproj`:
 
 Note: TargetFramework, ImplicitUsings, Nullable inherited from Directory.Build.props.
 
-- [ ] **Step 3: Set BigSchool.Application.csproj**
+- [x] **Step 3: Set BigSchool.Application.csproj**
 
 Replace content of `src/backend/src/BigSchool.Application/BigSchool.Application.csproj`:
 
@@ -277,7 +277,7 @@ Replace content of `src/backend/src/BigSchool.Application/BigSchool.Application.
 </Project>
 ```
 
-- [ ] **Step 4: Set BigSchool.Infrastructure.csproj**
+- [x] **Step 4: Set BigSchool.Infrastructure.csproj**
 
 Replace content of `src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj`:
 
@@ -302,7 +302,7 @@ Replace content of `src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastru
 </Project>
 ```
 
-- [ ] **Step 5: Set BigSchool.WebApi.csproj**
+- [x] **Step 5: Set BigSchool.WebApi.csproj**
 
 Replace content of `src/backend/src/BigSchool.WebApi/BigSchool.WebApi.csproj`:
 
@@ -326,7 +326,7 @@ Replace content of `src/backend/src/BigSchool.WebApi/BigSchool.WebApi.csproj`:
 </Project>
 ```
 
-- [ ] **Step 6: Set test project csproj files**
+- [x] **Step 6: Set test project csproj files**
 
 Replace `src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj`:
 
@@ -407,7 +407,7 @@ Replace `src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tes
 </Project>
 ```
 
-- [ ] **Step 7: Restore and verify build**
+- [x] **Step 7: Restore and verify build**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -417,7 +417,7 @@ dotnet build Backend.sln
 
 Expected: Build succeeded.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
@@ -440,7 +440,7 @@ git commit -m "feat: añadir Directory.Build.props con versiones centralizadas y
 - Create: `src/backend/src/BigSchool.Domain/Events/IDomainEvent.cs`
 - Test: `src/backend/tests/BigSchool.Domain.Tests/Entities/BaseEntityTests.cs`
 
-- [ ] **Step 1: Write tests for BaseEntity domain event behavior**
+- [x] **Step 1: Write tests for BaseEntity domain event behavior**
 
 Create file `src/backend/tests/BigSchool.Domain.Tests/Entities/BaseEntityTests.cs`:
 
@@ -496,12 +496,12 @@ public class BaseEntityTests
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet test tests/BigSchool.Domain.Tests -v minimal`
 Expected: FAIL — types `BaseEntity`, `IAggregateRoot`, `IDomainEvent` not found.
 
-- [ ] **Step 3: Implement IDomainEvent**
+- [x] **Step 3: Implement IDomainEvent**
 
 Create file `src/backend/src/BigSchool.Domain/Events/IDomainEvent.cs`:
 
@@ -514,7 +514,7 @@ public interface IDomainEvent
 }
 ```
 
-- [ ] **Step 4: Implement BaseEntity**
+- [x] **Step 4: Implement BaseEntity**
 
 Create file `src/backend/src/BigSchool.Domain/Entities/BaseEntity.cs`:
 
@@ -541,7 +541,7 @@ public abstract class BaseEntity
 }
 ```
 
-- [ ] **Step 5: Implement IAggregateRoot marker interface**
+- [x] **Step 5: Implement IAggregateRoot marker interface**
 
 Create file `src/backend/src/BigSchool.Domain/Entities/IAggregateRoot.cs`:
 
@@ -557,7 +557,7 @@ public interface IAggregateRoot
 }
 ```
 
-- [ ] **Step 6: Implement IUnitOfWork**
+- [x] **Step 6: Implement IUnitOfWork**
 
 Create file `src/backend/src/BigSchool.Domain/Interfaces/IUnitOfWork.cs`:
 
@@ -570,7 +570,7 @@ public interface IUnitOfWork
 }
 ```
 
-- [ ] **Step 7: Implement Enums**
+- [x] **Step 7: Implement Enums**
 
 Create file `src/backend/src/BigSchool.Domain/Enums/EntityStatus.cs`:
 
@@ -635,12 +635,12 @@ public enum RecurrencePeriod
 }
 ```
 
-- [ ] **Step 9: Run tests to verify they pass**
+- [x] **Step 9: Run tests to verify they pass**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet test tests/BigSchool.Domain.Tests -v minimal`
 Expected: 3 tests passed.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
@@ -664,7 +664,7 @@ git commit -m "feat: añadir capa Domain con BaseEntity, IAggregateRoot, IReposi
 - Create: `src/backend/src/BigSchool.Application/Events/DomainEventNotification.cs`
 - Create: `src/backend/src/BigSchool.Application/Configuration/AppSettings.cs`
 
-- [ ] **Step 1: Create IDbConnectionFactory**
+- [x] **Step 1: Create IDbConnectionFactory**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/IDbConnectionFactory.cs`:
 
@@ -679,7 +679,7 @@ public interface IDbConnectionFactory
 }
 ```
 
-- [ ] **Step 2: Implement IRepository<T, Y>**
+- [x] **Step 2: Implement IRepository<T, Y>**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/IRepository.cs`:
 
@@ -699,7 +699,7 @@ public interface IRepository<T, in Y> where T : IAggregateRoot
 ```
 
 
-- [ ] **Step 3: Create specific repository interfaces (all Aggregate Roots)**
+- [x] **Step 3: Create specific repository interfaces (all Aggregate Roots)**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/Repositories/IUserRepository.cs`:
 
@@ -768,7 +768,7 @@ public interface IRagDocumentRepository : IRepository<RagDocument, int>
 
 Note: These will not compile until the entities (User, Transaction, etc.) are created. For the scaffolding phase, create **placeholder entities** in Domain so the solution builds. They will be fully implemented in Phase 2 (Finanzas) and Phase 3 (Inversiones).
 
-- [ ] **Step 4: Create placeholder entities in Domain (minimal, just to satisfy compilation)**
+- [x] **Step 4: Create placeholder entities in Domain (minimal, just to satisfy compilation)**
 
 Create file `src/backend/src/BigSchool.Domain/Entities/User.cs`:
 
@@ -820,7 +820,7 @@ public class RagDocument : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 5: Create IRagServiceClient**
+- [x] **Step 5: Create IRagServiceClient**
 
 Create file `src/backend/src/BigSchool.Application/Interfaces/Services/IRagServiceClient.cs`:
 
@@ -833,7 +833,7 @@ public interface IRagServiceClient
 }
 ```
 
-- [ ] **Step 6: Create DomainEventNotification**
+- [x] **Step 6: Create DomainEventNotification**
 
 Create file `src/backend/src/BigSchool.Application/Events/DomainEventNotification.cs`:
 
@@ -854,7 +854,7 @@ public class DomainEventNotification<T> : INotification where T : IDomainEvent
 }
 ```
 
-- [ ] **Step 7: Create AppSettings**
+- [x] **Step 7: Create AppSettings**
 
 Create file `src/backend/src/BigSchool.Application/Configuration/AppSettings.cs`:
 
@@ -886,12 +886,12 @@ public class RagServiceSettings
 }
 ```
 
-- [ ] **Step 8: Verify build**
+- [x] **Step 8: Verify build**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet build Backend.sln`
 Expected: Build succeeded.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
