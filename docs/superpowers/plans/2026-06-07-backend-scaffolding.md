@@ -1462,7 +1462,7 @@ git commit -m "feat: configurar WebApi con Autofac simplificado, CustomMediatR, 
 **Files:**
 - Create: `src/backend/.editorconfig`
 
-- [ ] **Step 1: Create .editorconfig**
+- [x] **Step 1: Create .editorconfig**
 
 Create file `src/backend/.editorconfig`:
 
@@ -1485,7 +1485,7 @@ csharp_style_var_elsewhere = false:suggestion
 dotnet_diagnostic.CS8618.severity = warning
 ```
 
-- [ ] **Step 2: Final build + test run**
+- [x] **Step 2: Final build + test run**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend
@@ -1495,7 +1495,7 @@ dotnet test Backend.sln -v minimal
 
 Expected: Build succeeded. 3 tests passed (BaseEntity tests).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
@@ -1510,7 +1510,7 @@ git commit -m "chore: añadir editorconfig para el backend"
 **Files:**
 - No new files. Verification only.
 
-- [ ] **Step 1: Ensure MySQL is running (via Docker Compose)**
+- [x] **Step 1: Ensure MySQL is running (via Docker Compose)**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\infra
@@ -1519,42 +1519,42 @@ docker compose up -d mysql
 
 Wait ~10 seconds for MySQL to be ready.
 
-- [ ] **Step 2: Run the API**
+- [x] **Step 2: Run the API**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM\src\backend\src\BigSchool.WebApi
 dotnet run
 ```
 
-Expected: Application starts. Console shows Serilog output with the URL (e.g., `http://localhost:5062`).
+Expected: Application starts. Console shows Serilog output with the URL (e.g., `http://localhost:5285`).
 
-- [ ] **Step 3: Verify health endpoint**
+- [x] **Step 3: Verify health endpoint**
 
 In a separate terminal:
 
 ```powershell
-Invoke-WebRequest -Uri http://localhost:5062/health -UseBasicParsing | Select-Object -ExpandProperty Content
+Invoke-WebRequest -Uri http://localhost:5285/health -UseBasicParsing | Select-Object -ExpandProperty Content
 ```
 
-Expected: `Healthy`
+Result: `Healthy` (200) ✅
 
-- [ ] **Step 4: Verify Swagger UI**
+- [x] **Step 4: Verify Swagger UI**
 
 ```powershell
-Invoke-WebRequest -Uri http://localhost:5062/swagger/v1/swagger.json -UseBasicParsing | Select-Object -ExpandProperty StatusCode
+Invoke-WebRequest -Uri http://localhost:5285/swagger/v1/swagger.json -UseBasicParsing | Select-Object -ExpandProperty StatusCode
 ```
 
-Expected: `200`
+Result: `200` ✅
 
-- [ ] **Step 5: Verify Serilog file output**
+- [x] **Step 5: Verify Serilog file output**
 
 ```powershell
 Get-ChildItem C:\SourceCode\BigSchool-TFM\src\backend\src\BigSchool.WebApi\logs\
 ```
 
-Expected: A `bigschool-YYYYMMDD.log` file exists with log entries.
+Result: `bigschool-20260607.log` (1124 bytes) ✅
 
-- [ ] **Step 6: Stop the API (Ctrl+C) and final commit**
+- [x] **Step 6: Stop the API (Ctrl+C) and final commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM

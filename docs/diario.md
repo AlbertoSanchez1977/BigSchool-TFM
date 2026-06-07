@@ -88,15 +88,52 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - ✅ Diseño detallado del backend (`docs/02-backend-design.md`)
 - ✅ Estructura de monorepo creada con AGENTS.md por módulo
 - ✅ Docker Compose base (MySQL + Qdrant)
-- ⬜ Implementación del backend (siguiente)
+- ✅ Scaffolding del backend (Fase 1 completada)
+- ⬜ Implementación del backend — BC Finanzas Personales (siguiente)
 - ⬜ Diseño del frontend web
 - ⬜ Diseño del RAG service
 - ⬜ Diseño del MCP server
 - ⬜ Diseño del mobile
 
 **Siguiente paso:**
-- [ ] Añadir sección de documentación de referencia al AGENTS.md raíz
-- [ ] Comenzar implementación del backend: solución .NET, capas Domain y Application
+- [x] Añadir sección de documentación de referencia al AGENTS.md raíz
+- [x] Comenzar implementación del backend: solución .NET, capas Domain y Application
+
+---
+
+## 2026-06-07 — Scaffolding completo del backend .NET 8
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan detallado de scaffolding con 8 tareas incrementales (`docs/superpowers/plans/2026-06-07-backend-scaffolding.md`)
+- Flujo de trabajo: `develop` → `feature/backend-scaffolding-taskN` → PR → revisión humana → merge
+- **Task 1** (PR #1): Solución .NET 8 con 4 proyectos fuente + 3 de tests (formato `.slnx` de SDK 10)
+- **Task 2** (PR #2): `Directory.Build.props` con versiones centralizadas (AutoMapper 15.1.3 por vulnerabilidad en 13/14)
+- **Task 3** (PR #3): Capa Domain — `BaseEntity`, `IAggregateRoot`, `IUnitOfWork`, `IDomainEvent`, Enums, 3 tests unitarios
+- **Task 4** (PR #4): Capa Application — `IRepository<T,Y>`, repos específicos, `AppSettings`, `DomainEventNotification`, `IDbConnectionFactory`, `IRagServiceClient`
+- **Task 5** (PR #5): Capa Infrastructure — `EFRepository<T,Y>` abstracto, `BigSchoolDbContext` con dispatch condicional de eventos, `DbConnectionMySqlFactory`
+- **Task 6** (PR #6): Capa WebApi — `Program.cs` con Autofac simplificado, `CustomMediatR` (SyncContinueOnException), Serilog (file + console), Swagger, Health Check, CORS
+- **Task 7** (PR #7): `.editorconfig` con convenciones C#
+- **Task 8** (PR #8): Verificación quickstart — MySQL Docker, `/health` OK, Swagger OK, Serilog file sink OK
+
+**Decisiones clave tomadas durante la implementación:**
+- `IUnitOfWork` en Domain, `IRepository<T,Y>` en Application (Domain permanece persistence-agnostic)
+- `SaveChangesAsync(bool dispatchEvents = true)` sin `CancellationToken` → evita recursión infinita con overrides de EF Core
+- `IAggregateRoot` como marcador — solo Aggregate Roots tienen repositorio
+- `CustomMediatR` en Application/Infrastructure (no WebApi) — handlers pueden elegir estrategia de publicación
+- Autofac simplificado: un `RegisterAssemblyTypes` por capa en `Program.cs`
+- Sin `appsettings.Development.json` — usar `dotnet user-secrets` para overrides locales
+
+**Resultado / Estado:**
+- Backend scaffolding 100% completado (8/8 tareas, PRs #1-#8)
+- Build: 0 errores, 3 tests unitarios pasando
+- API arrancable con `dotnet run`, verificada con MySQL Docker
+
+**Siguiente paso:**
+- [ ] Fase 2: Implementación BC Finanzas Personales (entidades completas, CQRS, endpoints)
 
 ---
 
