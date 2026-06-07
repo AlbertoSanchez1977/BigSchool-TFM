@@ -12,8 +12,9 @@
 
 ## Key Architectural Decisions (changes from initial design doc)
 
-1. **IUnitOfWork, IRepository<T,Y>, IAggregateRoot, IDomainEvent** → all in **Domain** layer (no MediatR dependency in Domain)
-2. **IAggregateRoot** is a marker interface. Only Aggregate Roots get repositories: `User`, `Transaction`, `RagDocument`, `Portfolio`, `Holding`
+1. **IUnitOfWork, IAggregateRoot, IDomainEvent** → in **Domain** layer (no MediatR dependency in Domain)
+2. **IRepository<T,Y>** → in **Application/Interfaces/** (junto con repos específicos)
+3. **IAggregateRoot** is a marker interface. Only Aggregate Roots get repositories: `User`, `Transaction`, `RagDocument`, `Portfolio`, `Holding`
 3. **IRepository<T, Y>** generic base with `AddAsync`, `AddRangeAsync`, `GetByIdAsync`, `IUnitOfWork UnitOfWork { get; }`
 4. **EFRepository<T, Y>** abstract class in Infrastructure implements the generic base
 5. **Specific repos** (e.g. `IUserRepository : IRepository<User, int>`) live in **Application/Interfaces/**
@@ -48,12 +49,12 @@ src/backend/
 │   │   ├── Events/
 │   │   │   └── IDomainEvent.cs
 │   │   └── Interfaces/
-│   │       ├── IRepository.cs
 │   │       └── IUnitOfWork.cs
 │   │
 │   ├── BigSchool.Application/
 │   │   ├── BigSchool.Application.csproj
 │   │   ├── Interfaces/
+│   │   │   ├── IRepository.cs
 │   │   │   ├── Repositories/
 │   │   │   │   ├── IUserRepository.cs
 │   │   │   │   ├── ITransactionRepository.cs
@@ -426,12 +427,11 @@ git commit -m "feat: añadir Directory.Build.props con versiones centralizadas y
 
 ---
 
-### Task 3: Domain Layer — BaseEntity, IAggregateRoot, IRepository, IUnitOfWork, Enums, IDomainEvent
+### Task 3: Domain Layer — BaseEntity, IAggregateRoot, IUnitOfWork, Enums, IDomainEvent
 
 **Files:**
 - Create: `src/backend/src/BigSchool.Domain/Entities/BaseEntity.cs`
 - Create: `src/backend/src/BigSchool.Domain/Entities/IAggregateRoot.cs`
-- Create: `src/backend/src/BigSchool.Domain/Interfaces/IRepository.cs`
 - Create: `src/backend/src/BigSchool.Domain/Interfaces/IUnitOfWork.cs`
 - Create: `src/backend/src/BigSchool.Domain/Enums/EntityStatus.cs`
 - Create: `src/backend/src/BigSchool.Domain/Enums/TransactionType.cs`
@@ -570,26 +570,7 @@ public interface IUnitOfWork
 }
 ```
 
-- [ ] **Step 7: Implement IRepository<T, Y>**
-
-Create file `src/backend/src/BigSchool.Domain/Interfaces/IRepository.cs`:
-
-```csharp
-using BigSchool.Domain.Entities;
-
-namespace BigSchool.Domain.Interfaces;
-
-public interface IRepository<T, in Y> where T : IAggregateRoot
-{
-    IUnitOfWork UnitOfWork { get; }
-
-    Task<T?> GetByIdAsync(Y id, CancellationToken cancellationToken = default);
-    Task AddAsync(T entity, CancellationToken cancellationToken = default);
-    Task AddRangeAsync(List<T> entities, CancellationToken cancellationToken = default);
-}
-```
-
-- [ ] **Step 8: Implement Enums**
+- [ ] **Step 7: Implement Enums**
 
 Create file `src/backend/src/BigSchool.Domain/Enums/EntityStatus.cs`:
 
