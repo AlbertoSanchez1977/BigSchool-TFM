@@ -908,14 +908,14 @@ git commit -m "feat: añadir capa Application con interfaces de repositorios, se
 - Create: `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`
 - Create: `src/backend/src/BigSchool.Infrastructure/Persistence/DbConnectionMySqlFactory.cs`
 
-- [ ] **Step 1: Create EFRepository<T, Y> abstract base**
+- [x] **Step 1: Create EFRepository<T, Y> abstract base**
 
 Create file `src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/EFRepository.cs`:
 
 ```csharp
+using BigSchool.Application.Interfaces;
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace BigSchool.Infrastructure.Persistence.Repositories;
 
@@ -947,7 +947,7 @@ public abstract class EFRepository<T, Y> : IRepository<T, Y> where T : class, IA
 }
 ```
 
-- [ ] **Step 2: Create BigSchoolDbContext**
+- [x] **Step 2: Create BigSchoolDbContext**
 
 Create file `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`:
 
@@ -1015,7 +1015,7 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
 }
 ```
 
-- [ ] **Step 3: Create DbConnectionMySqlFactory**
+- [x] **Step 3: Create DbConnectionMySqlFactory**
 
 Create file `src/backend/src/BigSchool.Infrastructure/Persistence/DbConnectionMySqlFactory.cs`:
 
@@ -1030,26 +1030,27 @@ namespace BigSchool.Infrastructure.Persistence;
 
 public class DbConnectionMySqlFactory : IDbConnectionFactory
 {
-    private readonly AppSettings _settings;
+    private readonly string _connectionString;
 
     public DbConnectionMySqlFactory(IOptions<AppSettings> settings)
     {
-        _settings = settings.Value;
+        _connectionString = settings?.Value?.ConnectionString
+            ?? throw new ArgumentNullException(nameof(settings), "ConnectionString is required in AppSettings.");
     }
 
     public IDbConnection CreateConnection()
     {
-        return new MySqlConnection(_settings.ConnectionString);
+        return new MySqlConnection(_connectionString);
     }
 }
 ```
 
-- [ ] **Step 4: Verify build**
+- [x] **Step 4: Verify build**
 
 Run: `cd C:\SourceCode\BigSchool-TFM\src\backend && dotnet build Backend.sln`
 Expected: Build succeeded.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 cd C:\SourceCode\BigSchool-TFM
