@@ -22,9 +22,9 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     public DbSet<Holding> Holdings => Set<Holding>();
     public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 
-    public async Task<int> SaveChangesAsync(bool dispatchEvents = true, CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
     {
-        var result = await base.SaveChangesAsync(cancellationToken);
+        var result = await base.SaveChangesAsync(CancellationToken.None);
 
         if (dispatchEvents)
         {
