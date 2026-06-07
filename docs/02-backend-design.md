@@ -262,9 +262,18 @@ Subcategorías predefinidas (ejemplos):
 **Flujo completo:**
 1. Entity llama `RaiseDomainEvent(new TransactionCreatedEvent(...))`
 2. CommandHandler llama `await _unitOfWork.SaveChangesAsync()`
-3. DbContext.SaveChangesAsync: primero persiste, luego despacha eventos
+3. DbContext.SaveChangesAsync(dispatchEvents): primero persiste, luego despacha eventos si `dispatchEvents = true`
 4. Se crea `DomainEventNotification<T>` wrapper para cada evento
 5. MediatR publica → Handlers en Application lo procesan
+
+**Nota sobre la firma de IUnitOfWork:**
+```csharp
+Task<int> SaveChangesAsync(bool dispatchEvents = true);
+```
+No incluye `CancellationToken` para evitar sobreescrituras de segundo grado con EF Core:
+`SaveChangesAsync(dispatchEvents, token)` → `base.SaveChangesAsync(token)` → ambigüedad con
+`DbContext.SaveChangesAsync(bool acceptAllChanges, CancellationToken)` que podría causar recursión infinita.
+El parámetro `dispatchEvents = false` se usa para seeding en tests de integración.
 
 **Conversión IDomainEvent → INotification:**
 
@@ -281,7 +290,14 @@ public class DomainEventNotification<T> : INotification where T : IDomainEvent
 
 ```csharp
 // Infrastructure/Persistence/BigSchoolDbContext.cs (extracto)
-private async Task DispatchDomainEvents(IMediator mediator)
+public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
+{
+    var result = await base.SaveChangesAsync(CancellationToken.None);
+    if (dispatchEvents) await DispatchDomainEvents();
+    return result;
+}
+
+private async Task DispatchDomainEvents()
 {
     var entities = ChangeTracker.Entries<BaseEntity>()
         .Where(e => e.Entity.DomainEvents.Any())
@@ -296,7 +312,7 @@ private async Task DispatchDomainEvents(IMediator mediator)
         var notificationType = typeof(DomainEventNotification<>)
             .MakeGenericType(domainEvent.GetType());
         var notification = Activator.CreateInstance(notificationType, domainEvent);
-        await mediator.Publish(notification!);
+        await _mediator.Publish(notification!);
     }
 }
 ```
