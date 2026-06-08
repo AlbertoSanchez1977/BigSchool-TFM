@@ -20,11 +20,11 @@
 
 | # | Tarea | Descripción |
 |---|-------|-------------|
-| 1 | Quitar IAggregateRoot de entidades hijas | Transaction, Holding, RagDocument |
-| 2 | Eliminar repositorios de entidades hijas | ITransactionRepository, IHoldingRepository, IRagDocumentRepository |
-| 3 | Actualizar IRepository constraint | Actualizar diseño del doc |
-| 4 | Verificar build + tests | Confirmar que no se rompe nada |
-| 5 | Actualizar docs/02-backend-design.md | Reflejar el modelo correcto de agregados |
+| 1 | ✅ Quitar IAggregateRoot de entidades hijas | Transaction, Holding, RagDocument |
+| 2 | ✅ Eliminar repositorios de entidades hijas | ITransactionRepository, IHoldingRepository, IRagDocumentRepository |
+| 3 | ✅ Actualizar IRepository constraint | Actualizar diseño del doc |
+| 4 | ✅ Verificar build + tests | Confirmar que no se rompe nada |
+| 5 | ✅ Actualizar docs/02-backend-design.md | Reflejar el modelo correcto de agregados |
 
 ---
 
@@ -35,7 +35,7 @@
 - Modify: `src/backend/src/BigSchool.Domain/Entities/Holding.cs`
 - Modify: `src/backend/src/BigSchool.Domain/Entities/RagDocument.cs`
 
-- [ ] **Step 1: Modificar Transaction — quitar IAggregateRoot**
+- [x] **Step 1: Modificar Transaction — quitar IAggregateRoot**
 
 Contenido final de `Transaction.cs`:
 
@@ -47,7 +47,7 @@ public class Transaction : BaseEntity
 }
 ```
 
-- [ ] **Step 2: Modificar Holding — quitar IAggregateRoot**
+- [x] **Step 2: Modificar Holding — quitar IAggregateRoot**
 
 Contenido final de `Holding.cs`:
 
@@ -59,7 +59,7 @@ public class Holding : BaseEntity
 }
 ```
 
-- [ ] **Step 3: Modificar RagDocument — quitar IAggregateRoot**
+- [x] **Step 3: Modificar RagDocument — quitar IAggregateRoot**
 
 Contenido final de `RagDocument.cs`:
 
@@ -71,7 +71,7 @@ public class RagDocument : BaseEntity
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "refactor: quitar IAggregateRoot de entidades hijas (Transaction, Holding, RagDocument)"
@@ -86,26 +86,26 @@ git add -A && git commit -m "refactor: quitar IAggregateRoot de entidades hijas 
 - Delete: `src/backend/src/BigSchool.Application/Interfaces/Repositories/IHoldingRepository.cs`
 - Delete: `src/backend/src/BigSchool.Application/Interfaces/Repositories/IRagDocumentRepository.cs`
 
-- [ ] **Step 1: Eliminar ITransactionRepository.cs**
+- [x] **Step 1: Eliminar ITransactionRepository.cs**
 
 ```bash
 cd src/backend
 rm src/BigSchool.Application/Interfaces/Repositories/ITransactionRepository.cs
 ```
 
-- [ ] **Step 2: Eliminar IHoldingRepository.cs**
+- [x] **Step 2: Eliminar IHoldingRepository.cs**
 
 ```bash
 rm src/BigSchool.Application/Interfaces/Repositories/IHoldingRepository.cs
 ```
 
-- [ ] **Step 3: Eliminar IRagDocumentRepository.cs**
+- [x] **Step 3: Eliminar IRagDocumentRepository.cs**
 
 ```bash
 rm src/BigSchool.Application/Interfaces/Repositories/IRagDocumentRepository.cs
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "refactor: eliminar repositorios de entidades hijas (solo ARs tienen repositorio)"
@@ -120,7 +120,7 @@ git add -A && git commit -m "refactor: eliminar repositorios de entidades hijas 
 
 Nota: EF Core necesita `DbSet<T>` para generar tablas, pero conceptualmente el acceso a entidades hijas se hace a través de las navigation properties del AR. Mantenemos los DbSets para que EF Core genere las tablas correctamente pero añadimos un comentario clarificador.
 
-- [ ] **Step 1: Añadir comentario en BigSchoolDbContext**
+- [x] **Step 1: Añadir comentario en BigSchoolDbContext**
 
 Reemplazar la sección de DbSets por:
 
@@ -136,7 +136,7 @@ Reemplazar la sección de DbSets por:
     public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add -A && git commit -m "refactor: reorganizar DbSets con comentarios de diseño DDD (ARs vs entidades hijas)"
@@ -148,7 +148,7 @@ git add -A && git commit -m "refactor: reorganizar DbSets con comentarios de dis
 
 **Files:** Ninguno nuevo.
 
-- [ ] **Step 1: Build del proyecto completo**
+- [x] **Step 1: Build del proyecto completo**
 
 ```bash
 cd src/backend
@@ -157,7 +157,7 @@ dotnet build --no-restore -v q
 
 Expected: Build succeeded, 0 errors, 0 warnings relevantes
 
-- [ ] **Step 2: Ejecutar todos los tests**
+- [x] **Step 2: Ejecutar todos los tests**
 
 ```bash
 cd src/backend
@@ -166,7 +166,7 @@ dotnet test --no-restore -v q
 
 Expected: Todos los tests existentes pasan (3 tests de Domain del scaffolding original)
 
-- [ ] **Step 3: Commit (si hubo algún ajuste menor)**
+- [x] **Step 3: Commit (si hubo algún ajuste menor)**
 
 Solo si fue necesario arreglar algo para compilar.
 
@@ -177,7 +177,7 @@ Solo si fue necesario arreglar algo para compilar.
 **Files:**
 - Modify: `docs/02-backend-design.md`
 
-- [ ] **Step 1: Añadir sección de Aggregate Roots al documento de diseño**
+- [x] **Step 1: Añadir sección de Aggregate Roots al documento de diseño**
 
 Insertar después de la sección "Modelo de Datos" (antes de "Arquitectura CQRS") la siguiente sección:
 
@@ -219,7 +219,7 @@ var transactions = await connection.QueryAsync<TransactionDto>(sql, new { UserId
 ```
 ```
 
-- [ ] **Step 2: Actualizar la sección de Interfaces en la estructura**
+- [x] **Step 2: Actualizar la sección de Interfaces en la estructura**
 
 En la sección "Estructura Clean Architecture", reemplazar las interfaces de repositorios:
 
@@ -239,7 +239,7 @@ Por:
 │   │   │   ├── IPortfolioRepository.cs  → AR Portfolio + Holdings
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A && git commit -m "docs: actualizar diseño backend con modelo correcto de agregados DDD"
