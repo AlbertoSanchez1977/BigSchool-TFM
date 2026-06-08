@@ -16,9 +16,13 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
         _mediator = mediator;
     }
 
+    // Aggregate Roots — acceso principal
     public DbSet<User> Users => Set<User>();
-    public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+
+    // Entidades hijas — DbSet necesario para EF Core migrations/queries
+    // El acceso de escritura se hace siempre a través del Aggregate Root
+    public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Holding> Holdings => Set<Holding>();
     public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 

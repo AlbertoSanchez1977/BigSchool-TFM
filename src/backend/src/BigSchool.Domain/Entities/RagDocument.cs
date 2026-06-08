@@ -1,5 +1,5 @@
 namespace BigSchool.Domain.Entities;
 
-public class RagDocument : BaseEntity, IAggregateRoot
+public class RagDocument : BaseEntity
 {
 }
