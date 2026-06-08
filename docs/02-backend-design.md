@@ -244,6 +244,44 @@ Subcategorías predefinidas (ejemplos):
 
 ---
 
+## Agregados DDD
+
+### Reglas de Diseño
+
+1. **Solo los Aggregate Roots implementan `IAggregateRoot`** y tienen repositorio propio
+2. **Solo los AR disparan Domain Events** — las entidades hijas notifican al AR que algo cambió
+3. **Las entidades hijas no exponen métodos públicos de mutación** — se acceden a través de su AR
+4. **Las Queries (lectura) usan Dapper** y acceden directamente a tablas sin pasar por el AR
+5. **Los Commands (escritura) cargan el AR** con sus hijos y mutan a través de métodos del AR
+
+### Mapa de Agregados
+
+| Aggregate Root | Entidades hijas | Repositorio |
+|---|---|---|
+| **User** | Transaction, SubCategory, RagDocument | `IUserRepository` |
+| **Portfolio** | Holding | `IPortfolioRepository` |
+| **Company** | Valuation | `ICompanyRepository` |
+
+### Ejemplo de acceso a entidad hija (escritura)
+
+```csharp
+// Command: CreateTransaction
+var user = await _userRepository.GetByIdWithTransactionsAsync(userId);
+user.AddTransaction(type, amount, date, mainCategory, subCategoryId, description);
+await _userRepository.UnitOfWork.SaveChangesAsync();
+// El AR dispara TransactionCreatedEvent
+```
+
+### Ejemplo de lectura directa (Dapper)
+
+```csharp
+// Query: GetMonthlyExpenses — NO pasa por el AR
+var sql = "SELECT * FROM Transactions WHERE IdUser = @UserId AND MONTH(Date) = @Month";
+var transactions = await connection.QueryAsync<TransactionDto>(sql, new { UserId = userId, Month = month });
+```
+
+---
+
 ## Arquitectura CQRS
 
 ### Separación de escritura y lectura
@@ -505,12 +543,9 @@ Backend.sln
 │   ├── BigSchool.Application/
 │   │   ├── Interfaces/
 │   │   │   ├── IRepository.cs          → IRepository<T, Y> where T : IAggregateRoot
-│   │   │   ├── IUserRepository.cs
-│   │   │   ├── ITransactionRepository.cs
-│   │   │   ├── ICompanyRepository.cs
-│   │   │   ├── IPortfolioRepository.cs
-│   │   │   ├── IHoldingRepository.cs
-│   │   │   ├── IRagDocumentRepository.cs
+│   │   │   ├── IUserRepository.cs      → AR User + sus hijos (Transactions, SubCategories, RagDocuments)
+│   │   │   ├── ICompanyRepository.cs   → AR Company + Valuations
+│   │   │   ├── IPortfolioRepository.cs → AR Portfolio + Holdings
 │   │   │   ├── IRagServiceClient.cs
 │   │   │   └── IDbConnectionFactory.cs → Para Dapper
 │   │   ├── Events/
