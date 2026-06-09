@@ -47,7 +47,7 @@ public enum EntityStatus : short
 
 ```
 ┌──────────────────┐
-│      Users       │
+│      Users       │ (AR)
 ├──────────────────┤
 │ IdUser (INT) PK  │
 │ Email            │
@@ -59,39 +59,55 @@ public enum EntityStatus : short
 │ CreatedAt        │
 │ UpdatedAt        │
 └────────┬─────────┘
-         │ 1:N
-    ┌────┴──────────────────────────────────────────┐
-    │                    │                          │
-    ▼                    ▼                          ▼
-┌──────────────┐  ┌───────────────┐       ┌──────────────────┐
-│SubCategories │  │  Portfolios   │       │  RagDocuments    │
-├──────────────┤  ├───────────────┤       ├──────────────────┤
-│IdSubCategory │  │ IdPortfolio   │       │ IdRagDocument    │
-│IdMainCategory│  │ IdUser        │       │ IdUser           │
-│IdUser (null) │  │ Name          │       │ FileName         │
-│Name          │  │ IdStatus      │       │ IdStatus         │
-│IdStatus      │  │ CreatedAt     │       │ UploadedAt       │
-│CreatedAt     │  │ UpdatedAt     │       └──────────────────┘
-└──────┬───────┘  └───────┬───────┘
-       │                  │ 1:N
-       │                  ▼
-┌──────────────────┐  ┌──────────────────┐
-│  Transactions    │  │    Holdings      │
-├──────────────────┤  ├──────────────────┤
-│ IdTransaction    │  │ IdHolding        │
-│ IdUser           │  │ IdPortfolio      │
-│ Type (I/E)       │  │ IdCompany        │
-│ IdMainCategory   │  │ Shares           │
-│ IdSubCategory    │  │ AvgBuyPrice      │
-│ Amount           │  │ BuyDate          │
-│ Date             │  │ IdStatus         │
-│ IdStatus         │  │ CreatedAt        │
-│ CreatedAt        │  │ UpdatedAt        │
-│ UpdatedAt        │  └────────┬─────────┘
-└──────────────────┘           │ N:1
+         │ 1:N (entidad hija, colección navegable)
+         ▼
+┌──────────────┐
+│SubCategories │
+├──────────────┤
+│IdSubCategory │
+│IdMainCategory│
+│IdUser (null) │
+│Name          │
+│IsDefault     │
+│IdStatus      │
+│CreatedAt     │
+└──────────────┘
+
+    Referencia por ID (FK, sin navigation desde User):
+    ┌────────────────────────────────────────────────┐
+    │                    │                           │
+    ▼                    ▼                           ▼
+┌──────────────────┐  ┌───────────────┐    ┌──────────────────┐
+│  Transactions    │  │  Portfolios   │    │  RagDocuments    │
+│  (AR)            │  │  (AR)         │    │  (AR)            │
+├──────────────────┤  ├───────────────┤    ├──────────────────┤
+│ IdTransaction    │  │ IdPortfolio   │    │ IdRagDocument    │
+│ IdUser (FK)      │  │ IdUser (FK)   │    │ IdUser (FK)      │
+│ Type (I/E)       │  │ Name          │    │ FileName         │
+│ IdMainCategory   │  │ IdStatus      │    │ IdStatus         │
+│ IdSubCategory    │  │ CreatedAt     │    │ UploadedAt       │
+│ Amount           │  │ UpdatedAt     │    └──────────────────┘
+│ Date             │  └───────┬───────┘
+│ IdStatus         │          │ 1:N (entidad hija)
+│ CreatedAt        │          ▼
+│ UpdatedAt        │  ┌──────────────────┐
+└──────────────────┘  │    Holdings      │
+                      ├──────────────────┤
+                      │ IdHolding        │
+                      │ IdPortfolio      │
+                      │ IdCompany        │
+                      │ Shares           │
+                      │ AvgBuyPrice      │
+                      │ BuyDate          │
+                      │ IdStatus         │
+                      │ CreatedAt        │
+                      │ UpdatedAt        │
+                      └────────┬─────────┘
+                               │ N:1
                                ▼
                    ┌──────────────────┐    ┌──────────────────┐
                    │    Companies     │─1:N│   Valuations     │
+                   │    (AR)          │    │   (entidad hija) │
                    ├──────────────────┤    ├──────────────────┤
                    │ IdCompany        │    │ IdValuation      │
                    │ Name             │    │ IdCompany        │
@@ -254,22 +270,51 @@ Subcategorías predefinidas (ejemplos):
 4. **Las Queries (lectura) usan Dapper** y acceden directamente a tablas sin pasar por el AR
 5. **Los Commands (escritura) cargan el AR** con sus hijos y mutan a través de métodos del AR
 
+### Criterio de Diseño de Agregados
+
+Para decidir si una entidad es hija de un AR o un AR independiente se aplica:
+
+| Criterio | → Entidad hija del AR | → AR independiente |
+|---|---|---|
+| **Invariantes cruzadas** | Requiere validación contra estado del padre (ej: unicidad de nombre por usuario) | No requiere estado del padre para validarse |
+| **Volumen** | Colección pequeña y acotada (< 50 elementos) | Colección potencialmente grande (miles) |
+| **Ciclo de vida** | No tiene sentido sin el padre | Tiene sentido por sí sola (solo referencia al usuario por ID) |
+| **Concurrencia** | Modificaciones infrecuentes | Modificaciones frecuentes e independientes |
+
 ### Mapa de Agregados
 
 | Aggregate Root | Entidades hijas | Repositorio |
 |---|---|---|
-| **User** | Transaction, SubCategory, RagDocument | `IUserRepository` |
+| **User** | SubCategory | `IUserRepository` |
+| **Transaction** | _(ninguna)_ | `ITransactionRepository` |
 | **Portfolio** | Holding | `IPortfolioRepository` |
 | **Company** | Valuation | `ICompanyRepository` |
+| **RagDocument** | _(ninguna)_ | `IRagDocumentRepository` |
 
-### Ejemplo de acceso a entidad hija (escritura)
+**Justificación del cambio (ADR):**
+- **SubCategory** permanece como hija de User: colección pequeña (~20-50), invariante de unicidad de nombre por usuario+MainCategory, sin sentido fuera del usuario.
+- **Transaction** pasa a AR independiente: volumen alto (miles por usuario), no requiere invariantes cruzadas con User, alta frecuencia de escritura. Referencia a User solo por `IdUser` (int).
+- **RagDocument** pasa a AR independiente: volumen medio, ciclo de vida propio (upload → indexing → ready), no comparte invariantes con User.
+
+### Ejemplo: Entidad hija accedida a través del AR (SubCategory)
 
 ```csharp
-// Command: CreateTransaction
-var user = await _userRepository.GetByIdWithTransactionsAsync(userId);
-user.AddTransaction(type, amount, date, mainCategory, subCategoryId, description);
+// Command: AddSubCategory — se accede via User (AR padre)
+var user = await _userRepository.GetByIdWithSubCategoriesAsync(userId);
+user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
 await _userRepository.UnitOfWork.SaveChangesAsync();
-// El AR dispara TransactionCreatedEvent
+// Internamente: _subCategories.Add(SubCategory.Create(mainCategory, name))
+// El AR puede disparar SubCategoryCreatedEvent si es necesario
+```
+
+### Ejemplo: AR independiente (Transaction)
+
+```csharp
+// Command: CreateTransaction — AR con su propio repositorio
+var transaction = Transaction.Create(userId, type, amount, date, mainCategory, subCategoryId, description);
+await _transactionRepository.AddAsync(transaction, cancellationToken);
+await _transactionRepository.UnitOfWork.SaveChangesAsync();
+// Transaction dispara TransactionCreatedEvent
 ```
 
 ### Ejemplo de lectura directa (Dapper)
@@ -519,15 +564,14 @@ Backend.sln
 │   │   ├── Entities/
 │   │   │   ├── BaseEntity.cs           → DomainEvents list + RaiseDomainEvent()
 │   │   │   ├── IAggregateRoot.cs       → Marcador para Aggregate Roots
-│   │   │   ├── User.cs
-│   │   │   ├── Transaction.cs
-│   │   │   ├── MainCategory.cs
-│   │   │   ├── SubCategory.cs
-│   │   │   ├── Company.cs
-│   │   │   ├── Portfolio.cs
-│   │   │   ├── Holding.cs
-│   │   │   ├── Valuation.cs
-│   │   │   └── RagDocument.cs
+│   │   │   ├── User.cs                 → AR (posee SubCategories como entidad hija)
+│   │   │   ├── SubCategory.cs          → Entidad hija de User (constructor private)
+│   │   │   ├── Transaction.cs          → AR independiente (referencia User por IdUser)
+│   │   │   ├── Company.cs              → AR (posee Valuations como entidad hija)
+│   │   │   ├── Valuation.cs            → Entidad hija de Company
+│   │   │   ├── Portfolio.cs            → AR (posee Holdings como entidad hija)
+│   │   │   ├── Holding.cs              → Entidad hija de Portfolio
+│   │   │   └── RagDocument.cs          → AR independiente (referencia User por IdUser)
 │   │   ├── Enums/
 │   │   │   ├── TransactionType.cs
 │   │   │   ├── RecurrencePeriod.cs
@@ -543,9 +587,11 @@ Backend.sln
 │   ├── BigSchool.Application/
 │   │   ├── Interfaces/
 │   │   │   ├── IRepository.cs          → IRepository<T, Y> where T : IAggregateRoot
-│   │   │   ├── IUserRepository.cs      → AR User + sus hijos (Transactions, SubCategories, RagDocuments)
+│   │   │   ├── IUserRepository.cs      → AR User + SubCategories (entidad hija)
+│   │   │   ├── ITransactionRepository.cs → AR independiente
 │   │   │   ├── ICompanyRepository.cs   → AR Company + Valuations
 │   │   │   ├── IPortfolioRepository.cs → AR Portfolio + Holdings
+│   │   │   ├── IRagDocumentRepository.cs → AR independiente
 │   │   │   ├── IRagServiceClient.cs
 │   │   │   └── IDbConnectionFactory.cs → Para Dapper
 │   │   ├── Events/
@@ -553,13 +599,22 @@ Backend.sln
 │   │   ├── EventHandlers/
 │   │   │   └── ...
 │   │   ├── Commands/
-│   │   │   ├── CreateTransaction/
-│   │   │   ├── UpdateTransaction/
-│   │   │   ├── DeleteTransaction/
-│   │   │   ├── CreateCompany/
-│   │   │   ├── AddHolding/
-│   │   │   ├── AddValuation/
-│   │   │   └── UploadRagDocument/
+│   │   │   ├── Auth/
+│   │   │   │   ├── Register/
+│   │   │   │   └── Login/
+│   │   │   ├── Transactions/
+│   │   │   │   ├── CreateTransaction/
+│   │   │   │   ├── UpdateTransaction/
+│   │   │   │   └── DeleteTransaction/
+│   │   │   ├── SubCategories/
+│   │   │   │   └── AddSubCategory/      → Accede via User AR
+│   │   │   ├── Companies/
+│   │   │   │   └── CreateCompany/
+│   │   │   ├── Portfolios/
+│   │   │   │   ├── AddHolding/
+│   │   │   │   └── AddValuation/
+│   │   │   └── Rag/
+│   │   │       └── UploadRagDocument/
 │   │   ├── Queries/
 │   │   │   ├── GetTransactions/         → Usa Dapper via IDbConnectionFactory
 │   │   │   ├── GetTransactionSummary/
@@ -662,7 +717,7 @@ Backend.sln
 ## Notas de Implementación
 
 - **Argon2** para hashing de contraseñas (Hash + Salt)
-- **JWT** con claims: IdUser, Email
+- **JWT** con claims: IdUser (encriptado con DPAPI), Email
 - **EF Core Fluent API** (no Data Annotations) para configuración de entidades
 - **Dapper** con `IDbConnectionFactory` para todas las queries de lectura
 - **Autofac** registra automáticamente: Handlers, Repositories, Services, Profiles, Validators
@@ -673,3 +728,5 @@ Backend.sln
 - **Health check**: `/health`
 - **Global Query Filter** en EF Core: `entity.IdStatus != 4` (soft delete transparente)
 - **Rate limit** en endpoints del RAG (proteger consumo Azure OpenAI)
+- **Agregados pequeños** (Vaughn Vernon): Transaction y RagDocument son ARs independientes para evitar fat aggregate en User. SubCategory sí es hija de User por tener invariante de unicidad y volumen bajo.
+- **Entidades hijas con constructor private**: se acceden solo a través de métodos del AR padre (ej: `user.AddSubCategory(...)`). No necesitan `InternalsVisibleTo` — se testean a través del AR.

@@ -4,7 +4,7 @@
 
 **Goal:** Implementar la infraestructura cross-cutting (Envelope con Problem Details RFC 7807, Exception Middleware con protección de eventos, ValidationBehavior, Global Query Filter, EF Core configurations, migración inicial) y el sistema de autenticación completo (JWT con DPAPI + Argon2 + Register/Login) sobre el scaffolding existente.
 
-**Architecture:** Clean Architecture con CQRS. Commands usan EF Core vía repositorios de Aggregate Roots. Queries usan Dapper vía IDbConnectionFactory. User es Aggregate Root que posee Transaction, SubCategory y RagDocument. La autenticación se implementa como servicios en Infrastructure (JwtService con DPAPI para encrypt de userId, Argon2PasswordHasher) con interfaces en Application. El middleware de excepciones captura errores y los devuelve en formato Problem Details tipado. Los handlers de DomainEvents están protegidos por un NotificationExceptionBehavior.
+**Architecture:** Clean Architecture con CQRS. Commands usan EF Core vía repositorios de Aggregate Roots. Queries usan Dapper vía IDbConnectionFactory. User es Aggregate Root que posee SubCategory como entidad hija (colección navegable). Transaction y RagDocument son ARs independientes que referencian User por ID. La autenticación se implementa como servicios en Infrastructure (JwtService con DPAPI para encrypt de userId, Argon2PasswordHasher) con interfaces en Application. El middleware de excepciones captura errores y los devuelve en formato Problem Details tipado. Los handlers de DomainEvents están protegidos por un NotificationExceptionBehavior.
 
 **Tech Stack:** .NET 8, EF Core 8 + Pomelo MySQL, Dapper, MediatR 12, FluentValidation 11, Argon2 (Isopoh.Cryptography.Argon2), JWT Bearer + ASP.NET Data Protection, Autofac, xUnit + FluentAssertions + Moq
 
@@ -15,7 +15,7 @@
 ## Decisiones de Diseño (aprobadas por el humano)
 
 1. **Constructores de entidades**: `protected` parameterless para EF Core + constructor con todos los parámetros + factory `Create` estático
-2. **SubCategory**: Solo `CreateForUser` (internal). Seeds con objetos anónimos en `HasData`. No existe `CreateGlobal`
+2. **SubCategory**: Entidad hija de User. Se accede exclusivamente vía `user.AddSubCategory(mainCategory, name)`. Constructor `private`. No necesita `InternalsVisibleTo`. Se testea a través de User.
 3. **Envelope**: Problem Details RFC 7807 — errores como objetos `{ code, message, field }` para que el frontend haga switch/case
 4. **DomainEvents protegidos**: `NotificationExceptionBehavior` que envuelve todos los `INotificationHandler` con try-catch + logging
 5. **EF Core Configurations**: Métodos separados (`ConfigureProperties`, `ConfigureForeignKeys`, `ConfigureIndexes`). Seeds en Extension method
@@ -30,11 +30,11 @@
 
 | # | Tarea | Descripción |
 |---|-------|-------------|
-| 1 | Entidad User completa | Properties, constructor protected + params, factory Create |
-| 2 | Entidad SubCategory | Properties, constructor internal CreateForUser, seeds anónimos |
+| 1 | Entidad User completa | Properties, constructor protected + params, factory Create, colección SubCategories, AddSubCategory |
+| 2 | Entidad SubCategory (hija de User) | Constructor private, factory internal, testeada vía User.AddSubCategory, invariante unicidad |
 | 3 | Excepciones de dominio tipadas | DomainException base + específicas + ApiError tipado RFC 7807 |
 | 4 | Envelope + ExceptionMiddleware + NotificationExceptionBehavior | Errores tipados, protección eventos |
-| 5 | EF Core Configurations + Migración | Fluent API organizado, seeds en Extension, Global Query Filter |
+| 5 | EF Core Configurations + Migración | Fluent API organizado, shadow property IdUser, seeds en Extension, Global Query Filter |
 | 6 | Servicios Auth: Argon2 + JWT con DPAPI | IPasswordHasher, IJwtService + encrypt userId + tests |
 | 7 | Commands Auth: Register + Login | CQRS handlers, validators, DTO, excepciones específicas + tests |
 | 8 | AuthController + JWT middleware + UserRepository | Controller, pipeline JWT, repo concreto |
@@ -73,6 +73,7 @@ public class UserTests
         user.IdStatus.Should().Be(EntityStatus.Active);
         user.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
         user.LastLoginDate.Should().BeNull();
+        user.SubCategories.Should().BeEmpty();
     }
 
     [Theory]
@@ -153,6 +154,9 @@ public class User : BaseEntity, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
+    private readonly List<SubCategory> _subCategories = [];
+    public IReadOnlyCollection<SubCategory> SubCategories => _subCategories.AsReadOnly();
+
     protected User() { } // EF Core
 
     public User(int idUser, string email, string passwordHash, string passwordSalt,
@@ -197,8 +201,29 @@ public class User : BaseEntity, IAggregateRoot
         LastLoginDate = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public SubCategory AddSubCategory(MainCategory mainCategory, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name is required.", nameof(name));
+
+        var trimmedName = name.Trim();
+
+        if (_subCategories.Any(s => s.IdMainCategory == mainCategory
+            && s.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)
+            && s.IdStatus != EntityStatus.Deleted))
+        {
+            throw new DuplicateSubCategoryDomainException(trimmedName, mainCategory);
+        }
+
+        var subCategory = SubCategory.Create(mainCategory, trimmedName);
+        _subCategories.Add(subCategory);
+        return subCategory;
+    }
 }
 ```
+
+**Nota:** `DuplicateSubCategoryDomainException` se implementa en Task 3 junto con las demás excepciones. Para que compile en Task 1, se puede dejar un TODO temporal o implementar la excepción adelantada (preferible).
 
 - [ ] **Step 4: Ejecutar tests para verificar que pasan**
 
@@ -208,69 +233,106 @@ Expected: PASS (6 tests)
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "feat: implementar entidad User con factory method, constructor completo y validaciones"
+git add -A && git commit -m "feat: implementar entidad User con factory method, colección SubCategories y validaciones"
 ```
 
 ---
 
-### Task 2: Entidad SubCategory
+### Task 2: Entidad SubCategory (hija de User)
 
 **Files:**
 - Create: `src/backend/src/BigSchool.Domain/Entities/SubCategory.cs`
-- Create: `src/backend/tests/BigSchool.Domain.Tests/Entities/SubCategoryTests.cs`
+- Modify: `src/backend/tests/BigSchool.Domain.Tests/Entities/UserTests.cs` (añadir tests de SubCategory vía User)
 
-- [ ] **Step 1: Escribir tests para SubCategory**
+**Principio DDD:** SubCategory es entidad hija de User. Su constructor es `private` — solo User puede crear instancias vía `AddSubCategory(...)`. Se testea a través del AR, no directamente. No necesita `InternalsVisibleTo`.
+
+- [ ] **Step 1: Añadir tests de SubCategory al archivo UserTests (vía AR)**
 
 ```csharp
-// tests/BigSchool.Domain.Tests/Entities/SubCategoryTests.cs
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
-using FluentAssertions;
+// Añadir al archivo tests/BigSchool.Domain.Tests/Entities/UserTests.cs
 
-namespace BigSchool.Domain.Tests.Entities;
-
-public class SubCategoryTests
+public class UserSubCategoryTests
 {
     [Fact]
-    public void CreateForUser_SetsPropertiesCorrectly()
+    public void AddSubCategory_WithValidData_AddsToCollection()
     {
-        var sub = SubCategory.CreateForUser(MainCategory.Luxuries, "Conciertos", 5);
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
 
+        var sub = user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
+
+        user.SubCategories.Should().HaveCount(1);
         sub.IdMainCategory.Should().Be(MainCategory.Luxuries);
         sub.Name.Should().Be("Conciertos");
-        sub.IdUser.Should().Be(5);
         sub.IsDefault.Should().BeFalse();
         sub.IdStatus.Should().Be(EntityStatus.Active);
         sub.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void AddSubCategory_DuplicateNameSameCategory_ThrowsDuplicateException()
+    {
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
+        user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
+
+        var act = () => user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
+
+        act.Should().Throw<DuplicateSubCategoryDomainException>();
+    }
+
+    [Fact]
+    public void AddSubCategory_SameNameDifferentCategory_Succeeds()
+    {
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
+        user.AddSubCategory(MainCategory.Luxuries, "Otros");
+
+        var act = () => user.AddSubCategory(MainCategory.EssentialExpenses, "Otros");
+
+        act.Should().NotThrow();
+        user.SubCategories.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void AddSubCategory_DuplicateNameCaseInsensitive_Throws()
+    {
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
+        user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
+
+        var act = () => user.AddSubCategory(MainCategory.Luxuries, "CONCIERTOS");
+
+        act.Should().Throw<DuplicateSubCategoryDomainException>();
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
     [InlineData("   ")]
-    public void CreateForUser_WithEmptyName_ThrowsArgumentException(string? name)
+    public void AddSubCategory_WithEmptyName_ThrowsArgumentException(string? name)
     {
-        var act = () => SubCategory.CreateForUser(MainCategory.EssentialExpenses, name!, 1);
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
+
+        var act = () => user.AddSubCategory(MainCategory.EssentialExpenses, name!);
+
         act.Should().Throw<ArgumentException>().WithParameterName("name");
     }
 
     [Fact]
-    public void CreateForUser_TrimsName()
+    public void AddSubCategory_TrimsName()
     {
-        var sub = SubCategory.CreateForUser(MainCategory.Luxuries, "  Conciertos  ", 5);
+        var user = User.Create("test@example.com", "hash", "salt", "Name");
+
+        var sub = user.AddSubCategory(MainCategory.Luxuries, "  Conciertos  ");
+
         sub.Name.Should().Be("Conciertos");
     }
 }
 ```
 
-**Nota:** Los tests acceden a `CreateForUser` porque el proyecto de tests está en el mismo assembly solution (InternalsVisibleTo) o usamos `[assembly: InternalsVisibleTo("BigSchool.Domain.Tests")]`.
-
 - [ ] **Step 2: Ejecutar tests para verificar que fallan**
 
-Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~SubCategoryTests" --no-restore -v q`
+Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserSubCategoryTests" --no-restore -v q`
 Expected: FAIL — `SubCategory` no existe
 
-- [ ] **Step 3: Implementar SubCategory**
+- [ ] **Step 3: Implementar SubCategory con constructor private**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Entities/SubCategory.cs
@@ -282,24 +344,22 @@ public class SubCategory : BaseEntity
 {
     public int IdSubCategory { get; private set; }
     public MainCategory IdMainCategory { get; private set; }
-    public int? IdUser { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public bool IsDefault { get; private set; }
     public EntityStatus IdStatus { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    protected SubCategory() { } // EF Core
+    private SubCategory() { } // EF Core
 
-    internal static SubCategory CreateForUser(MainCategory mainCategory, string name, int userId)
+    /// <summary>
+    /// Factory interna — solo User.AddSubCategory() puede invocar este método.
+    /// </summary>
+    internal static SubCategory Create(MainCategory mainCategory, string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Name is required.", nameof(name));
-
         return new SubCategory
         {
             IdMainCategory = mainCategory,
-            IdUser = userId,
-            Name = name.Trim(),
+            Name = name,
             IsDefault = false,
             IdStatus = EntityStatus.Active,
             CreatedAt = DateTime.UtcNow
@@ -308,28 +368,35 @@ public class SubCategory : BaseEntity
 }
 ```
 
-- [ ] **Step 4: Añadir InternalsVisibleTo al proyecto Domain**
+**Nota:** El constructor es `private` para EF Core. El factory `Create` es `internal` — accesible solo desde dentro del assembly Domain (donde vive User). No se necesita `InternalsVisibleTo` porque los tests no llaman a `SubCategory.Create()` directamente, sino a `user.AddSubCategory(...)`.
 
-En `src/backend/src/BigSchool.Domain/BigSchool.Domain.csproj` o en un archivo `AssemblyInfo.cs`:
+- [ ] **Step 4: Implementar DuplicateSubCategoryDomainException (adelantada de Task 3)**
 
 ```csharp
-// src/backend/src/BigSchool.Domain/Properties/AssemblyInfo.cs
-using System.Runtime.CompilerServices;
+// src/backend/src/BigSchool.Domain/Exceptions/DuplicateSubCategoryDomainException.cs
+using BigSchool.Domain.Enums;
 
-[assembly: InternalsVisibleTo("BigSchool.Domain.Tests")]
-[assembly: InternalsVisibleTo("BigSchool.Application.Tests")]
-[assembly: InternalsVisibleTo("BigSchool.Infrastructure")]
+namespace BigSchool.Domain.Exceptions;
+
+public class DuplicateSubCategoryDomainException : DomainException
+{
+    public DuplicateSubCategoryDomainException(string name, MainCategory mainCategory)
+        : base("DUPLICATE_SUBCATEGORY",
+            $"Ya existe una subcategoría '{name}' en la categoría '{mainCategory}'.") { }
+}
 ```
+
+**Nota:** Esto requiere que `DomainException` base ya exista. Si se ejecutan Tasks 1-2 antes de Task 3, se puede crear `DomainException` como abstract mínima aquí y completarla en Task 3. Alternativamente, se implementa Task 3 Step 3 primero (solo la clase base).
 
 - [ ] **Step 5: Ejecutar tests para verificar que pasan**
 
-Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~SubCategoryTests" --no-restore -v q`
-Expected: PASS (3 tests)
+Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserSubCategoryTests" --no-restore -v q`
+Expected: PASS (6 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add -A && git commit -m "feat: implementar entidad SubCategory con factory internal CreateForUser"
+git add -A && git commit -m "feat: implementar entidad SubCategory como hija de User con invariante de unicidad"
 ```
 
 ---
@@ -774,6 +841,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.IdUser);
 
         ConfigureProperties(builder);
+        ConfigureRelationships(builder);
         ConfigureIndexes(builder);
         ConfigureFilters(builder);
 
@@ -794,6 +862,20 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<short>();
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt);
+    }
+
+    private static void ConfigureRelationships(EntityTypeBuilder<User> builder)
+    {
+        // SubCategory es entidad hija navegable de User
+        builder.HasMany(u => u.SubCategories)
+            .WithOne()
+            .HasForeignKey("IdUser")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Acceso al backing field para la colección privada
+        builder.Navigation(u => u.SubCategories)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 
     private static void ConfigureIndexes(EntityTypeBuilder<User> builder)
@@ -827,7 +909,6 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
         builder.HasKey(s => s.IdSubCategory);
 
         ConfigureProperties(builder);
-        ConfigureForeignKeys(builder);
         ConfigureFilters(builder);
 
         builder.Ignore(s => s.DomainEvents);
@@ -837,7 +918,6 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
     {
         builder.Property(s => s.IdSubCategory).ValueGeneratedOnAdd();
         builder.Property(s => s.IdMainCategory).IsRequired().HasConversion<int>();
-        builder.Property(s => s.IdUser);
         builder.Property(s => s.Name).IsRequired().HasMaxLength(100);
         builder.Property(s => s.IsDefault).HasDefaultValue(false);
         builder.Property(s => s.IdStatus)
@@ -845,15 +925,8 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
             .HasDefaultValue(EntityStatus.Active)
             .HasConversion<short>();
         builder.Property(s => s.CreatedAt).IsRequired();
-    }
-
-    private static void ConfigureForeignKeys(EntityTypeBuilder<SubCategory> builder)
-    {
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(s => s.IdUser)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+        // Shadow property IdUser (FK gestionada en UserConfiguration)
+        builder.Property<int?>("IdUser");
     }
 
     private static void ConfigureFilters(EntityTypeBuilder<SubCategory> builder)
@@ -862,6 +935,8 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
     }
 }
 ```
+
+**Nota:** La FK `IdUser` se define como shadow property en SubCategoryConfiguration y la relación se configura en UserConfiguration. SubCategory no expone `IdUser` como propiedad pública — EF Core la gestiona internamente. Las subcategorías predefinidas (seeds) tienen `IdUser = null` (globales para todos los usuarios).
 
 - [ ] **Step 3: Crear SeedDataExtensions**
 
@@ -2176,13 +2251,15 @@ git add -A && git commit -m "test: añadir tests de validators y verificación e
 - **ApiError RFC 7807** — `{ code, message, field }` permite al frontend hacer `switch(error.code)` sin parsear strings
 - **NotificationExceptionBehavior** — envuelve handlers de eventos con try-catch para que una excepción en un handler de DomainEvent no reviente toda la petición
 - **Global Query Filter** `IdStatus != Deleted` en cada Configuration → soft delete transparente
-- **InternalsVisibleTo** — permite a tests y Infrastructure acceder a factories `internal` de entidades hijas
-- **EF Core Configurations** — organizadas en métodos `ConfigureProperties`, `ConfigureForeignKeys`, `ConfigureIndexes`, `ConfigureFilters`
-- **Seeds** — en extension method `SeedSubCategories()` con objetos anónimos (no requiere factory en la entidad)
+- **SubCategory como entidad hija de User** — constructor `private`, factory `internal`, acceso exclusivamente vía `user.AddSubCategory(...)`. No necesita `InternalsVisibleTo`. Se testea a través del AR.
+- **Transaction y RagDocument como ARs independientes** — referencian User solo por `IdUser` (int). Tienen su propio repositorio y se crean con `Transaction.Create(...)` / `RagDocument.Create(...)`.
+- **EF Core Configurations** — organizadas en métodos `ConfigureProperties`, `ConfigureRelationships`, `ConfigureIndexes`, `ConfigureFilters`
+- **Seeds** — en extension method `SeedSubCategories()` con objetos anónimos (no requiere factory en la entidad). Seeds son globales (`IdUser = null`, `IsDefault = true`)
+- **Shadow property** `IdUser` en SubCategory — EF Core gestiona la FK internamente sin exponerla en el modelo de dominio
 
 ## Dependencias entre Plans
 
 Este plan (Plan 1) es requisito previo para:
-- **Plan 2: BC Finanzas Personales** — usa User AR, Auth, Envelope, Middleware, ValidationBehavior, SubCategory
+- **Plan 2: BC Finanzas Personales** — usa User AR, Auth, Envelope, Middleware, ValidationBehavior, SubCategory (hija de User). Transaction como AR independiente con ITransactionRepository.
 - **Plan 3: BC Inversiones** — usa los mismos cross-cutting + Company/Portfolio ARs
-- **Plan 4: RAG** — usa Auth + Envelope + User AR (posee RagDocument)
+- **Plan 4: RAG** — usa Auth + Envelope + RagDocument como AR independiente con IRagDocumentRepository
