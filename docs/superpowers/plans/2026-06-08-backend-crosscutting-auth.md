@@ -114,18 +114,6 @@ public class UserTests
 
         user.Email.Should().Be("test@example.com");
     }
-
-    [Fact]
-    public void Constructor_WithAllParameters_SetsProperties()
-    {
-        var now = DateTime.UtcNow;
-        var user = new User(1, "test@example.com", "hash", "salt", "John", null, EntityStatus.Active, now, null);
-
-        user.IdUser.Should().Be(1);
-        user.Email.Should().Be("test@example.com");
-        user.IdStatus.Should().Be(EntityStatus.Active);
-        user.CreatedAt.Should().Be(now);
-    }
 }
 ```
 
@@ -159,19 +147,15 @@ public class User : BaseEntity, IAggregateRoot
 
     protected User() { } // EF Core
 
-    public User(int idUser, string email, string passwordHash, string passwordSalt,
-        string fullName, DateTime? lastLoginDate, EntityStatus idStatus,
-        DateTime createdAt, DateTime? updatedAt)
+    private User(string email, string passwordHash, string passwordSalt,
+        string fullName, EntityStatus idStatus, DateTime createdAt)
     {
-        IdUser = idUser;
         Email = email;
         PasswordHash = passwordHash;
         PasswordSalt = passwordSalt;
         FullName = fullName;
-        LastLoginDate = lastLoginDate;
         IdStatus = idStatus;
         CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
     }
 
     public static User Create(string email, string passwordHash, string passwordSalt, string fullName)
@@ -185,15 +169,13 @@ public class User : BaseEntity, IAggregateRoot
         if (string.IsNullOrWhiteSpace(fullName))
             throw new ArgumentException("Full name is required.", nameof(fullName));
 
-        return new User
-        {
-            Email = email.Trim().ToLowerInvariant(),
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
-            FullName = fullName.Trim(),
-            IdStatus = EntityStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+        return new User(
+            email.Trim().ToLowerInvariant(),
+            passwordHash,
+            passwordSalt,
+            fullName.Trim(),
+            EntityStatus.Active,
+            DateTime.UtcNow);
     }
 
     public void UpdateLastLogin()
@@ -223,12 +205,12 @@ public class User : BaseEntity, IAggregateRoot
 }
 ```
 
-**Nota:** `DuplicateSubCategoryDomainException` se implementa en Task 3 junto con las demás excepciones. Para que compile en Task 1, se puede dejar un TODO temporal o implementar la excepción adelantada (preferible).
+**Nota:** El constructor parametrizado es `private` — solo `Create` puede invocarlo. El constructor `protected` parameterless es para EF Core. No existe constructor público con parámetros. `DuplicateSubCategoryDomainException` se implementa en Task 3 junto con las demás excepciones. Para que compile en Task 1, se puede dejar un TODO temporal o implementar la excepción adelantada (preferible).
 
 - [ ] **Step 4: Ejecutar tests para verificar que pasan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserTests" --no-restore -v q`
-Expected: PASS (6 tests)
+Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
 
