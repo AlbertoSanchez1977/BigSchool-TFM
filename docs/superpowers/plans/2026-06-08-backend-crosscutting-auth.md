@@ -49,7 +49,7 @@
 - Modify: `src/backend/src/BigSchool.Domain/Entities/User.cs`
 - Create: `src/backend/tests/BigSchool.Domain.Tests/Entities/UserTests.cs`
 
-- [ ] **Step 1: Escribir tests para la entidad User**
+- [x] **Step 1: Escribir tests para la entidad User**
 
 ```csharp
 // tests/BigSchool.Domain.Tests/Entities/UserTests.cs
@@ -117,12 +117,12 @@ public class UserTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar tests para verificar que fallan**
+- [x] **Step 2: Ejecutar tests para verificar que fallan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserTests" --no-restore -v q`
 Expected: FAIL — `User` no tiene `Create` ni propiedades
 
-- [ ] **Step 3: Implementar la entidad User**
+- [x] **Step 3: Implementar la entidad User**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Entities/User.cs
@@ -207,12 +207,12 @@ public class User : BaseEntity, IAggregateRoot
 
 **Nota:** El constructor parametrizado es `private` — solo `Create` puede invocarlo. El constructor `protected` parameterless es para EF Core. No existe constructor público con parámetros. `DuplicateSubCategoryDomainException` se implementa en Task 3 junto con las demás excepciones. Para que compile en Task 1, se puede dejar un TODO temporal o implementar la excepción adelantada (preferible).
 
-- [ ] **Step 4: Ejecutar tests para verificar que pasan**
+- [x] **Step 4: Ejecutar tests para verificar que pasan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserTests" --no-restore -v q`
 Expected: PASS (5 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar entidad User con factory method, colección SubCategories y validaciones"
@@ -228,7 +228,7 @@ git add -A && git commit -m "feat: implementar entidad User con factory method, 
 
 **Principio DDD:** SubCategory es entidad hija de User. Su constructor es `private` — solo User puede crear instancias vía `AddSubCategory(...)`. Se testea a través del AR, no directamente. No necesita `InternalsVisibleTo`.
 
-- [ ] **Step 1: Añadir tests de SubCategory al archivo UserTests (vía AR)**
+- [x] **Step 1: Añadir tests de SubCategory al archivo UserTests (vía AR)**
 
 ```csharp
 // Añadir al archivo tests/BigSchool.Domain.Tests/Entities/UserTests.cs
@@ -309,12 +309,12 @@ public class UserSubCategoryTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar tests para verificar que fallan**
+- [x] **Step 2: Ejecutar tests para verificar que fallan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserSubCategoryTests" --no-restore -v q`
 Expected: FAIL — `SubCategory` no existe
 
-- [ ] **Step 3: Implementar SubCategory con constructor private**
+- [x] **Step 3: Implementar SubCategory con constructor private**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Entities/SubCategory.cs
@@ -352,7 +352,7 @@ public class SubCategory : BaseEntity
 
 **Nota:** El constructor es `private` para EF Core. El factory `Create` es `internal` — accesible solo desde dentro del assembly Domain (donde vive User). No se necesita `InternalsVisibleTo` porque los tests no llaman a `SubCategory.Create()` directamente, sino a `user.AddSubCategory(...)`.
 
-- [ ] **Step 4: Implementar DuplicateSubCategoryDomainException (adelantada de Task 3)**
+- [x] **Step 4: Implementar DuplicateSubCategoryDomainException (adelantada de Task 3)**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Exceptions/DuplicateSubCategoryDomainException.cs
@@ -370,12 +370,12 @@ public class DuplicateSubCategoryDomainException : DomainException
 
 **Nota:** Esto requiere que `DomainException` base ya exista. Si se ejecutan Tasks 1-2 antes de Task 3, se puede crear `DomainException` como abstract mínima aquí y completarla en Task 3. Alternativamente, se implementa Task 3 Step 3 primero (solo la clase base).
 
-- [ ] **Step 5: Ejecutar tests para verificar que pasan**
+- [x] **Step 5: Ejecutar tests para verificar que pasan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserSubCategoryTests" --no-restore -v q`
 Expected: PASS (6 tests)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar entidad SubCategory como hija de User con invariante de unicidad"
