@@ -1367,7 +1367,7 @@ public class JwtService : IJwtService
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~Services" --no-restore -v q`
 Expected: PASS (8 tests — 4 hasher + 4 JWT)
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar Argon2PasswordHasher, JwtService con DPAPI y UserIdEncryptor"
