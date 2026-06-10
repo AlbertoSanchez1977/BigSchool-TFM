@@ -137,6 +137,72 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-08 al 2026-06-10 — Autenticación Backend Completa (Tasks 1-10)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan detallado de autenticación crosscutting en 10 tareas (`docs/superpowers/plans/2026-06-08-backend-crosscutting-auth.md`)
+- Flujo de trabajo: `develop` → `feature/backend-CR-auth-plan1-taskN` → PR → revisión humana → merge
+- **Task 1** (PR #10): Entidad `User` completa con factory `Create`, `UpdateLastLogin`, colección `SubCategories`, 4 tests unitarios
+- **Task 2** (PR #11): Entidad `SubCategory` (hija de User) con constructor `private`, factory `internal`, `AddSubCategory()` en User, invariante de unicidad, 5 tests
+- **Task 3** (PR #13): Excepciones de dominio tipadas — `DomainException` base (abstract), `ConflictException`, `NotFoundException`, `UnauthorizedException`, `InvalidCredentialsDomainException`, `ApiError` RFC 7807
+- **Task 4** (PR #14): Envelope `ApiResponse<T>`, `ExceptionHandlingMiddleware` con mapeo de excepciones a HTTP codes, `NotificationExceptionBehavior` para proteger handlers de DomainEvents
+- **Task 5** (PR #17): EF Core Configurations (UserConfiguration, SubCategoryConfiguration), Seed Data (28 subcategorías predefinidas), Migración `InitialCreate`, Global Query Filter para IdStatus != Deleted
+- **Task 6** (PR #18): Auth Services — `Argon2PasswordHasher` (Parallelism=2, MemoryCost=65536), `JwtService` (userId encriptado con DPAPI), `DataProtectionUserIdEncryptor`, 8 tests pasando
+- **Task 7** (PR #19): Commands Auth — `RegisterCommand`, `LoginCommand`, `EmailAlreadyExistsDomainException`, `AuthResponseDto`, extensión de `IUserRepository`, 5 tests pasando
+- **Task 8** (PR #20): `AuthController` (POST /api/v1/auth/register y /login), `UserRepository` con normalización de emails, JWT Authentication + DataProtection en `Program.cs`
+- **Task 9** (PR #21): `ValidationBehavior` para pipeline MediatR, validación paralela con FluentValidation, 3 tests pasando (TDD: Red → Green)
+- **Task 10** (PR #22): Tests de validators (6 para Register, 4 para Login), verificación build completo (0 errores), documentación de verificación end-to-end
+
+**Decisiones clave tomadas durante la implementación:**
+- **Constantes en UPPERCASE snake_case** (ej: `MEMORY_COST`, `PURPOSE`) — convención consolidada durante implementación
+- **Entidad User como Aggregate Root** — SubCategory es entidad hija accesible solo vía `user.AddSubCategory()`
+- **Constructor protected + factory Create** — Patrón para todas las entidades (EF Core usa protected parameterless, lógica usa factory)
+- **Argon2id** con parámetros: Parallelism=2, MemoryCost=65536 KB, Iterations=3, HashLength=16, SaltLength=32
+- **DPAPI para userId** — `DataProtection` API de ASP.NET Core encripta userId antes de incluirlo en JWT 'sub' claim (frontend nunca ve INTs internos)
+- **ValidationBehavior con Task.WhenAll** — ejecuta múltiples validators en paralelo para mejor rendimiento
+- **Normalización de email** — `.Trim().ToLowerInvariant()` en UserRepository para búsquedas case-insensitive
+- **DomainException específicas** — Cada error tiene su excepción tipada (ej: `EmailAlreadyExistsDomainException` hereda de `ConflictException` 409)
+- **ApiError RFC 7807** — Errores como objetos `{ code, message, field }` para que frontend haga switch/case sin parsear strings
+- **NotificationExceptionBehavior** — Envuelve handlers de DomainEvents con try-catch para que una excepción no reviente toda la petición
+- **Global Query Filter** — `IdStatus != Deleted` en todas las Configurations → soft delete transparente
+- **FluentValidation TestHelper** — `TestValidate()` y `ShouldHaveValidationErrorFor()` para tests declarativos
+
+**Problemas encontrados y soluciones:**
+- **Argon2 API** — No usar método estático `Argon2.Hash()`, usar `new Argon2(config)` con propiedades `Threads` (no `parallelism`), `MemoryCost`, `TimeCost` (not `iterations`)
+- **Autofac + EF Core** — Excluir Domain entities del contenedor DI (tienen constructores protegidos para EF Core), filtrar con `.Where(t => !t.Namespace!.Contains("Entities"))`
+- **Dependency conflicts** — Actualizar JWT packages de 8.0.2 a 8.14.0 para resolver conflictos con IdentityModel.Tokens
+- **Missing using Xunit** — Los tests de ValidationBehavior necesitaban `using Xunit;` explícito
+- **ApiResponse envelope** — Decidir si es `<T>` o no genérico para errors → solución: `ApiResponse` (sin T) para errores, `ApiResponse<T>` para datos
+
+**Resultado / Estado:**
+- Autenticación backend 100% completada (10/10 tareas, PRs #10, #11, #13, #14, #17-#22)
+- Build: 0 errores, warnings solo de versiones EF Core (Pomelo.EntityFrameworkCore.MySql 8.0.2 vs 8.0.11)
+- Tests: 19+ tests pasando (6 validator + 4 validator + 2 handler + 3 handler + 3 behavior + 4 services + 9 entities)
+- Migración EF Core lista: `InitialCreate` con Users y SubCategories + 28 subcategorías seed
+- API lista para pruebas end-to-end con MySQL
+- ExceptionMiddleware capturando y mapeando errores a Problem Details RFC 7807
+- ValidationBehavior integrado en pipeline MediatR para validación automática
+
+**Cobertura de Tests:**
+- 4 tests: `User` entity (Create, UpdateLastLogin, validaciones)
+- 5 tests: `SubCategory` + `User.AddSubCategory()` (unicidad, validaciones)
+- 6 tests: `RegisterCommandValidator` (email, password, fullName)
+- 4 tests: `LoginCommandValidator` (email, password)
+- 2 tests: `RegisterCommandHandler` (success, duplicate email)
+- 3 tests: `LoginCommandHandler` (valid, wrong password, non-existent user)
+- 3 tests: `ValidationBehavior` (valid, invalid, no validators)
+- 4 tests: `Argon2PasswordHasher` + `JwtService` (hash, verify, generate, extract)
+
+**Siguiente paso:**
+- [ ] Fase 3: Implementación BC Finanzas Personales — entidades Transaction, Category con lógica de negocio completa
+- [ ] Prueba end-to-end manual: MySQL Docker + migrations + curl a /register y /login para verificar flujo completo
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
