@@ -394,7 +394,7 @@ git add -A && git commit -m "feat: implementar entidad SubCategory como hija de 
 - Create: `src/backend/src/BigSchool.Application/Common/ApiResponse.cs`
 - Create: `src/backend/tests/BigSchool.Domain.Tests/Exceptions/DomainExceptionTests.cs`
 
-- [ ] **Step 1: Escribir tests para excepciones**
+- [x] **Step 1: Escribir tests para excepciones**
 
 ```csharp
 // tests/BigSchool.Domain.Tests/Exceptions/DomainExceptionTests.cs
@@ -441,12 +441,12 @@ public class DomainExceptionTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar tests para verificar que fallan**
+- [x] **Step 2: Ejecutar tests para verificar que fallan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~DomainExceptionTests" --no-restore -v q`
 Expected: FAIL
 
-- [ ] **Step 3: Implementar excepciones de dominio**
+- [x] **Step 3: Implementar excepciones de dominio**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Exceptions/DomainException.cs
@@ -501,12 +501,12 @@ public class InvalidCredentialsDomainException : DomainException
 }
 ```
 
-- [ ] **Step 4: Ejecutar tests de excepciones**
+- [x] **Step 4: Ejecutar tests de excepciones**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~DomainExceptionTests" --no-restore -v q`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Implementar ApiError y ApiResponse (Envelope RFC 7807)**
+- [x] **Step 5: Implementar ApiError y ApiResponse (Envelope RFC 7807)**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Common/ApiError.cs
@@ -570,7 +570,7 @@ public record MetaData
 }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir excepciones de dominio tipadas y envelope ApiResponse con RFC 7807"
