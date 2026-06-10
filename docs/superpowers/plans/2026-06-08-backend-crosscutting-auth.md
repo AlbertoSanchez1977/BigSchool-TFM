@@ -1425,7 +1425,7 @@ git add -A && git commit -m "feat: implementar Argon2PasswordHasher, JwtService 
 - Create: `src/backend/tests/BigSchool.Application.Tests/Commands/Auth/RegisterCommandHandlerTests.cs`
 - Create: `src/backend/tests/BigSchool.Application.Tests/Commands/Auth/LoginCommandHandlerTests.cs`
 
-- [ ] **Step 1: Crear excepción específica para email duplicado**
+- [x] **Step 1: Crear excepción específica para email duplicado**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Exceptions/EmailAlreadyExistsDomainException.cs
@@ -1438,7 +1438,7 @@ public class EmailAlreadyExistsDomainException : ConflictException
 }
 ```
 
-- [ ] **Step 2: Ampliar IUserRepository**
+- [x] **Step 2: Ampliar IUserRepository**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Interfaces/Repositories/IUserRepository.cs
@@ -1453,7 +1453,7 @@ public interface IUserRepository : IRepository<User, int>
 }
 ```
 
-- [ ] **Step 3: Crear DTO de respuesta**
+- [x] **Step 3: Crear DTO de respuesta**
 
 ```csharp
 // src/backend/src/BigSchool.Application/DTOs/Auth/AuthResponseDto.cs
@@ -1462,7 +1462,7 @@ namespace BigSchool.Application.DTOs.Auth;
 public record AuthResponseDto(string AccessToken, DateTime ExpiresAt, string Email, string FullName);
 ```
 
-- [ ] **Step 4: Implementar RegisterCommand + Validator + Handler**
+- [x] **Step 4: Implementar RegisterCommand + Validator + Handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Auth/Register/RegisterCommand.cs
@@ -1548,7 +1548,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 }
 ```
 
-- [ ] **Step 5: Implementar LoginCommand + Validator + Handler**
+- [x] **Step 5: Implementar LoginCommand + Validator + Handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Auth/Login/LoginCommand.cs
@@ -1625,7 +1625,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto
 }
 ```
 
-- [ ] **Step 6: Escribir tests para RegisterCommandHandler**
+- [x] **Step 6: Escribir tests para RegisterCommandHandler**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Commands/Auth/RegisterCommandHandlerTests.cs
@@ -1690,7 +1690,7 @@ public class RegisterCommandHandlerTests
 }
 ```
 
-- [ ] **Step 7: Escribir tests para LoginCommandHandler**
+- [x] **Step 7: Escribir tests para LoginCommandHandler**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Commands/Auth/LoginCommandHandlerTests.cs
@@ -1769,12 +1769,12 @@ public class LoginCommandHandlerTests
 }
 ```
 
-- [ ] **Step 8: Ejecutar todos los tests de Auth handlers**
+- [x] **Step 8: Ejecutar todos los tests de Auth handlers**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~Commands.Auth" --no-restore -v q`
 Expected: PASS (5 tests)
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar commands Register y Login con excepciones específicas y tests"
@@ -1789,7 +1789,7 @@ git add -A && git commit -m "feat: implementar commands Register y Login con exc
 - Create: `src/backend/src/BigSchool.WebApi/Controllers/AuthController.cs`
 - Modify: `src/backend/src/BigSchool.WebApi/Program.cs` (JWT authentication + DataProtection)
 
-- [ ] **Step 1: Implementar UserRepository (EF Core)**
+- [x] **Step 1: Implementar UserRepository (EF Core)**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/UserRepository.cs
