@@ -2079,7 +2079,7 @@ git add -A && git commit -m "feat: añadir ValidationBehavior para validación a
 - Create: `src/backend/tests/BigSchool.Application.Tests/Validators/RegisterCommandValidatorTests.cs`
 - Create: `src/backend/tests/BigSchool.Application.Tests/Validators/LoginCommandValidatorTests.cs`
 
-- [ ] **Step 1: Tests para RegisterCommandValidator**
+- [x] **Step 1: Tests para RegisterCommandValidator**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Validators/RegisterCommandValidatorTests.cs
@@ -2136,7 +2136,7 @@ public class RegisterCommandValidatorTests
 }
 ```
 
-- [ ] **Step 2: Tests para LoginCommandValidator**
+- [x] **Step 2: Tests para LoginCommandValidator**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Validators/LoginCommandValidatorTests.cs
@@ -2179,12 +2179,12 @@ public class LoginCommandValidatorTests
 }
 ```
 
-- [ ] **Step 3: Ejecutar todos los tests del proyecto**
+- [x] **Step 3: Ejecutar todos los tests del proyecto**
 
 Run: `dotnet test src/backend --no-restore -v q`
 Expected: All tests passed
 
-- [ ] **Step 4: Verificar build completo**
+- [x] **Step 4: Verificar build completo**
 
 ```bash
 cd src/backend
