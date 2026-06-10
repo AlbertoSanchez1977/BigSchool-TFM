@@ -1,6 +1,7 @@
 using BigSchool.Application.Events;
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Interfaces;
+using BigSchool.Infrastructure.Persistence.Extensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,13 +19,16 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
 
     // Aggregate Roots — acceso principal
     public DbSet<User> Users => Set<User>();
-    public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+    // TODO: Task futura — Portfolio no está implementado aún
+    // public DbSet<Portfolio> Portfolios => Set<Portfolio>();
 
     // Entidades hijas — DbSet necesario para EF Core migrations/queries
     // El acceso de escritura se hace siempre a través del Aggregate Root
-    public DbSet<Transaction> Transactions => Set<Transaction>();
-    public DbSet<Holding> Holdings => Set<Holding>();
-    public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
+    public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+    // TODO: Tasks futuras — Entidades no implementadas aún
+    // public DbSet<Transaction> Transactions => Set<Transaction>();
+    // public DbSet<Holding> Holdings => Set<Holding>();
+    // public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 
     public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
     {
@@ -42,6 +46,7 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BigSchoolDbContext).Assembly);
+        modelBuilder.SeedSubCategories();
     }
 
     private async Task DispatchDomainEvents()
