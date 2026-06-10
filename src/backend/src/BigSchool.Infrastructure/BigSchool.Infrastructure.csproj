@@ -10,6 +10,9 @@
     <PackageReference Include="Dapper" Version="$(DapperVersion)" />
     <PackageReference Include="MediatR" Version="$(MediatRVersion)" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="$(Argon2Version)" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(JwtVersion)" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="$(IdentityModelTokensVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="$(DataProtectionVersion)" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="$(OptionsVersion)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(OptionsVersion)" />
   </ItemGroup>

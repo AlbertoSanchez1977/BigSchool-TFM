@@ -1034,7 +1034,7 @@ git add -A && git commit -m "feat: añadir EF Core configurations organizadas, s
 - Create: `src/backend/tests/BigSchool.Application.Tests/Services/PasswordHasherTests.cs`
 - Create: `src/backend/tests/BigSchool.Application.Tests/Services/JwtServiceTests.cs`
 
-- [ ] **Step 1: Definir interfaces en Application**
+- [x] **Step 1: Definir interfaces en Application**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Interfaces/Services/IPasswordHasher.cs
@@ -1071,7 +1071,7 @@ public interface IUserIdEncryptor
 }
 ```
 
-- [ ] **Step 2: Añadir paquetes necesarios**
+- [x] **Step 2: Añadir paquetes necesarios**
 
 ```bash
 cd src/backend
@@ -1080,7 +1080,7 @@ dotnet add src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj package 
 dotnet add src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj package Microsoft.AspNetCore.DataProtection --version 8.0.11
 ```
 
-- [ ] **Step 3: Implementar Argon2PasswordHasher con constantes**
+- [x] **Step 3: Implementar Argon2PasswordHasher con constantes**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/Argon2PasswordHasher.cs
@@ -1136,7 +1136,7 @@ public class Argon2PasswordHasher : IPasswordHasher
 }
 ```
 
-- [ ] **Step 4: Implementar DataProtectionUserIdEncryptor**
+- [x] **Step 4: Implementar DataProtectionUserIdEncryptor**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/DataProtectionUserIdEncryptor.cs
@@ -1147,12 +1147,12 @@ namespace BigSchool.Infrastructure.Services;
 
 public class DataProtectionUserIdEncryptor : IUserIdEncryptor
 {
-    private const string Purpose = "BigSchool.UserId.v1";
+    private const string PURPOSE = "BigSchool.UserId.v1";
     private readonly IDataProtector _protector;
 
     public DataProtectionUserIdEncryptor(IDataProtectionProvider dataProtectionProvider)
     {
-        _protector = dataProtectionProvider.CreateProtector(Purpose);
+        _protector = dataProtectionProvider.CreateProtector(PURPOSE);
     }
 
     public string Encrypt(int userId)
@@ -1175,7 +1175,7 @@ public class DataProtectionUserIdEncryptor : IUserIdEncryptor
 }
 ```
 
-- [ ] **Step 5: Implementar JwtService con userId encriptado**
+- [x] **Step 5: Implementar JwtService con userId encriptado**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/JwtService.cs
@@ -1239,7 +1239,7 @@ public class JwtService : IJwtService
 }
 ```
 
-- [ ] **Step 6: Configurar tests (refs + paquetes)**
+- [x] **Step 6: Configurar tests (refs + paquetes)**
 
 ```bash
 cd src/backend
@@ -1249,7 +1249,7 @@ dotnet add tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj 
 dotnet add tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj package Microsoft.AspNetCore.DataProtection --version 8.0.11
 ```
 
-- [ ] **Step 7: Escribir tests para PasswordHasher**
+- [x] **Step 7: Escribir tests para PasswordHasher**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Services/PasswordHasherTests.cs
@@ -1298,93 +1298,71 @@ public class PasswordHasherTests
 }
 ```
 
-- [ ] **Step 8: Escribir tests para JwtService con DPAPI**
+- [x] **Step 8: Escribir tests para JwtService con DPAPI**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Services/JwtServiceTests.cs
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using BigSchool.Application.Configuration;
-using BigSchool.Infrastructure.Services;
-using FluentAssertions;
-using Microsoft.AspNetCore.DataProtection;
+using BigSchool.Application.Interfaces.Services;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
-namespace BigSchool.Application.Tests.Services;
+namespace BigSchool.Infrastructure.Services;
 
-public class JwtServiceTests
+public class JwtService : IJwtService
 {
-    private readonly JwtService _jwtService;
-    private readonly DataProtectionUserIdEncryptor _encryptor;
+    private readonly JwtSettings _jwtSettings;
+    private readonly IUserIdEncryptor _userIdEncryptor;
 
-    public JwtServiceTests()
+    public JwtService(IOptions<AppSettings> settings, IUserIdEncryptor userIdEncryptor)
     {
-        var dataProtectionProvider = DataProtectionProvider.Create("BigSchool-Tests");
-        _encryptor = new DataProtectionUserIdEncryptor(dataProtectionProvider);
+        _jwtSettings = settings.Value.Jwt;
+        _userIdEncryptor = userIdEncryptor;
+    }
 
-        var settings = Options.Create(new AppSettings
+    public JwtToken GenerateToken(int userId, string email)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes);
+
+        var encryptedUserId = _userIdEncryptor.Encrypt(userId);
+
+        var claims = new[]
         {
-            ConnectionString = "unused",
-            Jwt = new JwtSettings
-            {
-                Secret = "SuperSecretKeyForTestingPurposesOnly_32chars!!",
-                Issuer = "BigSchool",
-                Audience = "BigSchool",
-                ExpirationMinutes = 60
-            },
-            RagService = new RagServiceSettings { BaseUrl = "http://localhost" }
-        });
-        _jwtService = new JwtService(settings, _encryptor);
+            new Claim(JwtRegisteredClaimNames.Sub, encryptedUserId),
+            new Claim(JwtRegisteredClaimNames.Email, email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: credentials
+        );
+
+        return new JwtToken(
+            AccessToken: new JwtSecurityTokenHandler().WriteToken(token),
+            ExpiresAt: expiresAt
+        );
     }
 
-    [Fact]
-    public void GenerateToken_ReturnsValidJwt()
+    public int? ExtractUserId(string token)
     {
-        var token = _jwtService.GenerateToken(1, "test@example.com");
-
-        token.AccessToken.Should().NotBeNullOrEmpty();
-        token.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
-    }
-
-    [Fact]
-    public void GenerateToken_SubClaimIsEncrypted_NotPlainInt()
-    {
-        var token = _jwtService.GenerateToken(42, "user@test.com");
-
         var handler = new JwtSecurityTokenHandler();
-        var jwt = handler.ReadJwtToken(token.AccessToken);
-        var sub = jwt.Claims.First(c => c.Type == "sub").Value;
-
-        // El sub NO debe ser "42" en texto plano
-        sub.Should().NotBe("42");
-        // Pero debe ser decryptable a 42
-        _encryptor.Decrypt(sub).Should().Be(42);
-    }
-
-    [Fact]
-    public void ExtractUserId_WithValidToken_ReturnsUserId()
-    {
-        var token = _jwtService.GenerateToken(99, "user@test.com");
-
-        var userId = _jwtService.ExtractUserId(token.AccessToken);
-
-        userId.Should().Be(99);
-    }
-
-    [Fact]
-    public void GenerateToken_ContainsEmailClaim()
-    {
-        var token = _jwtService.GenerateToken(1, "user@test.com");
-
-        var handler = new JwtSecurityTokenHandler();
-        var jwt = handler.ReadJwtToken(token.AccessToken);
-
-        jwt.Claims.Should().Contain(c => c.Type == "email" && c.Value == "user@test.com");
-        jwt.Issuer.Should().Be("BigSchool");
+        var jwt = handler.ReadJwtToken(token);
+        var sub = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+        return sub is null ? null : _userIdEncryptor.Decrypt(sub);
     }
 }
 ```
 
-- [ ] **Step 9: Ejecutar todos los tests de servicios**
+- [x] **Step 9: Ejecutar todos los tests de servicios**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~Services" --no-restore -v q`
 Expected: PASS (8 tests — 4 hasher + 4 JWT)

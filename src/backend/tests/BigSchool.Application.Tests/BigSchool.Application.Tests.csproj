@@ -12,11 +12,15 @@
     <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="MediatR" Version="$(MediatRVersion)" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(JwtVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="$(OptionsVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="$(DataProtectionVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BigSchool.Application\BigSchool.Application.csproj" />
     <ProjectReference Include="..\..\src\BigSchool.Domain\BigSchool.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BigSchool.Infrastructure\BigSchool.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
