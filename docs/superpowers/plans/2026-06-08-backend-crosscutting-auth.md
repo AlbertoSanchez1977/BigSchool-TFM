@@ -1923,7 +1923,7 @@ git add -A && git commit -m "feat: añadir AuthController, UserRepository, pipel
 - Modify: `src/backend/src/BigSchool.WebApi/Program.cs` (registrar behavior)
 - Create: `src/backend/tests/BigSchool.Application.Tests/Behaviors/ValidationBehaviorTests.cs`
 
-- [ ] **Step 1: Escribir tests para ValidationBehavior**
+- [x] **Step 1: Escribir tests para ValidationBehavior**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Behaviors/ValidationBehaviorTests.cs

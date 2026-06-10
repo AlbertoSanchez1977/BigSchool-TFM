@@ -71,6 +71,7 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(AppSettings).Assembly);
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.Behaviors.ValidationBehavior<,>));
     });
     builder.Services.AddTransient<IMediator, CustomMediatR>();
 
