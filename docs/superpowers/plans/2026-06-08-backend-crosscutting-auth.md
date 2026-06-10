@@ -1034,7 +1034,7 @@ git add -A && git commit -m "feat: añadir EF Core configurations organizadas, s
 - Create: `src/backend/tests/BigSchool.Application.Tests/Services/PasswordHasherTests.cs`
 - Create: `src/backend/tests/BigSchool.Application.Tests/Services/JwtServiceTests.cs`
 
-- [ ] **Step 1: Definir interfaces en Application**
+- [x] **Step 1: Definir interfaces en Application**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Interfaces/Services/IPasswordHasher.cs
@@ -1071,7 +1071,7 @@ public interface IUserIdEncryptor
 }
 ```
 
-- [ ] **Step 2: Añadir paquetes necesarios**
+- [x] **Step 2: Añadir paquetes necesarios**
 
 ```bash
 cd src/backend
@@ -1080,7 +1080,7 @@ dotnet add src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj package 
 dotnet add src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj package Microsoft.AspNetCore.DataProtection --version 8.0.11
 ```
 
-- [ ] **Step 3: Implementar Argon2PasswordHasher con constantes**
+- [x] **Step 3: Implementar Argon2PasswordHasher con constantes**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/Argon2PasswordHasher.cs
@@ -1093,26 +1093,32 @@ namespace BigSchool.Infrastructure.Services;
 
 public class Argon2PasswordHasher : IPasswordHasher
 {
-    private const int Parallelism = 2;
-    private const int MemoryCost = 65536;
-    private const int Iterations = 3;
-    private const int HashLength = 16;
-    private const int SaltLength = 32;
+    private const int PARALLELISM = 2;
+    private const int MEMORY_COST = 65536;
+    private const int ITERATIONS = 3;
+    private const int HASH_LENGTH = 16;
+    private const int SALT_LENGTH = 32;
 
     public (string Hash, string Salt) HashPassword(string password)
     {
-        var saltBytes = RandomNumberGenerator.GetBytes(SaltLength);
+        var saltBytes = RandomNumberGenerator.GetBytes(SALT_LENGTH);
         var salt = Convert.ToBase64String(saltBytes);
 
-        var hash = Argon2.Hash(
-            password: Encoding.UTF8.GetBytes(password),
-            salt: saltBytes,
-            parallelism: Parallelism,
-            memoryCost: MemoryCost,
-            iterations: Iterations,
-            hashLength: HashLength,
-            type: Argon2Type.HybridAddressing
-        );
+        var config = new Argon2Config
+        {
+            Type = Argon2Type.HybridAddressing,
+            Version = Argon2Version.Nineteen,
+            Password = Encoding.UTF8.GetBytes(password),
+            Salt = saltBytes,
+            Threads = PARALLELISM,
+            MemoryCost = MEMORY_COST,
+            TimeCost = ITERATIONS,
+            HashLength = HASH_LENGTH
+        };
+
+        using var argon2 = new Argon2(config);
+        using var hashResult = argon2.Hash();
+        var hash = Convert.ToBase64String(hashResult.Buffer);
 
         return (hash, salt);
     }
@@ -1121,22 +1127,28 @@ public class Argon2PasswordHasher : IPasswordHasher
     {
         var saltBytes = Convert.FromBase64String(salt);
 
-        var computedHash = Argon2.Hash(
-            password: Encoding.UTF8.GetBytes(password),
-            salt: saltBytes,
-            parallelism: Parallelism,
-            memoryCost: MemoryCost,
-            iterations: Iterations,
-            hashLength: HashLength,
-            type: Argon2Type.HybridAddressing
-        );
+        var config = new Argon2Config
+        {
+            Type = Argon2Type.HybridAddressing,
+            Version = Argon2Version.Nineteen,
+            Password = Encoding.UTF8.GetBytes(password),
+            Salt = saltBytes,
+            Threads = PARALLELISM,
+            MemoryCost = MEMORY_COST,
+            TimeCost = ITERATIONS,
+            HashLength = HASH_LENGTH
+        };
+
+        using var argon2 = new Argon2(config);
+        using var hashResult = argon2.Hash();
+        var computedHash = Convert.ToBase64String(hashResult.Buffer);
 
         return string.Equals(hash, computedHash, StringComparison.Ordinal);
     }
 }
 ```
 
-- [ ] **Step 4: Implementar DataProtectionUserIdEncryptor**
+- [x] **Step 4: Implementar DataProtectionUserIdEncryptor**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/DataProtectionUserIdEncryptor.cs
@@ -1147,12 +1159,12 @@ namespace BigSchool.Infrastructure.Services;
 
 public class DataProtectionUserIdEncryptor : IUserIdEncryptor
 {
-    private const string Purpose = "BigSchool.UserId.v1";
+    private const string PURPOSE = "BigSchool.UserId.v1";
     private readonly IDataProtector _protector;
 
     public DataProtectionUserIdEncryptor(IDataProtectionProvider dataProtectionProvider)
     {
-        _protector = dataProtectionProvider.CreateProtector(Purpose);
+        _protector = dataProtectionProvider.CreateProtector(PURPOSE);
     }
 
     public string Encrypt(int userId)
@@ -1175,7 +1187,7 @@ public class DataProtectionUserIdEncryptor : IUserIdEncryptor
 }
 ```
 
-- [ ] **Step 5: Implementar JwtService con userId encriptado**
+- [x] **Step 5: Implementar JwtService con userId encriptado**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/JwtService.cs
@@ -1239,7 +1251,7 @@ public class JwtService : IJwtService
 }
 ```
 
-- [ ] **Step 6: Configurar tests (refs + paquetes)**
+- [x] **Step 6: Configurar tests (refs + paquetes)**
 
 ```bash
 cd src/backend
@@ -1249,7 +1261,7 @@ dotnet add tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj 
 dotnet add tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj package Microsoft.AspNetCore.DataProtection --version 8.0.11
 ```
 
-- [ ] **Step 7: Escribir tests para PasswordHasher**
+- [x] **Step 7: Escribir tests para PasswordHasher**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Services/PasswordHasherTests.cs
@@ -1298,7 +1310,7 @@ public class PasswordHasherTests
 }
 ```
 
-- [ ] **Step 8: Escribir tests para JwtService con DPAPI**
+- [x] **Step 8: Escribir tests para JwtService con DPAPI**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Services/JwtServiceTests.cs
@@ -1308,6 +1320,7 @@ using BigSchool.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
+using Xunit;
 
 namespace BigSchool.Application.Tests.Services;
 
@@ -1318,7 +1331,7 @@ public class JwtServiceTests
 
     public JwtServiceTests()
     {
-        var dataProtectionProvider = DataProtectionProvider.Create("BigSchool-Tests");
+        var dataProtectionProvider = new EphemeralDataProtectionProvider();
         _encryptor = new DataProtectionUserIdEncryptor(dataProtectionProvider);
 
         var settings = Options.Create(new AppSettings
@@ -1384,12 +1397,12 @@ public class JwtServiceTests
 }
 ```
 
-- [ ] **Step 9: Ejecutar todos los tests de servicios**
+- [x] **Step 9: Ejecutar todos los tests de servicios**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~Services" --no-restore -v q`
 Expected: PASS (8 tests — 4 hasher + 4 JWT)
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar Argon2PasswordHasher, JwtService con DPAPI y UserIdEncryptor"

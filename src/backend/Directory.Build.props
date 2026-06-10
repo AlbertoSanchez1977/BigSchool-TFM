@@ -20,6 +20,9 @@
     <Argon2Version>2.0.0</Argon2Version>
     <SwashbuckleVersion>6.9.0</SwashbuckleVersion>
     <JwtBearerVersion>8.0.11</JwtBearerVersion>
+    <JwtVersion>8.14.0</JwtVersion>
+    <IdentityModelTokensVersion>8.14.0</IdentityModelTokensVersion>
+    <DataProtectionVersion>8.0.11</DataProtectionVersion>
     <SerilogVersion>4.1.0</SerilogVersion>
     <SerilogSinksFileVersion>6.0.0</SerilogSinksFileVersion>
     <SerilogAspNetCoreVersion>8.0.3</SerilogAspNetCoreVersion>
