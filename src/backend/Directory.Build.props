@@ -13,6 +13,7 @@
     <FluentValidationVersion>11.11.0</FluentValidationVersion>
     <DapperVersion>2.1.35</DapperVersion>
     <EFCoreVersion>8.0.11</EFCoreVersion>
+    <EFCoreDesignVersion>8.0.11</EFCoreDesignVersion>
     <PomeloVersion>8.0.2</PomeloVersion>
     <AutofacVersion>8.1.1</AutofacVersion>
     <AutofacDIVersion>9.0.0</AutofacDIVersion>

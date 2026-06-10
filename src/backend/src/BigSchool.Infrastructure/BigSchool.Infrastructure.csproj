@@ -2,6 +2,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="$(EFCoreVersion)" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="$(EFCoreDesignVersion)">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="$(PomeloVersion)" />
     <PackageReference Include="Dapper" Version="$(DapperVersion)" />
     <PackageReference Include="MediatR" Version="$(MediatRVersion)" />
