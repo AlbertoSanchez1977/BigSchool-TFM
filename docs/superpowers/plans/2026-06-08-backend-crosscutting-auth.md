@@ -586,7 +586,7 @@ git add -A && git commit -m "feat: añadir excepciones de dominio tipadas y enve
 - Modify: `src/backend/src/BigSchool.WebApi/Program.cs` (registrar middleware)
 - Create: `src/backend/tests/BigSchool.Application.Tests/Behaviors/NotificationExceptionBehaviorTests.cs`
 
-- [ ] **Step 1: Implementar ExceptionHandlingMiddleware con errores tipados**
+- [x] **Step 1: Implementar ExceptionHandlingMiddleware con errores tipados**
 
 ```csharp
 // src/backend/src/BigSchool.WebApi/Middleware/ExceptionHandlingMiddleware.cs
@@ -681,7 +681,7 @@ public class ExceptionHandlingMiddleware
 }
 ```
 
-- [ ] **Step 2: Escribir test para NotificationExceptionBehavior**
+- [x] **Step 2: Escribir test para NotificationExceptionBehavior**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Behaviors/NotificationExceptionBehaviorTests.cs
@@ -690,13 +690,14 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Xunit;
 
 namespace BigSchool.Application.Tests.Behaviors;
 
+public record TestNotification : INotification;
+
 public class NotificationExceptionBehaviorTests
 {
-    private record TestNotification : INotification;
-
     [Fact]
     public async Task Handle_WhenHandlerThrows_LogsErrorAndDoesNotRethrow()
     {
@@ -720,7 +721,7 @@ public class NotificationExceptionBehaviorTests
 
         await behavior.Handle(
             new TestNotification(),
-            () => { called = true; return Task.CompletedTask; },
+            () => { called = true; return Task.FromResult(Unit.Value); },
             CancellationToken.None);
 
         called.Should().BeTrue();
@@ -728,7 +729,7 @@ public class NotificationExceptionBehaviorTests
 }
 ```
 
-- [ ] **Step 3: Implementar NotificationExceptionBehavior**
+- [x] **Step 3: Implementar NotificationExceptionBehavior**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Behaviors/NotificationExceptionBehavior.cs
@@ -774,7 +775,7 @@ public class NotificationExceptionBehavior<TNotification> : IPipelineBehavior<TN
 
 **Nota:** MediatR 12 trata las Notifications como `IRequest<Unit>` internamente cuando se usa pipeline behavior. Si esto no funciona directamente, una alternativa es un wrapper en el dispatch del DbContext. El implementador debe verificar que el behavior se registra correctamente para notifications.
 
-- [ ] **Step 4: Registrar middleware en Program.cs**
+- [x] **Step 4: Registrar middleware en Program.cs**
 
 En `Program.cs`, después de `var app = builder.Build();` y antes de `app.UseSerilogRequestLogging();`:
 
@@ -782,12 +783,12 @@ En `Program.cs`, después de `var app = builder.Build();` y antes de `app.UseSer
 app.UseMiddleware<BigSchool.WebApi.Middleware.ExceptionHandlingMiddleware>();
 ```
 
-- [ ] **Step 5: Ejecutar tests**
+- [x] **Step 5: Ejecutar tests**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~NotificationExceptionBehavior" --no-restore -v q`
 Expected: PASS (2 tests)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir ExceptionHandlingMiddleware tipado y NotificationExceptionBehavior para protección de eventos"

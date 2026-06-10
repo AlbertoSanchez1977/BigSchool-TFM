@@ -103,6 +103,8 @@ try
     var app = builder.Build();
 
     // Middleware pipeline
+    app.UseMiddleware<BigSchool.WebApi.Middleware.ExceptionHandlingMiddleware>();
+    
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
