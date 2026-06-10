@@ -804,7 +804,7 @@ git add -A && git commit -m "feat: añadir ExceptionHandlingMiddleware tipado y 
 - Modify: `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs` (añadir SubCategory DbSet y seeds)
 - Modify: `src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj` (EF Core Design)
 
-- [ ] **Step 1: Implementar UserConfiguration con métodos organizados**
+- [x] **Step 1: Implementar UserConfiguration con métodos organizados**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/UserConfiguration.cs
@@ -872,7 +872,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 }
 ```
 
-- [ ] **Step 2: Implementar SubCategoryConfiguration**
+- [x] **Step 2: Implementar SubCategoryConfiguration**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/SubCategoryConfiguration.cs
@@ -920,7 +920,7 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
 
 **Nota:** La FK `IdUser` se define como shadow property en SubCategoryConfiguration y la relación se configura en UserConfiguration. SubCategory no expone `IdUser` como propiedad pública — EF Core la gestiona internamente. Las subcategorías predefinidas (seeds) tienen `IdUser = null` (globales para todos los usuarios).
 
-- [ ] **Step 3: Crear SeedDataExtensions**
+- [x] **Step 3: Crear SeedDataExtensions**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExtensions.cs
@@ -982,7 +982,7 @@ public static class SeedDataExtensions
 }
 ```
 
-- [ ] **Step 4: Actualizar BigSchoolDbContext — añadir SubCategory y llamar seeds**
+- [x] **Step 4: Actualizar BigSchoolDbContext — añadir SubCategory y llamar seeds**
 
 ```csharp
     // Añadir a la sección de entidades hijas:
@@ -999,7 +999,7 @@ public static class SeedDataExtensions
 
 Añadir `using BigSchool.Infrastructure.Persistence.Extensions;` al archivo.
 
-- [ ] **Step 5: Añadir paquete EF Core Design y generar migración**
+- [x] **Step 5: Añadir paquete EF Core Design y generar migración**
 
 ```bash
 cd src/backend
@@ -1007,12 +1007,12 @@ dotnet add src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj package 
 dotnet ef migrations add InitialCreate --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi --output-dir Persistence/Migrations
 ```
 
-- [ ] **Step 6: Verificar build**
+- [x] **Step 6: Verificar build**
 
 Run: `dotnet build src/backend --no-restore -v q`
 Expected: 0 errors
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir EF Core configurations organizadas, seeds en extension y migración inicial"
