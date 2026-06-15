@@ -307,12 +307,12 @@ git add -A && git commit -m "feat: añadir endpoint POST /api/v1/auth/refresh co
 **Files:**
 - Modify: `docs/diario.md`
 
-- [ ] **Step 1: Ejecutar toda la suite de tests del backend**
+- [x] **Step 1: Ejecutar toda la suite de tests del backend**
 
 Run: `dotnet test src/backend --no-restore -v q`
 Expected: PASS (todos, incluyendo los 3 nuevos de `RefreshTokenCommandHandlerTests`)
 
-- [ ] **Step 2: Verificación manual del flujo (Swagger o curl)**
+- [x] **Step 2: Verificación manual del flujo (Swagger o curl)**
 
 Con MySQL levantado (`docker compose up -d`) y la API corriendo (`dotnet run --project src/backend/src/BigSchool.WebApi`):
 
@@ -327,11 +327,11 @@ curl -i -X POST http://localhost:5000/api/v1/auth/refresh \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
-- [ ] **Step 3: Actualizar el diario**
+- [x] **Step 3: Actualizar el diario**
 
 Añadir una entrada al final de `docs/diario.md` siguiendo el formato existente (fecha `2026-06-15`, Fase: Implementar, Módulo: backend) que registre: implementación del endpoint `refresh` pendiente del Plan 1, estrategia elegida (re-emisión desde access válido), y su limitación conocida (sin rotación/revocación; si el access expira hay que volver a login).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "docs: registrar implementación del endpoint de refresh en el diario"
