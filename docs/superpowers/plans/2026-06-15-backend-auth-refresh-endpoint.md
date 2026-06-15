@@ -47,7 +47,7 @@ El cliente llama a `/refresh` con su access token actual en la cabecera `Authori
 - Create: `src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommand.cs`
 - Create: `src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommandValidator.cs`
 
-- [ ] **Step 1: Crear el Command**
+- [x] **Step 1: Crear el Command**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommand.cs
@@ -59,7 +59,7 @@ namespace BigSchool.Application.Commands.Auth.Refresh;
 public record RefreshTokenCommand(string AccessToken) : IRequest<AuthResponseDto>;
 ```
 
-- [ ] **Step 2: Crear el Validator**
+- [x] **Step 2: Crear el Validator**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommandValidator.cs
@@ -79,12 +79,12 @@ public class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenComman
 
 **Nota:** El validator se registra y engancha automáticamente al `ValidationBehavior` (Autofac escanea `IValidator<>` en el assembly Application). En la práctica `[Authorize]` ya garantiza que la cabecera existe, pero el validator protege frente a llamadas mal construidas internamente y mantiene la simetría con `LoginCommand`/`RegisterCommand`.
 
-- [ ] **Step 3: Verificar build**
+- [x] **Step 3: Verificar build**
 
 Run: `dotnet build src/backend/src/BigSchool.Application --no-restore -v q`
 Expected: 0 errors
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir RefreshTokenCommand y validator para endpoint de refresh"
