@@ -98,7 +98,7 @@ git add -A && git commit -m "feat: añadir RefreshTokenCommand y validator para 
 - Create: `src/backend/tests/BigSchool.Application.Tests/Commands/Auth/RefreshTokenCommandHandlerTests.cs`
 - Create: `src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommandHandler.cs`
 
-- [ ] **Step 1: Escribir los tests del handler (espejo de `LoginCommandHandlerTests`)**
+- [x] **Step 1: Escribir los tests del handler (espejo de `LoginCommandHandlerTests`)**
 
 ```csharp
 // tests/BigSchool.Application.Tests/Commands/Auth/RefreshTokenCommandHandlerTests.cs
@@ -164,12 +164,12 @@ public class RefreshTokenCommandHandlerTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar tests para verificar que fallan**
+- [x] **Step 2: Ejecutar tests para verificar que fallan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~RefreshTokenCommandHandlerTests" --no-restore -v q`
 Expected: FAIL — `RefreshTokenCommandHandler` no existe
 
-- [ ] **Step 3: Implementar el Handler**
+- [x] **Step 3: Implementar el Handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Auth/Refresh/RefreshTokenCommandHandler.cs
@@ -210,12 +210,12 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
 **Nota:** No se llama a `UpdateLastLogin()` ni a `SaveChangesAsync()` — un refresh no es un login y no muta estado. Solo lectura + emisión de token.
 
-- [ ] **Step 4: Ejecutar tests para verificar que pasan**
+- [x] **Step 4: Ejecutar tests para verificar que pasan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~RefreshTokenCommandHandlerTests" --no-restore -v q`
 Expected: PASS (3 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar RefreshTokenCommandHandler con re-emisión de token y tests"
