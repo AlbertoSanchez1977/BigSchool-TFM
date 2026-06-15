@@ -1,0 +1,1 @@
+Usar: src\mobile\AGENTS.md

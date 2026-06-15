@@ -1,0 +1,1 @@
+Usar: src\backend\AGENTS.md
