@@ -229,7 +229,7 @@ git add -A && git commit -m "feat: implementar RefreshTokenCommandHandler con re
 - Modify: `src/backend/src/BigSchool.WebApi/Controllers/AuthController.cs`
 - Modify: `src/backend/src/BigSchool.WebApi/Program.cs` (definición de seguridad Bearer en Swagger)
 
-- [ ] **Step 1: Añadir el endpoint `Refresh` al AuthController**
+- [x] **Step 1: Añadir el endpoint `Refresh` al AuthController**
 
 Añadir el `using` y el método. El endpoint lee el bearer token de la cabecera (no hay `SaveTokens` activado en `JwtBearer`, así que se lee directamente de `Authorization`):
 
@@ -259,7 +259,7 @@ public async Task<IActionResult> Refresh()
 
 **Nota:** Con `[Authorize]`, si el token falta, está mal firmado o ha expirado, el middleware `JwtBearer` responde `401` antes de entrar al método — comportamiento esperado de esta estrategia.
 
-- [ ] **Step 2: Configurar el esquema de seguridad Bearer en Swagger**
+- [x] **Step 2: Configurar el esquema de seguridad Bearer en Swagger**
 
 Para poder probar el endpoint protegido desde Swagger UI (botón "Authorize"), ampliar `AddSwaggerGen` en `Program.cs`. Localizar el bloque `builder.Services.AddSwaggerGen(c => { ... })` y añadir, después del `c.SwaggerDoc(...)`:
 
@@ -289,12 +289,12 @@ Para poder probar el endpoint protegido desde Swagger UI (botón "Authorize"), a
         });
 ```
 
-- [ ] **Step 3: Verificar build**
+- [x] **Step 3: Verificar build**
 
 Run: `dotnet build src/backend --no-restore -v q`
 Expected: 0 errors
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir endpoint POST /api/v1/auth/refresh con auth Bearer en Swagger"

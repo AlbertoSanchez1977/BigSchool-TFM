@@ -1,8 +1,10 @@
 using BigSchool.Application.Commands.Auth.Login;
+using BigSchool.Application.Commands.Auth.Refresh;
 using BigSchool.Application.Commands.Auth.Register;
 using BigSchool.Application.Common;
 using BigSchool.Application.DTOs.Auth;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BigSchool.WebApi.Controllers;
@@ -34,6 +36,21 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _mediator.Send(command);
+        return Ok(ApiResponse<AuthResponseDto>.Success(result));
+    }
+
+    [Authorize]
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh()
+    {
+        var authHeader = Request.Headers.Authorization.ToString();
+        var accessToken = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authHeader["Bearer ".Length..].Trim()
+            : authHeader.Trim();
+
+        var result = await _mediator.Send(new RefreshTokenCommand(accessToken));
         return Ok(ApiResponse<AuthResponseDto>.Success(result));
     }
 }
