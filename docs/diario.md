@@ -203,6 +203,43 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-15 — Endpoint de refresh de token JWT
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Implementación del endpoint pendiente `POST /api/v1/auth/refresh` documentado en `docs/02-backend-design.md`
+- Plan: `docs/superpowers/plans/2026-06-15-backend-auth-refresh-endpoint.md` (4 tareas, PRs #23–#25)
+- **Task 1** (PR #23): `RefreshTokenCommand` + `RefreshTokenCommandValidator` (FluentValidation)
+- **Task 2** (PR #24): `RefreshTokenCommandHandler` con TDD (Red → Green); 3 tests nuevos
+- **Task 3** (PR #25): `AuthController.Refresh()` con `[Authorize]` + esquema Bearer en Swagger UI
+
+**Decisiones clave:**
+- **Estrategia elegida: re-emisión desde access token válido** — El middleware `JwtBearer` (ya configurado con `ValidateLifetime = true`) valida la firma y expiración antes de entrar al handler; sin refresh token separado, sin tabla, sin migración
+- **Sin `UpdateLastLogin` ni `SaveChanges`** — un refresh no es un login; el handler solo lee y re-emite
+- **Global Query Filter como guarda** — `GetByIdAsync` devuelve `null` para usuarios con `IdStatus = Deleted`; handler lanza `UnauthorizedAccessException` → middleware mapea a `401`
+- **Bearer en Swagger** — `AddSecurityDefinition` + `AddSecurityRequirement` globales; todos los endpoints muestran el candado y el botón "Authorize"
+- **Limitación conocida y aceptada** — sin rotación ni revocación; si el access token expira el usuario debe volver a hacer login. Para revocación real se necesitaría un `RefreshToken` persistido (entidad + tabla + migración)
+
+**Resultado / Estado:**
+- Endpoint `POST /api/v1/auth/refresh` operativo
+- Build: 0 errores
+- Tests: 3 tests nuevos pasando (flujo feliz, token sin sub, usuario borrado/inexistente)
+- Verificación E2E manual completada: flujo register → login → refresh → nuevo token correcto; sin token devuelve `401`
+- Swagger UI con botón "Authorize" y soporte Bearer para todos los endpoints
+
+**Cobertura de tests añadida:**
+- `Handle_ValidToken_ReturnsNewToken`
+- `Handle_TokenWithoutUserId_ThrowsUnauthorized`
+- `Handle_UserNotFoundOrDeleted_ThrowsUnauthorized`
+
+**Siguiente paso:**
+- [ ] Implementación BC Finanzas Personales — entidades Transaction, Category con lógica de negocio completa
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
