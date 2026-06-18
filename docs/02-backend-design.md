@@ -235,13 +235,13 @@ Subcategorías predefinidas (ejemplos):
 | BaseCurrency | CHAR(3) | NOT NULL (snapshot moneda base del usuario) |
 | RateDate | DATE | NOT NULL (fecha del tipo aplicado) |
 | Description | VARCHAR(500) | NULL |
-| | | _Las 6 columnas de importe/moneda son el VO `MoneyConversion` (owned type): `Original` (OriginalAmount+OriginalCurrency) + `Rate` + `Base` (BaseAmount+BaseCurrency) + `RateDate`._ |
 | Date | DATE | NOT NULL |
 | IsRecurrent | BOOLEAN | DEFAULT FALSE |
 | RecurrencePeriod | ENUM('MONTHLY','QUARTERLY','YEARLY') | NULL |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
+| | | _Las 6 columnas de importe/moneda son el VO `MoneyConversion` (owned type): `Original` (OriginalAmount+OriginalCurrency) + `Rate` + `Base` (BaseAmount+BaseCurrency) + `RateDate`._ |
 
 #### Companies
 | Campo | Tipo | Restricciones |
