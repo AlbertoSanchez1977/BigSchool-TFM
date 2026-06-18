@@ -91,4 +91,36 @@ Este documento registra las decisiones de arquitectura (ADR ligero) tomadas dura
 
 ---
 
+## ADR-006: Soporte multimoneda con moneda base por usuario
+
+**Fecha**: 2026-06-17
+**Estado**: Aceptado
+
+**Contexto**: El modelo inicial era monomoneda implícita: las transacciones no tenían moneda y las inversiones no contemplaban conversión. En el BC de Inversiones (Plan 3) las empresas cotizan en distintas monedas y cada valoración es un punto temporal con su propio tipo de cambio. Sin un modelo multimoneda, `Transaction` nacería monomoneda y habría que rehacerlo.
+
+**Decisión**: Introducir soporte multimoneda transversal desde el Plan 2 (BC Finanzas Personales):
+
+- **Moneda base por usuario** (`Users.BaseCurrency`, EUR por defecto). Balances y carteras se consolidan en ella.
+- **Value Objects de dominio reutilizables**: `Currency` (enum), `Money` (importe + moneda) y `MoneyConversion` (snapshot: original + tipo + convertido + fecha).
+- **Conversión por snapshot** en el momento del registro: se persiste el importe original, su moneda, el tipo aplicado, el importe convertido a base y la fecha del tipo. El balance histórico no cambia aunque cambien los tipos.
+- **Tipos de cambio vía API externa** (Frankfurter/ECB) encapsulada en un anti-corruption layer (`ExchangeRateApiClient`), con tabla cache `ExchangeRates`: EF posee el esquema, el cliente lee/escribe con Dapper (UPSERT) desacoplado del `UnitOfWork` de negocio. El dominio recibe el tipo ya resuelto y **no realiza llamadas externas**.
+
+**Consecuencias**:
+- (+) `Transaction`, `Holding` y `Valuation` comparten el mismo modelo `Money`/`MoneyConversion`.
+- (+) Balances y valoraciones consolidados en la moneda base del usuario; auditables.
+- (+) Determinismo y resiliencia: el cache permite seeds reproducibles y operar sin red.
+- (+) Dominio puro (sin dependencias HTTP); la llamada externa vive en Application/Infrastructure.
+- (-) Más columnas por fila (snapshot) y una tabla/servicio adicionales.
+- (-) Dependencia de una API externa de tipos (mitigada por el cache y un fallback).
+
+**Alternativas descartadas**:
+- Guardar solo el importe convertido a base (pierde el importe/moneda original).
+- Conversión on-the-fly en queries (el balance histórico cambiaría al cambiar los tipos).
+- Moneda base global única (no permite usuarios con bases distintas).
+- Tipos introducidos manualmente por el usuario (carga al usuario, menos realista).
+
+**Referencia**: `docs/superpowers/specs/2026-06-17-backend-finanzas-multicurrency-design.md`
+
+---
+
 *Añadir nuevas decisiones al final del documento siguiendo el mismo formato.*
