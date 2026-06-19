@@ -84,6 +84,7 @@ Application/
 - **Integración**: WebApi con TestServer + BD MySQL en Docker
 - Framework: xUnit + FluentAssertions + Moq + Testcontainers
 - Cobertura mínima: 80% en Domain y Application
+- **Un fichero de test por clase bajo prueba**, nombrado `{ClaseBajoPrueba}Tests.cs` (p. ej. `CreateExpenseCommandHandlerTests`). No agrupar varias clases/handlers en un mismo fichero de test.
 
 ### API REST
 - Versionado: `/api/v1/`
