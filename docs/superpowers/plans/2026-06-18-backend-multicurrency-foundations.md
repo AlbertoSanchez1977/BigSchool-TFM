@@ -232,7 +232,7 @@ git add -A && git commit -m "feat: añadir Value Object Money con factory valida
 
 **Nota de diseño:** `MoneyConversion.Create(Money original, Currency baseCurrency, decimal rate, DateOnly rateDate)` calcula `Base = Money.Create(original.Amount * rate, baseCurrency)`. Si `original.Currency == baseCurrency` exige `rate == 1` (invariante). En Plan 2B será un EF owned type anidado (`MoneyConversion` posee dos `Money`).
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```csharp
 // src/backend/tests/BigSchool.Domain.Tests/ValueObjects/MoneyConversionTests.cs
@@ -293,12 +293,12 @@ public class MoneyConversionTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test y ver que falla**
+- [x] **Step 2: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~MoneyConversionTests"`
 Expected: FAIL de compilación — `MoneyConversion` no existe.
 
-- [ ] **Step 3: Crear el Value Object**
+- [x] **Step 3: Crear el Value Object**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/ValueObjects/MoneyConversion.cs
@@ -328,12 +328,12 @@ public sealed record MoneyConversion(Money Original, decimal Rate, Money Base, D
 }
 ```
 
-- [ ] **Step 4: Ejecutar el test y ver que pasa**
+- [x] **Step 4: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~MoneyConversionTests"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir Value Object MoneyConversion (snapshot de conversión)"
