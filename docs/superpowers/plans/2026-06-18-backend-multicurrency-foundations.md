@@ -46,7 +46,7 @@
 - Create: `src/backend/src/BigSchool.Domain/Enums/Currency.cs`
 - Test: `src/backend/tests/BigSchool.Domain.Tests/Enums/CurrencyTests.cs`
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```csharp
 // src/backend/tests/BigSchool.Domain.Tests/Enums/CurrencyTests.cs
@@ -86,12 +86,12 @@ public class CurrencyTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test y ver que falla**
+- [x] **Step 2: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~CurrencyTests"`
 Expected: FAIL de compilación — `Currency` no existe.
 
-- [ ] **Step 3: Crear el enum**
+- [x] **Step 3: Crear el enum**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Enums/Currency.cs
@@ -111,12 +111,12 @@ public enum Currency : short
 }
 ```
 
-- [ ] **Step 4: Ejecutar el test y ver que pasa**
+- [x] **Step 4: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~CurrencyTests"`
 Expected: PASS (3+ tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir enum Currency (ISO 4217) para soporte multimoneda"
@@ -132,7 +132,7 @@ git add -A && git commit -m "feat: añadir enum Currency (ISO 4217) para soporte
 
 **Nota de diseño:** `Money` es un record inmutable. El constructor primario (posicional) lo usa EF para rehidratar datos ya válidos (owned type en Plan 2B); el dominio crea instancias siempre vía `Money.Create`, que valida invariantes (redondeo a 2 decimales). La negatividad se valida en la entidad `Transaction` en Plan 2B (no se añade aquí — YAGNI).
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```csharp
 // src/backend/tests/BigSchool.Domain.Tests/ValueObjects/MoneyTests.cs
@@ -180,12 +180,12 @@ public class MoneyTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test y ver que falla**
+- [x] **Step 2: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~MoneyTests"`
 Expected: FAIL de compilación — `Money` no existe.
 
-- [ ] **Step 3: Crear el Value Object**
+- [x] **Step 3: Crear el Value Object**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/ValueObjects/Money.cs
@@ -211,12 +211,12 @@ public sealed record Money(decimal Amount, Currency Currency)
 }
 ```
 
-- [ ] **Step 4: Ejecutar el test y ver que pasa**
+- [x] **Step 4: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~MoneyTests"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir Value Object Money con factory validadora"
