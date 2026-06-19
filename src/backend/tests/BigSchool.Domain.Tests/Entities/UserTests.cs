@@ -60,4 +60,20 @@ public class UserTests
 
         user.Email.Should().Be("test@example.com");
     }
+
+    [Fact]
+    public void Create_WithoutBaseCurrency_DefaultsToEur()
+    {
+        var user = User.Create("test@example.com", "hashedpwd", "salted", "John Doe");
+
+        user.BaseCurrency.Should().Be(Currency.EUR);
+    }
+
+    [Fact]
+    public void Create_WithExplicitBaseCurrency_SetsIt()
+    {
+        var user = User.Create("test@example.com", "hashedpwd", "salted", "John Doe", Currency.USD);
+
+        user.BaseCurrency.Should().Be(Currency.USD);
+    }
 }

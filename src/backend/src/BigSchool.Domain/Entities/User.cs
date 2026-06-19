@@ -9,6 +9,7 @@ public class User : BaseEntity, IAggregateRoot
     public string PasswordHash { get; private set; } = string.Empty;
     public string PasswordSalt { get; private set; } = string.Empty;
     public string FullName { get; private set; } = string.Empty;
+    public Currency BaseCurrency { get; private set; }
     public DateTime? LastLoginDate { get; private set; }
     public EntityStatus IdStatus { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -20,17 +21,19 @@ public class User : BaseEntity, IAggregateRoot
     protected User() { } // EF Core
 
     private User(string email, string passwordHash, string passwordSalt,
-        string fullName, EntityStatus idStatus, DateTime createdAt)
+        string fullName, Currency baseCurrency, EntityStatus idStatus, DateTime createdAt)
     {
         Email = email;
         PasswordHash = passwordHash;
         PasswordSalt = passwordSalt;
         FullName = fullName;
+        BaseCurrency = baseCurrency;
         IdStatus = idStatus;
         CreatedAt = createdAt;
     }
 
-    public static User Create(string email, string passwordHash, string passwordSalt, string fullName)
+    public static User Create(string email, string passwordHash, string passwordSalt,
+        string fullName, Currency baseCurrency = Currency.EUR)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email is required.", nameof(email));
@@ -46,6 +49,7 @@ public class User : BaseEntity, IAggregateRoot
             passwordHash,
             passwordSalt,
             fullName.Trim(),
+            baseCurrency,
             EntityStatus.Active,
             DateTime.UtcNow);
     }
