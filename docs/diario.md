@@ -279,6 +279,60 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-20 — BC Finanzas Personales completo (Plan 2B, Tasks 1-10)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan detallado en 10 (+1 refactor) tareas (`docs/superpowers/plans/2026-06-18-backend-finanzas-transactions.md`), task-by-task con PR + revisión humana por tarea.
+- **Task 1** (PR #38): Agregado `Transaction` (AR) con `MoneyConversion` owned type — factory `Create` con invariantes (userId > 0, amount > 0, rate > 0), métodos `Update` y `Delete` (soft), `TransactionCreatedEvent(Transaction)`. Convenciones de dominio añadidas a `AGENTS.md`.
+- **Task 2** (PR #39): `TransactionConfiguration` (EF) — `OwnsOne(MoneyConversion)`, FK `IdUser` CASCADE, FK `IdSubCategory` SET NULL, índice `(IdUser, TransactionDate)`, Global Query Filter `IdStatus != Deleted`. Migración `CreateTransactions`.
+- **Task 3** (PR #40): `ITransactionRepository` + `TransactionRepository` (EFRepository). Commands Create/Update/Delete con handlers, validadores FluentValidation y `TransactionDto`. Lógica de ownership (not-found en vez de forbidden). 12 tests unitarios.
+- **Task 4** (PR #41): `GetTransactionByIdQuery` + `GetTransactionsQuery` (paginación, `QueryMultipleAsync` COUNT+SELECT en un roundtrip, `PagedResult<T>`). `TransactionListItemDto` con `string` para monedas (Dapper no convierte CHAR(3) a enum). 4 tests.
+- **Task 5** (PR #42): `GetTransactionSummaryQuery` (COALESCE SUM CASE por tipo) + `GetMonthlyChartQuery` (GROUP BY YEAR/MONTH). DTOs `TransactionSummaryDto` y `MonthlyChartPointDto`. 4 tests.
+- **Task 6** (PR #43): `GetCategoriesQuery` — SQL a `SubCategories` con `IdUser IS NULL OR IdUser = @IdUser`; agrupación en memoria via `Enum.GetValues<MainCategory>()`. DTOs `CategoryDto` / `SubCategoryDto`. 2 tests.
+- **Task 7** (PR #44): DI — registro de `TransactionRepository` en módulo Autofac (ya auto-scan). `ApiResponse.Fail()` sin parámetros añadido.
+- **Task 8** (PR #45): `TransactionsController` (7 endpoints) + `CategoriesController` (GET) + helper `CurrentUser.GetId` (extrae `IdUser` del claim `sub` cifrado DPAPI vía `IUserIdEncryptor.Decrypt`; `UnauthorizedAccessException` → 401 por middleware).
+- **Task 9** (PR #46): Tests E2E con `BigSchoolWebAppFactory` (`WebApplicationFactory<Program>`) sobre `bigschool_test`. JWT real (mismo secreto que `JwtBearer`), sin mocks de auth. Happy path: POST crear ingreso → GET summary (TotalIncome=1500, BaseCurrency="EUR") + verificación física en MySQL con Dapper. 401 auténtico sin token. `ResetAsync` ampliado.
+- **Task 10** (este PR): Documentación — tabla `Transactions` corregida y completada, enums actualizados a valores reales, endpoints alineados con la implementación, nota CQRS multimoneda añadida, diario actualizado.
+
+**Decisiones clave tomadas durante la implementación:**
+- **`TransactionListItemDto` usa `string` para monedas**: Dapper no convierte CHAR(3) a enum automáticamente. `TransactionDto` (built from domain objects) sí usa `Currency` tipado.
+- **Ownership check en Update/Delete**: `transaction.IdUser != request.IdUser` → `NotFoundException` (not 403), evita revelar existencia del recurso a usuarios no autorizados.
+- **`QueryMultipleAsync`** en `GetTransactions`: COUNT + SELECT paginado en un único roundtrip; la query WHERE compartida como `const string TRANSACTIONS_WHERE` se concatena en compile-time.
+- **`currency` opcional en Create/Update**: si es null, se usa `user.BaseCurrency` con `rate = 1` (sin red). Esto permite tests E2E sin acoplarse a un servidor de tipos de cambio.
+- **`BigSchoolWebAppFactory` sin mocks de auth**: usa el `IJwtService` real del contenedor; el 401 es real, no simulado.
+- **`public partial class Program { }`** ya estaba en `Program.cs` (estándar ASP.NET Core para `WebApplicationFactory`).
+
+**Problemas encontrados y soluciones:**
+- **`MoneyConversion` constructor binding en EF**: `MoneyConversion` es un `sealed record` con `Money Original` y `Money Base` como parámetros del constructor primario. EF no puede inyectar owned navigations por constructor → añadido `private MoneyConversion() : this(null!, 0m, null!, default) { }` (EF usa el ctor sin parámetros y luego asigna propiedades por init setters).
+- **`MainCategory` enum en inglés** (implementación) vs nombres en español (diseño original): corrección en `AGENTS.md` y `02-backend-design.md`.
+- **`DomainEvent` con entidad completa**: convención establecida — el record recibe la entidad de dominio completa (puntero), no campos individuales. Documentado en `AGENTS.md` y en el plan.
+- **Constructor private + factory**: revertido de object initializer a patrón `protected ctor() + private ctor(all fields) + static Create`. Documentado en `AGENTS.md`.
+
+**Resultado / Estado:**
+- Plan 2B completado (Tasks 1-10, PRs #38-#46 + este PR). Build 0 errores.
+- Tests: 22+ unitarios (Domain + Application) + 4 de integración PASS (2 de Plan 2A + 2 nuevos E2E).
+- Endpoints implementados: `/api/v1/transactions` (7 endpoints: POST, PUT/{id}, DELETE/{id}, GET/{id}, GET, GET/summary, GET/monthly-chart) y `/api/v1/categories` (GET).
+- BC Finanzas Personales operativo end-to-end: registro/login JWT → CRUD transacciones multimoneda → queries consolidadas en moneda base.
+- **Task 11 pendiente** (registrada en el plan): refactor de `ExchangeRateApiClient` a convención SQL/Dapper (`const _QUERY` + `DynamicParameters`).
+
+**Cobertura de tests añadida (Plan 2B):**
+- 4 tests: `Transaction` entity (Create con invariantes, Update, Delete, re-conversión)
+- 4 tests: Commands Create/Update/Delete handlers (happy path, NotFoundException)
+- 4 tests: `GetTransactions` + `GetTransactionById` (filtros, paginación, not-found)
+- 4 tests: `GetTransactionSummary` + `GetMonthlyChart` (agregación, agrupación)
+- 2 tests: `GetCategories` (subcategorías globales + de usuario)
+- 2 tests E2E: POST crear → GET summary → verificación física MySQL + 401 sin token
+
+**Siguiente paso:**
+- [ ] Task 11: Refactor `ExchangeRateApiClient` a convención SQL/Dapper (deuda técnica Plan 2A Anexo A)
+- [ ] Plan 3: BC Inversiones (Portfolio, Holding, Company, Valuation)
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
