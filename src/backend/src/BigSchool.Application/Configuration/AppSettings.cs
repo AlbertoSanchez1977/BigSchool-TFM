@@ -9,6 +9,8 @@ public class AppSettings
     public required JwtSettings Jwt { get; set; }
 
     public required RagServiceSettings RagService { get; set; }
+
+    public required ExchangeRateSettings ExchangeRate { get; set; }
 }
 
 public class JwtSettings
@@ -20,6 +22,11 @@ public class JwtSettings
 }
 
 public class RagServiceSettings
+{
+    public required string BaseUrl { get; set; }
+}
+
+public class ExchangeRateSettings
 {
     public required string BaseUrl { get; set; }
 }

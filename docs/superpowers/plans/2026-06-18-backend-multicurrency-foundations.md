@@ -636,7 +636,7 @@ git add -A && git commit -m "feat: añadir tabla ExchangeRates (reference data) 
 
 **Nota de diseño:** El `ExchangeRateApiClient` (Task 7) implementa `IExchangeRateProvider` → Autofac lo auto-registra por `AsImplementedInterfaces` en la capa Infrastructure. Para inyectarle `HttpClient` registramos `IHttpClientFactory` con `builder.Services.AddHttpClient()` (MS DI, puenteado por Autofac); el cliente recibe `IHttpClientFactory`. No usamos typed-client para evitar doble registro con Autofac.
 
-- [ ] **Step 1: Crear la interfaz**
+- [x] **Step 1: Crear la interfaz**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Interfaces/Services/IExchangeRateProvider.cs
@@ -654,7 +654,7 @@ public interface IExchangeRateProvider
 }
 ```
 
-- [ ] **Step 2: Añadir `ExchangeRateSettings` a `AppSettings`**
+- [x] **Step 2: Añadir `ExchangeRateSettings` a `AppSettings`**
 
 En `src/backend/src/BigSchool.Application/Configuration/AppSettings.cs`:
 
@@ -673,7 +673,7 @@ public class ExchangeRateSettings
 }
 ```
 
-- [ ] **Step 3: Bindear settings y registrar HttpClient en `Program.cs`**
+- [x] **Step 3: Bindear settings y registrar HttpClient en `Program.cs`**
 
 En `src/backend/src/BigSchool.WebApi/Program.cs`:
 
@@ -690,7 +690,7 @@ En `src/backend/src/BigSchool.WebApi/Program.cs`:
     builder.Services.AddHttpClient();
 ```
 
-- [ ] **Step 4: Añadir la sección a `appsettings.json`**
+- [x] **Step 4: Añadir la sección a `appsettings.json`**
 
 En `src/backend/src/BigSchool.WebApi/appsettings.json`, añadir a nivel raíz (junto a `RagService`):
 
@@ -700,12 +700,12 @@ En `src/backend/src/BigSchool.WebApi/appsettings.json`, añadir a nivel raíz (j
   }
 ```
 
-- [ ] **Step 5: Verificar build**
+- [x] **Step 5: Verificar build**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir IExchangeRateProvider y settings del proveedor de tipos de cambio"
