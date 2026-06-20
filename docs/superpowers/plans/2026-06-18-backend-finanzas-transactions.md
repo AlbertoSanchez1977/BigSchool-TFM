@@ -496,7 +496,7 @@ git add -A && git commit -m "feat: añadir ITransactionRepository y repositorio 
 
 **Nota de diseño:** El command lleva `IdUser` (lo inyecta el controller desde el JWT, no el body), `Type`, `IdMainCategory`, `IdSubCategory?`, `Description?`, `TransactionDate`, `Amount`, `Currency?` (default a la base del usuario si null). El handler: carga el usuario (`IUserRepository.GetByIdAsync`), determina `currency = command.Currency ?? user.BaseCurrency`, `rate = (currency == base) ? 1 : await provider.GetRateAsync(currency, base, txDate, ct)`, `Transaction.Create(...)`, `AddAsync` + `SaveChangesAsync()`. Si el usuario no existe → `NotFoundException`.
 
-- [ ] **Step 1: Crear el DTO de respuesta**
+- [x] **Step 1: Crear el DTO de respuesta**
 
 ```csharp
 // src/backend/src/BigSchool.Application/DTOs/Transactions/TransactionDto.cs
@@ -519,7 +519,7 @@ public record TransactionDto(
     DateOnly RateDate);
 ```
 
-- [ ] **Step 2: Escribir el test del handler que falla**
+- [x] **Step 2: Escribir el test del handler que falla**
 
 ```csharp
 // src/backend/tests/BigSchool.Application.Tests/Commands/Transactions/CreateTransactionCommandHandlerTests.cs
@@ -613,12 +613,12 @@ public class CreateTransactionCommandHandlerTests
 }
 ```
 
-- [ ] **Step 3: Ejecutar el test y ver que falla**
+- [x] **Step 3: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~CreateTransactionCommandHandlerTests"`
 Expected: FAIL de compilación.
 
-- [ ] **Step 4: Crear el command**
+- [x] **Step 4: Crear el command**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Create/CreateTransactionCommand.cs
@@ -639,7 +639,7 @@ public record CreateTransactionCommand(
     Currency? Currency) : IRequest<TransactionDto>;
 ```
 
-- [ ] **Step 5: Crear el validator**
+- [x] **Step 5: Crear el validator**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Create/CreateTransactionCommandValidator.cs
@@ -669,7 +669,7 @@ public class CreateTransactionCommandValidator : AbstractValidator<CreateTransac
 }
 ```
 
-- [ ] **Step 6: Crear el handler**
+- [x] **Step 6: Crear el handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Create/CreateTransactionCommandHandler.cs
@@ -735,12 +735,12 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
 
 **Nota:** verificar la firma de `NotFoundException`. Si su constructor no es `(string entity, object key)`, ajustar la llamada a la firma real (ver `src/BigSchool.Domain/Exceptions/NotFoundException.cs`).
 
-- [ ] **Step 7: Ejecutar el test y ver que pasa**
+- [x] **Step 7: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~CreateTransactionCommandHandlerTests"`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir CreateTransaction (flujo de conversión multimoneda)"
