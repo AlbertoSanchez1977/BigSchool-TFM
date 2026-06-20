@@ -1490,7 +1490,7 @@ git add -A && git commit -m "feat: añadir query GetCategories (MainCategory + s
 
 **Nota de diseño:** El `IdUser` se obtiene del JWT (claim `sub` cifrado con DPAPI vía `IUserIdEncryptor.Decrypt`), NO del body. Crear un helper `CurrentUser` que descifre el claim `sub`. Los endpoints van con `[Authorize]`. El body de creación NO incluye `IdUser`; se compone el command con el userId del token. Respuestas con `ApiResponse`/`ApiResponse<T>`. Verificar el método real de `IUserIdEncryptor` (`Decrypt`/`Encrypt`) en `src/BigSchool.Application/Interfaces/Services/IUserIdEncryptor.cs`.
 
-- [ ] **Step 1: Crear el helper `CurrentUser`**
+- [x] **Step 1: Crear el helper `CurrentUser`**
 
 ```csharp
 // src/backend/src/BigSchool.WebApi/Common/CurrentUser.cs
@@ -1516,7 +1516,7 @@ public static class CurrentUser
 
 **Nota:** `IUserIdEncryptor.Decrypt(string)` devuelve `int?` (null si el valor cifrado es inválido); por eso el helper lanza `UnauthorizedAccessException` cuando es null (el `ExceptionHandlingMiddleware` lo mapea a 401).
 
-- [ ] **Step 2: Crear `TransactionsController`**
+- [x] **Step 2: Crear `TransactionsController`**
 
 ```csharp
 // src/backend/src/BigSchool.WebApi/Controllers/TransactionsController.cs
@@ -1628,7 +1628,7 @@ public class TransactionsController : ControllerBase
 }
 ```
 
-- [ ] **Step 3: Crear `CategoriesController`**
+- [x] **Step 3: Crear `CategoriesController`**
 
 ```csharp
 // src/backend/src/BigSchool.WebApi/Controllers/CategoriesController.cs
@@ -1667,13 +1667,13 @@ public class CategoriesController : ControllerBase
 }
 ```
 
-- [ ] **Step 4: Build + arranque rápido**
+- [x] **Step 4: Build + arranque rápido**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 Verificar que Swagger lista los nuevos endpoints (`dotnet run --project src/backend/src/BigSchool.WebApi` y abrir `/swagger`), o dejarlo para la verificación E2E de Task 9.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir endpoints de transacciones y categorías"
