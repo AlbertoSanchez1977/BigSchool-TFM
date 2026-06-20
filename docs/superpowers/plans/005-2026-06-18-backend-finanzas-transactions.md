@@ -1,5 +1,7 @@
 # Backend — BC Finanzas Personales: Transaction (Plan 2B) — Implementation Plan
 
+> **Estado: ✅ COMPLETADO — 2026-06-20. Verificación manual superada.**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implementar el Bounded Context de Finanzas Personales sobre el agregado `Transaction`: entidad completa con `MoneyConversion` (snapshot multimoneda), persistencia EF (owned type + migración), repositorio, CQRS (commands EF Core con flujo de conversión vía `IExchangeRateProvider`, queries Dapper consolidadas en moneda base) y endpoints `/api/v1/transactions` y `/api/v1/categories`. Diseño aprobado: `docs/superpowers/specs/2026-06-17-backend-finanzas-multicurrency-design.md` (§6, §7).

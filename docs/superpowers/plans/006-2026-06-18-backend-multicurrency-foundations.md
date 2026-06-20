@@ -1,5 +1,7 @@
 # Backend — Cimientos Multimoneda (Plan 2A) — Implementation Plan
 
+> **Estado: ✅ COMPLETADO — 2026-06-20. Verificación manual superada.**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Construir el modelo de dominio multimoneda transversal (`Currency`, `Money`, `MoneyConversion`), añadir la moneda base por usuario (`Users.BaseCurrency`) y la infraestructura de tipos de cambio (entidad `ExchangeRate` + tabla cache, `IExchangeRateProvider` + `ExchangeRateApiClient` con proveedor externo Frankfurter + Dapper), de forma reutilizable tal cual por el BC Transaction (Plan 2B) y por Inversiones (Plan 3). Diseño aprobado: `docs/superpowers/specs/2026-06-17-backend-finanzas-multicurrency-design.md`.
