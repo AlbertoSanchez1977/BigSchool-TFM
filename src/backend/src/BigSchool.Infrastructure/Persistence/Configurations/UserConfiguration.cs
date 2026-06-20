@@ -1,5 +1,6 @@
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Enums;
+using BigSchool.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,6 +28,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(512);
         builder.Property(u => u.PasswordSalt).IsRequired().HasMaxLength(256);
         builder.Property(u => u.FullName).IsRequired().HasMaxLength(200);
+        builder.Property(u => u.BaseCurrency)
+            .IsRequired()
+            .HasConversion(CurrencyConverter.CharIso)
+            .HasColumnType("char(3)")
+            .HasDefaultValueSql("'EUR'");
         builder.Property(u => u.LastLoginDate);
         builder.Property(u => u.IdStatus)
             .IsRequired()

@@ -352,7 +352,7 @@ git add -A && git commit -m "feat: añadir Value Object MoneyConversion (snapsho
 
 **Nota de diseño:** El `ValueConverter<Currency,string>` (alpha-3) se define **una vez** y se reutiliza en `UserConfiguration`, `ExchangeRateConfiguration` (Task 5) y `TransactionConfiguration` (Plan 2B). `User.Create` gana un parámetro opcional `Currency baseCurrency = Currency.EUR` para no romper llamadas existentes (`RegisterCommandHandler` no cambia).
 
-- [ ] **Step 1: Crear el converter compartido**
+- [x] **Step 1: Crear el converter compartido**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Converters/CurrencyConverter.cs
@@ -373,7 +373,7 @@ public static class CurrencyConverter
 }
 ```
 
-- [ ] **Step 2: Escribir el test de dominio que falla**
+- [x] **Step 2: Escribir el test de dominio que falla**
 
 Añadir a `src/backend/tests/BigSchool.Domain.Tests/Entities/UserTests.cs`:
 
@@ -397,12 +397,12 @@ Añadir a `src/backend/tests/BigSchool.Domain.Tests/Entities/UserTests.cs`:
 
 (El `using BigSchool.Domain.Enums;` ya está presente en el fichero.)
 
-- [ ] **Step 3: Ejecutar el test y ver que falla**
+- [x] **Step 3: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserTests"`
 Expected: FAIL de compilación — `User` no tiene `BaseCurrency` ni overload con `Currency`.
 
-- [ ] **Step 4: Añadir `BaseCurrency` a `User`**
+- [x] **Step 4: Añadir `BaseCurrency` a `User`**
 
 En `src/backend/src/BigSchool.Domain/Entities/User.cs`:
 
@@ -454,12 +454,12 @@ En `src/backend/src/BigSchool.Domain/Entities/User.cs`:
     }
 ```
 
-- [ ] **Step 5: Ejecutar el test de dominio y ver que pasa**
+- [x] **Step 5: Ejecutar el test de dominio y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~UserTests"`
 Expected: PASS (incluidos los tests existentes de `User`).
 
-- [ ] **Step 6: Configurar la columna en `UserConfiguration`**
+- [x] **Step 6: Configurar la columna en `UserConfiguration`**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/UserConfiguration.cs`, añadir el `using` y, dentro de `ConfigureProperties`, mapear la columna tras `FullName`:
 
@@ -477,7 +477,7 @@ using BigSchool.Infrastructure.Persistence.Converters;
 
 **Fallback** si `HasDefaultValue` con converter diera problemas en Pomelo: usar `.HasDefaultValueSql("'EUR'")` en lugar de `.HasDefaultValue(Currency.EUR)`.
 
-- [ ] **Step 7: Generar la migración**
+- [x] **Step 7: Generar la migración**
 
 Run (desde `src/backend`):
 ```bash
@@ -490,12 +490,12 @@ Expected: se crea `Persistence/Migrations/<timestamp>_AlterUsersAddBaseCurrency.
 
 **Fallback** si `dotnet ef` no encuentra el `DbContext` (Autofac no lo registra en `builder.Services`): crear `src/BigSchool.Infrastructure/Persistence/BigSchoolDbContextFactory.cs` implementando `IDesignTimeDbContextFactory<BigSchoolDbContext>` que construya `DbContextOptions` con `UseMySql(connString, ServerVersion.AutoDetect(connString))` leyendo `appsettings.json` del WebApi y pase una implementación mínima de `IMediator`. Si `InitialCreate` se generó sin factory, no será necesario.
 
-- [ ] **Step 8: Verificar build de toda la solución**
+- [x] **Step 8: Verificar build de toda la solución**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir Users.BaseCurrency y converter de Currency compartido"
