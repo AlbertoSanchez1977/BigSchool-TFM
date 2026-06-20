@@ -82,6 +82,7 @@ Application/
 ### Dapper y SQL (Queries / acceso con `IDbConnectionFactory`)
 - **SQL como `private const string` a nivel de clase, en UPPERCASE terminado en `_QUERY`** (p. ej. `GETTRANSACTIONSUMMARY_QUERY`). Coherente con la convención de constantes UPPERCASE ya consolidada en el proyecto (p. ej. `MEMORY_COST`, `PURPOSE`). **No** incrustar SQL en línea dentro del método: la consulta vive como constante legible, reutilizable y localizable por nombre.
 - **Parámetros con `DynamicParameters`**, no objetos anónimos: hace explícito cada parámetro (`parameters.Add("@Id", id)`), permite construirlos condicionalmente y deja la query como cadena pura.
+- **No incrustar valores de enums persistidos como números mágicos** (p. ej. `IdStatus <> 4`): pasarlos como parámetro desde el propio enum — `parameters.Add("@StatusDeleted", EntityStatus.Deleted)` con `... WHERE IdStatus <> @StatusDeleted`. El SQL queda autoexplicativo y resistente a cambios del enum.
 - El método solo orquesta: arma los parámetros, abre la conexión y ejecuta la query nombrada.
 
 ```csharp

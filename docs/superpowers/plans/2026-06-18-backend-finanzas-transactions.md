@@ -1024,7 +1024,7 @@ git add -A && git commit -m "feat: añadir UpdateTransaction y DeleteTransaction
 - Create: `src/backend/src/BigSchool.Application/Queries/Transactions/GetMonthlyChart/GetMonthlyChartQuery.cs` (+ Handler + `MonthlyChartPointDto`)
 - Create: `src/backend/src/BigSchool.Application/Common/PagedResult.cs`
 
-**Nota de diseño:** Las queries usan Dapper vía `IDbConnectionFactory`, **filtran por `IdUser` y `IdStatus <> 4`** (soft-delete; el Global Query Filter de EF no aplica a Dapper) y **agregan sobre `BaseAmount`**. `GetTransactions` pagina (`MetaData`). El mapeo de columnas `Type`/`IdStatus` es a `short`; las fechas a `DateOnly` (Dapper 2.1 soporta `DateOnly` con MySqlConnector; si diera problema, mapear a `DateTime` y convertir).
+**Nota de diseño:** Las queries usan Dapper vía `IDbConnectionFactory`, **filtran por `IdUser` y por estado no borrado** (`IdStatus <> @StatusDeleted`, parametrizado desde `EntityStatus.Deleted` — sin número mágico; el Global Query Filter de EF no aplica a Dapper) y **agregan sobre `BaseAmount`**. `GetTransactions` pagina (`MetaData`). El mapeo de columnas `Type`/`IdStatus` es a `short`; las fechas a `DateOnly` (Dapper 2.1 soporta `DateOnly` con MySqlConnector; si diera problema, mapear a `DateTime` y convertir).
 
 **Convención SQL/Dapper (ver Decisión 7 y `AGENTS.md`):** cada handler declara su SQL como `private const string ..._QUERY` (UPPERCASE) a nivel de clase y pasa los parámetros con `DynamicParameters`. Los bloques siguientes ya la aplican.
 
@@ -1092,6 +1092,7 @@ public record GetTransactionByIdQuery(int IdTransaction, int IdUser) : IRequest<
 // src/backend/src/BigSchool.Application/Queries/Transactions/GetTransactionById/GetTransactionByIdQueryHandler.cs
 using BigSchool.Application.DTOs.Transactions;
 using BigSchool.Application.Interfaces;
+using BigSchool.Domain.Enums;
 using Dapper;
 using MediatR;
 
@@ -1106,7 +1107,7 @@ public class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionById
     private const string GETTRANSACTIONBYID_QUERY = @"SELECT IdTransaction, Type, IdMainCategory, IdSubCategory, Description, TransactionDate,
                                                              OriginalAmount, OriginalCurrency, ExchangeRate, BaseAmount, BaseCurrency, RateDate
                                                       FROM Transactions
-                                                      WHERE IdTransaction = @IdTransaction AND IdUser = @IdUser AND IdStatus <> 4
+                                                      WHERE IdTransaction = @IdTransaction AND IdUser = @IdUser AND IdStatus <> @StatusDeleted
                                                       LIMIT 1;";
 
     public async Task<TransactionDto?> Handle(GetTransactionByIdQuery request, CancellationToken cancellationToken)
@@ -1114,6 +1115,7 @@ public class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionById
         var parameters = new DynamicParameters();
         parameters.Add("@IdTransaction", request.IdTransaction);
         parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@StatusDeleted", EntityStatus.Deleted);
 
         using var conn = _dbFactory.CreateConnection();
         return await conn.QuerySingleOrDefaultAsync<TransactionDto>(GETTRANSACTIONBYID_QUERY, parameters);
@@ -1179,6 +1181,7 @@ public record GetTransactionsQuery(
 using BigSchool.Application.Common;
 using BigSchool.Application.DTOs.Transactions;
 using BigSchool.Application.Interfaces;
+using BigSchool.Domain.Enums;
 using Dapper;
 using MediatR;
 
@@ -1192,7 +1195,7 @@ public class GetTransactionsQueryHandler
     public GetTransactionsQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
     // Fragmento WHERE reutilizado por el COUNT y el SELECT paginado (const concatenable en compilación).
-    private const string TRANSACTIONS_WHERE = @"WHERE IdUser = @IdUser AND IdStatus <> 4
+    private const string TRANSACTIONS_WHERE = @"WHERE IdUser = @IdUser AND IdStatus <> @StatusDeleted
                                                   AND (@Type IS NULL OR Type = @Type)
                                                   AND (@IdMainCategory IS NULL OR IdMainCategory = @IdMainCategory)
                                                   AND (@From IS NULL OR TransactionDate >= @From)
@@ -1213,6 +1216,7 @@ public class GetTransactionsQueryHandler
 
         var parameters = new DynamicParameters();
         parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@StatusDeleted", EntityStatus.Deleted);
         parameters.Add("@Type", request.Type.HasValue ? (short?)request.Type.Value : null);
         parameters.Add("@IdMainCategory", request.IdMainCategory.HasValue ? (int?)request.IdMainCategory.Value : null);
         parameters.Add("@From", request.From);
@@ -1273,7 +1277,7 @@ public class GetTransactionSummaryQueryHandler : IRequestHandler<GetTransactionS
                 COALESCE(SUM(CASE WHEN Type = @Expense THEN BaseAmount ELSE 0 END), 0) AS TotalExpense,
                 COALESCE(MAX(BaseCurrency), '') AS BaseCurrency
             FROM Transactions
-            WHERE IdUser = @IdUser AND IdStatus <> 4
+            WHERE IdUser = @IdUser AND IdStatus <> @StatusDeleted
               AND (@From IS NULL OR TransactionDate >= @From)
               AND (@To IS NULL OR TransactionDate <= @To);";
 
@@ -1281,6 +1285,7 @@ public class GetTransactionSummaryQueryHandler : IRequestHandler<GetTransactionS
     {
         var parameters = new DynamicParameters();
         parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@StatusDeleted", EntityStatus.Deleted);
         parameters.Add("@Income", (short)TransactionType.Income);
         parameters.Add("@Expense", (short)TransactionType.Expense);
         parameters.Add("@From", request.From);
@@ -1336,7 +1341,7 @@ public class GetMonthlyChartQueryHandler
                 COALESCE(SUM(CASE WHEN Type = @Income  THEN BaseAmount ELSE 0 END), 0) AS Income,
                 COALESCE(SUM(CASE WHEN Type = @Expense THEN BaseAmount ELSE 0 END), 0) AS Expense
             FROM Transactions
-            WHERE IdUser = @IdUser AND IdStatus <> 4 AND YEAR(TransactionDate) = @Year
+            WHERE IdUser = @IdUser AND IdStatus <> @StatusDeleted AND YEAR(TransactionDate) = @Year
             GROUP BY YEAR(TransactionDate), MONTH(TransactionDate)
             ORDER BY Month;";
 
@@ -1345,6 +1350,7 @@ public class GetMonthlyChartQueryHandler
     {
         var parameters = new DynamicParameters();
         parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@StatusDeleted", EntityStatus.Deleted);
         parameters.Add("@Year", request.Year);
         parameters.Add("@Income", (short)TransactionType.Income);
         parameters.Add("@Expense", (short)TransactionType.Expense);
@@ -1414,13 +1420,14 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, IRe
 
     private const string GETCATEGORIES_QUERY = @"SELECT IdSubCategory, IdMainCategory, Name, IsDefault
                                                  FROM SubCategories
-                                                 WHERE IdStatus <> 4 AND (IdUser IS NULL OR IdUser = @IdUser)
+                                                 WHERE IdStatus <> @StatusDeleted AND (IdUser IS NULL OR IdUser = @IdUser)
                                                  ORDER BY IdMainCategory, Name;";
 
     public async Task<IReadOnlyList<CategoryDto>> Handle(GetCategoriesQuery request, CancellationToken cancellationToken)
     {
         var parameters = new DynamicParameters();
         parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@StatusDeleted", EntityStatus.Deleted);
 
         using var conn = _dbFactory.CreateConnection();
         var rows = (await conn.QueryAsync<(int IdSubCategory, int IdMainCategory, string Name, bool IsDefault)>(
@@ -1812,7 +1819,8 @@ public class TransactionsEndpointTests : IAsyncLifetime
         // Verificación FÍSICA en MySQL: la fila quedó persistida.
         await using var conn = new MySqlConnection(_fixture.ConnectionString);
         var rows = await conn.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM Transactions WHERE IdUser = @userId AND IdStatus <> 4;", new { userId });
+            "SELECT COUNT(*) FROM Transactions WHERE IdUser = @userId AND IdStatus <> @statusDeleted;",
+            new { userId, statusDeleted = EntityStatus.Deleted });
         rows.Should().Be(1);
     }
 
