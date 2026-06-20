@@ -763,7 +763,7 @@ git add -A && git commit -m "feat: añadir CreateTransaction (flujo de conversi�
 
 **Convención de tests (repo):** **un fichero de test por clase bajo prueba**, con el nombre de la clase + `Tests` (p. ej. `UpdateTransactionCommandHandlerTests` para `UpdateTransactionCommandHandler`). No se agrupan dos handlers en un mismo fichero. Coherente con los tests existentes (`LoginCommandHandlerTests`, `RegisterCommandHandlerTests`, `RefreshTokenCommandHandlerTests`…) y con la Task 4 (`CreateTransactionCommandHandlerTests`).
 
-- [ ] **Step 1: Escribir los tests que fallan (un fichero por handler)**
+- [x] **Step 1: Escribir los tests que fallan (un fichero por handler)**
 
 ```csharp
 // src/backend/tests/BigSchool.Application.Tests/Commands/Transactions/UpdateTransactionCommandHandlerTests.cs
@@ -877,12 +877,12 @@ public class DeleteTransactionCommandHandlerTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar los tests y ver que fallan**
+- [x] **Step 2: Ejecutar los tests y ver que fallan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~UpdateTransactionCommandHandlerTests|FullyQualifiedName~DeleteTransactionCommandHandlerTests"`
 Expected: FAIL de compilación.
 
-- [ ] **Step 3: Crear `UpdateTransactionCommand` + validator**
+- [x] **Step 3: Crear `UpdateTransactionCommand` + validator**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Update/UpdateTransactionCommand.cs
@@ -924,7 +924,7 @@ public class UpdateTransactionCommandValidator : AbstractValidator<UpdateTransac
 }
 ```
 
-- [ ] **Step 4: Crear `UpdateTransactionCommandHandler`**
+- [x] **Step 4: Crear `UpdateTransactionCommandHandler`**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Update/UpdateTransactionCommandHandler.cs
@@ -984,7 +984,7 @@ public class UpdateTransactionCommandHandler : IRequestHandler<UpdateTransaction
 }
 ```
 
-- [ ] **Step 5: Crear `DeleteTransactionCommand` + handler**
+- [x] **Step 5: Crear `DeleteTransactionCommand` + handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Commands/Transactions/Delete/DeleteTransactionCommand.cs
@@ -1025,12 +1025,12 @@ public class DeleteTransactionCommandHandler : IRequestHandler<DeleteTransaction
 }
 ```
 
-- [ ] **Step 6: Ejecutar los tests y ver que pasan**
+- [x] **Step 6: Ejecutar los tests y ver que pasan**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~UpdateTransactionCommandHandlerTests|FullyQualifiedName~DeleteTransactionCommandHandlerTests"`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir UpdateTransaction y DeleteTransaction (soft-delete)"
