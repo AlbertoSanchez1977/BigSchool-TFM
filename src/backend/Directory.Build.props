@@ -34,5 +34,6 @@
     <MvcTestingVersion>8.0.11</MvcTestingVersion>
     <!-- Infrastructure -->
     <OptionsVersion>9.0.0</OptionsVersion>
+    <HttpExtensionsVersion>8.0.1</HttpExtensionsVersion>
   </PropertyGroup>
 </Project>

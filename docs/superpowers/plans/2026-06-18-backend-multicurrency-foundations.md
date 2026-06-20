@@ -722,7 +722,7 @@ git add -A && git commit -m "feat: añadir IExchangeRateProvider y settings del 
 
 **Nota de diseño:** El cliente: (1) `from == to` → `1m` sin IO; (2) lee cache con Dapper; (3) si *miss*, llama a Frankfurter (`GET {BaseUrl}/{yyyy-MM-dd}?from=FROM&to=TO`), parsea `rates[TO]`; (4) UPSERT idempotente; (5) devuelve el tipo. Fallback si la API falla en *miss*: último tipo conocido (`ORDER BY RateDate DESC`); si tampoco hay, excepción controlada. Los unit tests cubren solo el atajo `from == to` (sin IO); el camino con cache/API se cubre en integración (Task 8).
 
-- [ ] **Step 1: Escribir el test que falla (atajo from == to)**
+- [x] **Step 1: Escribir el test que falla (atajo from == to)**
 
 ```csharp
 // src/backend/tests/BigSchool.Application.Tests/Services/ExchangeRateApiClientTests.cs
@@ -764,12 +764,12 @@ public class ExchangeRateApiClientTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test y ver que falla**
+- [x] **Step 2: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~ExchangeRateApiClientTests"`
 Expected: FAIL de compilación — `ExchangeRateApiClient` no existe.
 
-- [ ] **Step 3: Crear el DTO de respuesta de Frankfurter**
+- [x] **Step 3: Crear el DTO de respuesta de Frankfurter**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/FrankfurterResponse.cs
@@ -787,7 +787,7 @@ public sealed class FrankfurterResponse
 }
 ```
 
-- [ ] **Step 4: Crear el cliente**
+- [x] **Step 4: Crear el cliente**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Services/ExchangeRateApiClient.cs
@@ -907,17 +907,17 @@ public class ExchangeRateApiClient : IExchangeRateProvider
 }
 ```
 
-- [ ] **Step 5: Ejecutar el test y ver que pasa**
+- [x] **Step 5: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~ExchangeRateApiClientTests"`
 Expected: PASS.
 
-- [ ] **Step 6: Verificar build de la solución**
+- [x] **Step 6: Verificar build de la solución**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir ExchangeRateApiClient con cache Dapper y proveedor Frankfurter"
