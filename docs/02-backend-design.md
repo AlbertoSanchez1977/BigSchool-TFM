@@ -788,8 +788,9 @@ Backend.sln
 - xUnit
 - FluentAssertions
 - Moq
-- Testcontainers
-- Microsoft.AspNetCore.Mvc.Testing
+- WireMock.Net (fake de servidor HTTP para el anti-corruption layer de tipos de cambio)
+- MySqlConnector + Dapper (fixture de integración sobre el MySQL real de docker-compose, BD `bigschool_test`)
+- Microsoft.AspNetCore.Mvc.Testing (E2E con `WebApplicationFactory<Program>`)
 
 ---
 
@@ -798,7 +799,7 @@ Backend.sln
 - **Argon2** para hashing de contraseñas (Hash + Salt)
 - **JWT** con claims: IdUser (encriptado con DPAPI), Email
 - **EF Core Fluent API** (no Data Annotations) para configuración de entidades
-- **Dapper** con `IDbConnectionFactory` para todas las queries de lectura
+- **Dapper** con `IDbConnectionFactory` para todas las queries de lectura. **Convención**: el SQL se declara como `private const string` a nivel de clase en UPPERCASE terminado en `_QUERY`, y los parámetros se pasan con `DynamicParameters` (no objetos anónimos). Ver `src/backend/AGENTS.md` › *Dapper y SQL*.
 - **Autofac** registra automáticamente: Handlers, Repositories, Services, Profiles, Validators
 - **AutoMapper** mapea entidades ↔ DTOs en cada Profile
 - **Migraciones** con `dotnet ef migrations`

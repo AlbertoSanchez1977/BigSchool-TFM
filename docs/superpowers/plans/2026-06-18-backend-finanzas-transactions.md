@@ -20,6 +20,7 @@
 4. **Commands con EF Core; Queries con Dapper consolidando sobre `BaseAmount`** (moneda base del usuario). Opcional: desglose por moneda original (fuera de alcance mínimo — YAGNI).
 5. **Endpoint de creación añade `currency` al body** con default a la moneda base del usuario si se omite.
 6. **Validaciones de dominio**: importe > 0, fecha no nula, categoría válida (`MainCategory`), `SubCategory` opcional. Soft-delete vía `IdStatus = Deleted` (Global Query Filter ya lo excluye).
+7. **Convención SQL/Dapper (obligatoria en este plan)**: todas las queries Dapper se escriben con el **SQL como `private const string` a nivel de clase en UPPERCASE terminado en `_QUERY`** y los **parámetros con `DynamicParameters`** (no objetos anónimos). Ver `src/backend/AGENTS.md` › *Dapper y SQL*. Los bloques de código de las Tasks 6 y 7 ya están escritos según esta convención. Además, la Task 11 (final) refactoriza `ExchangeRateApiClient` (Plan 2A) a esta misma convención — deuda registrada en el Anexo A de Plan 2A.
 
 ---
 
@@ -60,6 +61,7 @@
 | 8 | `TransactionsController` + `CategoriesController` | WebApi | Endpoints REST con envelope `ApiResponse` |
 | 9 | Tests E2E de endpoints (happy path + 401) | Integration.Tests | `WebApplicationFactory` + JWT real + verificación física en MySQL |
 | 10 | Documentación (design + diario) | docs | Cierre documental Plan 2B |
+| 11 | Refactor `ExchangeRateApiClient` a convención SQL/Dapper | Infra | `const` UPPERCASE `_QUERY` + `DynamicParameters` (deuda Anexo A Plan 2A) |
 
 ---
 
@@ -1024,6 +1026,8 @@ git add -A && git commit -m "feat: añadir UpdateTransaction y DeleteTransaction
 
 **Nota de diseño:** Las queries usan Dapper vía `IDbConnectionFactory`, **filtran por `IdUser` y `IdStatus <> 4`** (soft-delete; el Global Query Filter de EF no aplica a Dapper) y **agregan sobre `BaseAmount`**. `GetTransactions` pagina (`MetaData`). El mapeo de columnas `Type`/`IdStatus` es a `short`; las fechas a `DateOnly` (Dapper 2.1 soporta `DateOnly` con MySqlConnector; si diera problema, mapear a `DateTime` y convertir).
 
+**Convención SQL/Dapper (ver Decisión 7 y `AGENTS.md`):** cada handler declara su SQL como `private const string ..._QUERY` (UPPERCASE) a nivel de clase y pasa los parámetros con `DynamicParameters`. Los bloques siguientes ya la aplican.
+
 - [ ] **Step 1: Crear `PagedResult<T>`**
 
 ```csharp
@@ -1099,18 +1103,20 @@ public class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionById
 
     public GetTransactionByIdQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
+    private const string GETTRANSACTIONBYID_QUERY = @"SELECT IdTransaction, Type, IdMainCategory, IdSubCategory, Description, TransactionDate,
+                                                             OriginalAmount, OriginalCurrency, ExchangeRate, BaseAmount, BaseCurrency, RateDate
+                                                      FROM Transactions
+                                                      WHERE IdTransaction = @IdTransaction AND IdUser = @IdUser AND IdStatus <> 4
+                                                      LIMIT 1;";
+
     public async Task<TransactionDto?> Handle(GetTransactionByIdQuery request, CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT IdTransaction, Type, IdMainCategory, IdSubCategory, Description, TransactionDate,
-                   OriginalAmount, OriginalCurrency, ExchangeRate, BaseAmount, BaseCurrency, RateDate
-            FROM Transactions
-            WHERE IdTransaction = @IdTransaction AND IdUser = @IdUser AND IdStatus <> 4
-            LIMIT 1;
-            """;
+        var parameters = new DynamicParameters();
+        parameters.Add("@IdTransaction", request.IdTransaction);
+        parameters.Add("@IdUser", request.IdUser);
+
         using var conn = _dbFactory.CreateConnection();
-        return await conn.QuerySingleOrDefaultAsync<TransactionDto>(sql,
-            new { request.IdTransaction, request.IdUser });
+        return await conn.QuerySingleOrDefaultAsync<TransactionDto>(GETTRANSACTIONBYID_QUERY, parameters);
     }
 }
 ```
@@ -1185,42 +1191,37 @@ public class GetTransactionsQueryHandler
 
     public GetTransactionsQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
+    // Fragmento WHERE reutilizado por el COUNT y el SELECT paginado (const concatenable en compilación).
+    private const string TRANSACTIONS_WHERE = @"WHERE IdUser = @IdUser AND IdStatus <> 4
+                                                  AND (@Type IS NULL OR Type = @Type)
+                                                  AND (@IdMainCategory IS NULL OR IdMainCategory = @IdMainCategory)
+                                                  AND (@From IS NULL OR TransactionDate >= @From)
+                                                  AND (@To IS NULL OR TransactionDate <= @To)";
+
+    private const string GETTRANSACTIONS_QUERY = @"SELECT COUNT(*) FROM Transactions " + TRANSACTIONS_WHERE + @";
+            SELECT IdTransaction, Type, IdMainCategory, IdSubCategory, Description, TransactionDate,
+                   OriginalAmount, OriginalCurrency, ExchangeRate, BaseAmount, BaseCurrency, RateDate
+            FROM Transactions " + TRANSACTIONS_WHERE + @"
+            ORDER BY TransactionDate DESC, IdTransaction DESC
+            LIMIT @PageSize OFFSET @Offset;";
+
     public async Task<PagedResult<TransactionListItemDto>> Handle(
         GetTransactionsQuery request, CancellationToken cancellationToken)
     {
         var page = GetTransactionsQuery.NormalizePage(request.Page);
         var pageSize = GetTransactionsQuery.NormalizePageSize(request.PageSize);
 
-        const string where = """
-            WHERE IdUser = @IdUser AND IdStatus <> 4
-              AND (@Type IS NULL OR Type = @Type)
-              AND (@IdMainCategory IS NULL OR IdMainCategory = @IdMainCategory)
-              AND (@From IS NULL OR TransactionDate >= @From)
-              AND (@To IS NULL OR TransactionDate <= @To)
-            """;
-
-        var sql = $"""
-            SELECT COUNT(*) FROM Transactions {where};
-            SELECT IdTransaction, Type, IdMainCategory, IdSubCategory, Description, TransactionDate,
-                   OriginalAmount, OriginalCurrency, ExchangeRate, BaseAmount, BaseCurrency, RateDate
-            FROM Transactions {where}
-            ORDER BY TransactionDate DESC, IdTransaction DESC
-            LIMIT @PageSize OFFSET @Offset;
-            """;
-
-        var parameters = new
-        {
-            request.IdUser,
-            Type = request.Type.HasValue ? (short?)request.Type.Value : null,
-            IdMainCategory = request.IdMainCategory.HasValue ? (int?)request.IdMainCategory.Value : null,
-            request.From,
-            request.To,
-            PageSize = pageSize,
-            Offset = (page - 1) * pageSize
-        };
+        var parameters = new DynamicParameters();
+        parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@Type", request.Type.HasValue ? (short?)request.Type.Value : null);
+        parameters.Add("@IdMainCategory", request.IdMainCategory.HasValue ? (int?)request.IdMainCategory.Value : null);
+        parameters.Add("@From", request.From);
+        parameters.Add("@To", request.To);
+        parameters.Add("@PageSize", pageSize);
+        parameters.Add("@Offset", (page - 1) * pageSize);
 
         using var conn = _dbFactory.CreateConnection();
-        using var multi = await conn.QueryMultipleAsync(sql, parameters);
+        using var multi = await conn.QueryMultipleAsync(GETTRANSACTIONS_QUERY, parameters);
         var total = await multi.ReadSingleAsync<int>();
         var items = (await multi.ReadAsync<TransactionListItemDto>()).ToList();
 
@@ -1266,30 +1267,28 @@ public class GetTransactionSummaryQueryHandler : IRequestHandler<GetTransactionS
 
     public GetTransactionSummaryQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
-    public async Task<TransactionSummaryDto> Handle(GetTransactionSummaryQuery request, CancellationToken cancellationToken)
-    {
-        // Consolidación SIEMPRE sobre BaseAmount (moneda base del usuario).
-        const string sql = """
-            SELECT
+    // Consolidación SIEMPRE sobre BaseAmount (moneda base del usuario).
+    private const string GETTRANSACTIONSUMMARY_QUERY = @"SELECT
                 COALESCE(SUM(CASE WHEN Type = @Income  THEN BaseAmount ELSE 0 END), 0) AS TotalIncome,
                 COALESCE(SUM(CASE WHEN Type = @Expense THEN BaseAmount ELSE 0 END), 0) AS TotalExpense,
                 COALESCE(MAX(BaseCurrency), '') AS BaseCurrency
             FROM Transactions
             WHERE IdUser = @IdUser AND IdStatus <> 4
               AND (@From IS NULL OR TransactionDate >= @From)
-              AND (@To IS NULL OR TransactionDate <= @To);
-            """;
+              AND (@To IS NULL OR TransactionDate <= @To);";
+
+    public async Task<TransactionSummaryDto> Handle(GetTransactionSummaryQuery request, CancellationToken cancellationToken)
+    {
+        var parameters = new DynamicParameters();
+        parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@Income", (short)TransactionType.Income);
+        parameters.Add("@Expense", (short)TransactionType.Expense);
+        parameters.Add("@From", request.From);
+        parameters.Add("@To", request.To);
 
         using var conn = _dbFactory.CreateConnection();
-        var row = await conn.QuerySingleAsync<(decimal TotalIncome, decimal TotalExpense, string BaseCurrency)>(sql,
-            new
-            {
-                request.IdUser,
-                Income = (short)TransactionType.Income,
-                Expense = (short)TransactionType.Expense,
-                request.From,
-                request.To
-            });
+        var row = await conn.QuerySingleAsync<(decimal TotalIncome, decimal TotalExpense, string BaseCurrency)>(
+            GETTRANSACTIONSUMMARY_QUERY, parameters);
 
         return new TransactionSummaryDto(
             row.TotalIncome, row.TotalExpense, row.TotalIncome - row.TotalExpense, row.BaseCurrency);
@@ -1331,11 +1330,7 @@ public class GetMonthlyChartQueryHandler
 
     public GetMonthlyChartQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
-    public async Task<IReadOnlyList<MonthlyChartPointDto>> Handle(
-        GetMonthlyChartQuery request, CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT
+    private const string GETMONTHLYCHART_QUERY = @"SELECT
                 YEAR(TransactionDate)  AS Year,
                 MONTH(TransactionDate) AS Month,
                 COALESCE(SUM(CASE WHEN Type = @Income  THEN BaseAmount ELSE 0 END), 0) AS Income,
@@ -1343,17 +1338,19 @@ public class GetMonthlyChartQueryHandler
             FROM Transactions
             WHERE IdUser = @IdUser AND IdStatus <> 4 AND YEAR(TransactionDate) = @Year
             GROUP BY YEAR(TransactionDate), MONTH(TransactionDate)
-            ORDER BY Month;
-            """;
+            ORDER BY Month;";
+
+    public async Task<IReadOnlyList<MonthlyChartPointDto>> Handle(
+        GetMonthlyChartQuery request, CancellationToken cancellationToken)
+    {
+        var parameters = new DynamicParameters();
+        parameters.Add("@IdUser", request.IdUser);
+        parameters.Add("@Year", request.Year);
+        parameters.Add("@Income", (short)TransactionType.Income);
+        parameters.Add("@Expense", (short)TransactionType.Expense);
 
         using var conn = _dbFactory.CreateConnection();
-        var rows = await conn.QueryAsync<MonthlyChartPointDto>(sql, new
-        {
-            request.IdUser,
-            request.Year,
-            Income = (short)TransactionType.Income,
-            Expense = (short)TransactionType.Expense
-        });
+        var rows = await conn.QueryAsync<MonthlyChartPointDto>(GETMONTHLYCHART_QUERY, parameters);
         return rows.ToList();
     }
 }
@@ -1379,7 +1376,7 @@ git add -A && git commit -m "feat: añadir queries Dapper de transacciones conso
 **Files:**
 - Create: `src/backend/src/BigSchool.Application/Queries/Categories/GetCategories/GetCategoriesQuery.cs` (+ Handler + DTOs)
 
-**Nota de diseño:** Devuelve las `MainCategory` (enum, estáticas) con sus `SubCategories` del usuario (las `IsDefault` con `IdUser IS NULL` + las propias del usuario), leídas por Dapper. Estructura: lista de `CategoryDto { Id, Name, SubCategories[] }`.
+**Nota de diseño:** Devuelve las `MainCategory` (enum, estáticas) con sus `SubCategories` del usuario (las `IsDefault` con `IdUser IS NULL` + las propias del usuario), leídas por Dapper. Estructura: lista de `CategoryDto { Id, Name, SubCategories[] }`. SQL como `const` UPPERCASE `_QUERY` + `DynamicParameters` (Decisión 7 / `AGENTS.md`).
 
 - [ ] **Step 1: Crear DTOs + query + handler**
 
@@ -1415,17 +1412,19 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, IRe
 
     public GetCategoriesQueryHandler(IDbConnectionFactory dbFactory) => _dbFactory = dbFactory;
 
+    private const string GETCATEGORIES_QUERY = @"SELECT IdSubCategory, IdMainCategory, Name, IsDefault
+                                                 FROM SubCategories
+                                                 WHERE IdStatus <> 4 AND (IdUser IS NULL OR IdUser = @IdUser)
+                                                 ORDER BY IdMainCategory, Name;";
+
     public async Task<IReadOnlyList<CategoryDto>> Handle(GetCategoriesQuery request, CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT IdSubCategory, IdMainCategory, Name, IsDefault
-            FROM SubCategories
-            WHERE IdStatus <> 4 AND (IdUser IS NULL OR IdUser = @IdUser)
-            ORDER BY IdMainCategory, Name;
-            """;
+        var parameters = new DynamicParameters();
+        parameters.Add("@IdUser", request.IdUser);
+
         using var conn = _dbFactory.CreateConnection();
         var rows = (await conn.QueryAsync<(int IdSubCategory, int IdMainCategory, string Name, bool IsDefault)>(
-            sql, new { request.IdUser })).ToList();
+            GETCATEGORIES_QUERY, parameters)).ToList();
 
         return Enum.GetValues<MainCategory>()
             .Select(mc => new CategoryDto(
@@ -1871,6 +1870,70 @@ git add -A && git commit -m "docs: actualizar diseño backend y diario con BC Tr
 
 ---
 
+### Task 11: Refactor de `ExchangeRateApiClient` a la convención SQL/Dapper
+
+**Files:**
+- Modify: `src/backend/src/BigSchool.Infrastructure/Services/ExchangeRateApiClient.cs`
+
+**Nota de diseño:** `ExchangeRateApiClient` (Plan 2A, Task 7) se implementó con el SQL incrustado en línea (`const string sql` local) y parámetros como objetos anónimos, antes de consolidar la convención (ver Anexo A de Plan 2A y `AGENTS.md` › *Dapper y SQL*). Esta tarea lo alinea: **`private const string ..._QUERY` a nivel de clase (UPPERCASE) + `DynamicParameters`**. Es **estilo/consistencia, sin cambio de comportamiento**; los tests de integración de Plan 2A (Task 8: cache hit/miss + seed) son la red de seguridad y **deben seguir en verde** sin tocarlos.
+
+- [ ] **Step 1: Extraer las queries a `const` UPPERCASE `_QUERY` a nivel de clase**
+
+En `ExchangeRateApiClient`, mover el SQL de `ReadCacheAsync`, `ReadLastKnownAsync` y `UpsertCacheAsync` a constantes de clase:
+
+```csharp
+    private const string READCACHE_QUERY = @"SELECT Rate FROM ExchangeRates
+                                             WHERE FromCurrency = @From AND ToCurrency = @To AND RateDate = @Date
+                                             LIMIT 1;";
+
+    private const string READLASTKNOWN_QUERY = @"SELECT Rate FROM ExchangeRates
+                                                 WHERE FromCurrency = @From AND ToCurrency = @To
+                                                 ORDER BY RateDate DESC LIMIT 1;";
+
+    private const string UPSERTCACHE_QUERY = @"INSERT INTO ExchangeRates (FromCurrency, ToCurrency, Rate, RateDate, Source, FetchedAt)
+                                               VALUES (@From, @To, @Rate, @Date, @Source, @Now)
+                                               ON DUPLICATE KEY UPDATE Rate = @Rate, Source = @Source, FetchedAt = @Now;";
+```
+
+- [ ] **Step 2: Migrar los parámetros de objeto anónimo a `DynamicParameters`**
+
+En cada método, sustituir el objeto anónimo por `DynamicParameters` y usar la query nombrada. Ejemplo (`ReadCacheAsync`):
+
+```csharp
+    private async Task<decimal?> ReadCacheAsync(Currency from, Currency to, DateOnly date)
+    {
+        var parameters = new DynamicParameters();
+        parameters.Add("@From", from.ToString());
+        parameters.Add("@To", to.ToString());
+        parameters.Add("@Date", date.ToDateTime(TimeOnly.MinValue).Date);
+
+        using var conn = _dbFactory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<decimal?>(READCACHE_QUERY, parameters);
+    }
+```
+
+Aplicar lo análogo a `ReadLastKnownAsync` (parámetros `@From`, `@To`) y `UpsertCacheAsync` (`@From`, `@To`, `@Rate`, `@Date`, `@Source`, `@Now`).
+
+- [ ] **Step 3: Verificar build + tests de integración (red de seguridad de Plan 2A)**
+
+Prerequisito: `mysql` de docker-compose levantado.
+Run: `dotnet build src/backend/Backend.slnx`
+Expected: 0 errors.
+Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests --filter "FullyQualifiedName~ExchangeRateApiClientIntegrationTests"`
+Expected: PASS (mismo comportamiento; cache miss→hit intacto).
+
+- [ ] **Step 4: Actualizar el diario**
+
+En `docs/diario.md`, añadir una nota a la entrada de Plan 2B: `ExchangeRateApiClient` refactorizado a la convención SQL/Dapper (cierre de la deuda registrada en el Anexo A de Plan 2A).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A && git commit -m "refactor: alinear ExchangeRateApiClient con la convención SQL/Dapper (const _QUERY + DynamicParameters)"
+```
+
+---
+
 ## Verificación final del Plan 2B
 
 - [ ] **Build completo**
@@ -1904,3 +1967,4 @@ Run: `dotnet run --project src/backend/src/BigSchool.WebApi` y en `/swagger`:
 - [ ] Endpoints `/transactions` y `/categories` + `currency` opcional — Task 8 (spec §7.5)
 - [ ] Tests E2E de endpoints (happy path + 401, verificación física) — Task 9 (spec §9)
 - [ ] Docs — Task 10 (spec §8)
+- [ ] Refactor `ExchangeRateApiClient` a convención SQL/Dapper — Task 11 (Anexo A Plan 2A)

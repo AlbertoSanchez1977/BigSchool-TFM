@@ -240,6 +240,45 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-18 al 2026-06-20 — Cimientos Multimoneda (Plan 2A, Tasks 1-9)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan detallado de cimientos multimoneda en 9 tareas (`docs/superpowers/plans/2026-06-18-backend-multicurrency-foundations.md`), task-by-task con PR + revisión humana por tarea.
+- **Task 1** (PR #29): enum `Currency : short` (ISO 4217 — EUR/USD/GBP/CHF/JPY; nombre = alpha-3, valor = numérico) + 9 tests.
+- **Task 2** (PR #30): VO `Money` (record sellado, factory `Create` con redondeo bancario a 2 decimales) + 6 tests.
+- **Task 3** (PR #31): VO `MoneyConversion` (snapshot Original + Rate + Base + RateDate, factory que calcula `Base` e impone invariante misma-moneda→rate=1) + 4 tests.
+- **Task 4** (PR #32): `CurrencyConverter.CharIso` compartido (Currency↔CHAR(3)), `Users.BaseCurrency` (default EUR, factory retrocompatible), migración `AlterUsersAddBaseCurrency`.
+- **Task 5** (PR #33): entidad plana `ExchangeRate` (reference data, sin AR/BaseEntity), `ExchangeRateConfiguration`, migración `CreateExchangeRates` con índice único `(From, To, RateDate)` y seed de 4 pares fijos.
+- **Task 6** (PR #34): `IExchangeRateProvider`, `ExchangeRateSettings`, registro `AddHttpClient` + sección `appsettings.json` (Frankfurter).
+- **Task 7** (PR #35): `ExchangeRateApiClient` (anti-corruption: atajo from==to, cache Dapper hit/miss, UPSERT idempotente, fallback al último tipo, proveedor Frankfurter) + unit test del atajo.
+- **Task 8** (PR #36): tests de integración sobre el MySQL real de docker-compose — fixture `MySqlDatabaseFixture` + `IntegrationCollection` (un solo crear/migrar/destruir de `bigschool_test` por ejecución, serial, `ResetAsync` entre tests) verificando seed y ciclo cache miss→WireMock→hit.
+- **Task 9** (este PR): cierre documental — ADR-006, diseño backend, diario; **nueva convención SQL/Dapper** en AGENTS.md y su anexo/absorción en planes.
+
+**Decisiones clave tomadas durante la implementación:**
+- **Conversión por snapshot, dominio puro**: `MoneyConversion` guarda el tipo aplicado; el `rate` lo resuelve Application (`IExchangeRateProvider`), el dominio nunca llama a servicios externos.
+- **`ExchangeRates` como reference data**: EF posee solo el esquema; el cliente lee/escribe con Dapper (UPSERT) desacoplado del `UnitOfWork` de negocio.
+- **Estrategia de integración reusando docker-compose** en vez de Testcontainers: BD dedicada `bigschool_test` migrada por EF (no `bigschool`, cuyas tablas las crea `init.sql` y chocarían), con `ICollectionFixture` de ciclo único y ejecución serial. WireMock.Net fakea el servidor HTTP de Frankfurter (ejercita toda la capa anti-corrupción HTTP, lo que Moq sobre la interfaz no cubre).
+- **Convención SQL/Dapper consolidada**: SQL como `const` UPPERCASE `_QUERY` a nivel de clase + `DynamicParameters`. Documentada en AGENTS.md; se aplica en Plan 2B desde su origen y deja como deuda registrada el refactor de `ExchangeRateApiClient` (Anexo Plan 2A → tarea en Plan 2B).
+- **`HasDefaultValueSql("'EUR'")`** en `Users.BaseCurrency` para evitar el warning de sentinel value de EF con enums persistidos como string.
+
+**Problemas encontrados y soluciones:**
+- **Credenciales del fixture**: el default usaba `root/root`; el `.env` de compose define `MYSQL_ROOT_PASSWORD=bigschool_root`. Corregido el fallback (configurable por `BIGSCHOOL_TEST_MYSQL`).
+- **`Microsoft.Extensions.Http` no transitivo** en class libraries: `IHttpClientFactory` no resolvía en Infrastructure → añadido el paquete explícito + versión centralizada en `Directory.Build.props`.
+- **Interpolación de JSON en raw string** (`$$"""..."""`) daba CS9007 por las `}}` finales del JSON → el body del fake WireMock se construye con `JsonSerializer.Serialize(new { ... })`, más limpio y sin ambigüedad de compilador.
+
+**Resultado / Estado:**
+- Plan 2A completado (9/9 tareas, PRs #29-#36). Build 0 errores; unit tests Domain/Application en verde; 2 tests de integración PASS contra MySQL de docker-compose.
+- Cimientos multimoneda listos y reutilizables tal cual por el BC Transaction (Plan 2B) y por Inversiones (Plan 3).
+
+**Siguiente paso:**
+- [ ] Plan 2B — BC Finanzas Personales: agregado `Transaction` con `MoneyConversion`, CQRS completo y endpoints. Incluye, como tarea final, el refactor de `ExchangeRateApiClient` a la convención SQL/Dapper.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:

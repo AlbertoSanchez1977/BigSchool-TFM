@@ -79,10 +79,38 @@ Application/
 │       └── MonthlyExpensesDto.cs
 ```
 
+### Dapper y SQL (Queries / acceso con `IDbConnectionFactory`)
+- **SQL como `private const string` a nivel de clase, en UPPERCASE terminado en `_QUERY`** (p. ej. `GETTRANSACTIONSUMMARY_QUERY`). Coherente con la convención de constantes UPPERCASE ya consolidada en el proyecto (p. ej. `MEMORY_COST`, `PURPOSE`). **No** incrustar SQL en línea dentro del método: la consulta vive como constante legible, reutilizable y localizable por nombre.
+- **Parámetros con `DynamicParameters`**, no objetos anónimos: hace explícito cada parámetro (`parameters.Add("@Id", id)`), permite construirlos condicionalmente y deja la query como cadena pura.
+- El método solo orquesta: arma los parámetros, abre la conexión y ejecuta la query nombrada.
+
+```csharp
+public sealed class ExchangeRateReader
+{
+    private const string READRATEBYPAIRANDDATE_QUERY = @"SELECT Rate
+                                                         FROM ExchangeRates
+                                                         WHERE FromCurrency = @From
+                                                           AND ToCurrency   = @To
+                                                           AND RateDate     = @Date
+                                                         LIMIT 1;";
+
+    public async Task<decimal?> ReadRateAsync(Currency from, Currency to, DateOnly date)
+    {
+        var parameters = new DynamicParameters();
+        parameters.Add("@From", from.ToString());
+        parameters.Add("@To", to.ToString());
+        parameters.Add("@Date", date.ToDateTime(TimeOnly.MinValue).Date);
+
+        using var conn = _dbFactory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<decimal?>(READRATEBYPAIRANDDATE_QUERY, parameters);
+    }
+}
+```
+
 ### Testing
 - **Unitarios**: Domain y Application (mocking de Infrastructure)
-- **Integración**: WebApi con TestServer + BD MySQL en Docker
-- Framework: xUnit + FluentAssertions + Moq + Testcontainers
+- **Integración**: BD MySQL real de docker-compose (BD dedicada `bigschool_test` migrada por EF, fixture `ICollectionFixture`) + `WebApplicationFactory<Program>` para E2E; WireMock.Net para fakear servidores HTTP externos
+- Framework: xUnit + FluentAssertions + Moq + WireMock.Net + MySqlConnector/Dapper + Microsoft.AspNetCore.Mvc.Testing
 - Cobertura mínima: 80% en Domain y Application
 - **Un fichero de test por clase bajo prueba**, nombrado `{ClaseBajoPrueba}Tests.cs` (p. ej. `CreateExpenseCommandHandlerTests`). No agrupar varias clases/handlers en un mismo fichero de test.
 

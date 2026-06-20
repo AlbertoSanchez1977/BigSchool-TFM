@@ -1203,11 +1203,11 @@ git add -A && git commit -m "test: integración de ExchangeRates (migración + c
 - Modify: `docs/02-backend-design.md`
 - Modify: `docs/diario.md`
 
-- [ ] **Step 1: Añadir ADR-006 en `docs/01-arquitectura.md`**
+- [x] **Step 1: Añadir ADR-006 en `docs/01-arquitectura.md`** _(ya presente: se añadió al redactar la spec; verificado)_
 
 Añadir al final de la sección de ADRs un nuevo apartado **ADR-006: Soporte multimoneda**, cubriendo: moneda base por usuario (`Users.BaseCurrency`); modelo de conversión por snapshot (`MoneyConversion`: original + tipo + convertido + fecha, sin reconversión retroactiva); `Currency` como enum persistido `CHAR(3)`; proveedor externo (Frankfurter/ECB) + cache `ExchangeRates` con Dapper desacoplado del UoW; y las simplificaciones TFM (set reducido de divisas, `DECIMAL(18,2)`/`(18,6)`, cache por día). Mantener el formato de los ADR existentes (Contexto / Decisión / Consecuencias).
 
-- [ ] **Step 2: Actualizar `docs/02-backend-design.md`**
+- [x] **Step 2: Actualizar `docs/02-backend-design.md`**
 
 - `Users`: añadir fila `BaseCurrency | CHAR(3) | NOT NULL, DEFAULT 'EUR'`.
 - Nueva tabla `ExchangeRates` (columnas de la spec §5.1: IdExchangeRate, FromCurrency, ToCurrency, Rate DECIMAL(18,6), RateDate DATE, Source, FetchedAt; `UNIQUE(FromCurrency, ToCurrency, RateDate)`), marcada como reference data (no AR, no soft-delete).
@@ -1216,11 +1216,11 @@ Añadir al final de la sección de ADRs un nuevo apartado **ADR-006: Soporte mul
 - Sección interfaces/services: añadir `IExchangeRateProvider` / `ExchangeRateApiClient`.
 - Nota: prever `Currency` + snapshot en `Holdings`/`Valuations` para Plan 3.
 
-- [ ] **Step 3: Actualizar `docs/diario.md`**
+- [x] **Step 3: Actualizar `docs/diario.md`**
 
 Añadir entrada con fecha indicando que se han implementado los cimientos multimoneda (Plan 2A): `Currency`/`Money`/`MoneyConversion`, `Users.BaseCurrency` + migración, tabla `ExchangeRates` + seed, `IExchangeRateProvider`/`ExchangeRateApiClient` (Frankfurter + cache Dapper), y que queda pendiente el BC Transaction (Plan 2B).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "docs: ADR-006 multimoneda, actualizar diseño backend y diario (Plan 2A)"
@@ -1242,14 +1242,28 @@ Expected: todos los tests PASS (los de integración requieren Docker).
 
 - [ ] **Checklist de cobertura de la spec**
 
-- [ ] `Currency` enum (spec §3.1) — Task 1
-- [ ] `Money` VO (spec §3.2) — Task 2
-- [ ] `MoneyConversion` VO (spec §3.3) — Task 3
-- [ ] `Users.BaseCurrency` + migración (spec §4) — Task 4
-- [ ] `ExchangeRate` + config + tabla + seed (spec §5.1, §5.3) — Task 5
-- [ ] `IExchangeRateProvider` (spec §5.1) — Task 6
-- [ ] `ExchangeRateApiClient` (Dapper UPSERT + Frankfurter, spec §5.1, §5.2) — Task 7
-- [ ] Tests integración cache hit/miss + migración (spec §9) — Task 8
-- [ ] ADR-006 + docs (spec §8) — Task 9
+- [x] `Currency` enum (spec §3.1) — Task 1
+- [x] `Money` VO (spec §3.2) — Task 2
+- [x] `MoneyConversion` VO (spec §3.3) — Task 3
+- [x] `Users.BaseCurrency` + migración (spec §4) — Task 4
+- [x] `ExchangeRate` + config + tabla + seed (spec §5.1, §5.3) — Task 5
+- [x] `IExchangeRateProvider` (spec §5.1) — Task 6
+- [x] `ExchangeRateApiClient` (Dapper UPSERT + Frankfurter, spec §5.1, §5.2) — Task 7
+- [x] Tests integración cache hit/miss + migración (spec §9) — Task 8
+- [x] ADR-006 + docs (spec §8) — Task 9
 
 **Pendiente para Plan 2B:** entidad `Transaction` (AR completa con `MoneyConversion` owned type), `TransactionConfiguration`, migración `Transactions`, `ITransactionRepository`, CQRS (Create/Update/Delete + queries Dapper consolidadas en base), validators, endpoints `/api/v1/transactions` y `/api/v1/categories`, flujo de conversión en `CreateTransactionHandler`.
+
+---
+
+## Anexo A — Deuda técnica: convención SQL/Dapper en `ExchangeRateApiClient`
+
+**Fecha**: 2026-06-20 (durante Task 9)
+
+**Contexto**: `ExchangeRateApiClient` (Task 7) se implementó con el SQL **incrustado en línea** dentro de cada método (`const string sql` local) y los parámetros como **objetos anónimos** (`new { From = ..., To = ... }`). Posteriormente se consolidó la convención SQL/Dapper del proyecto (ver `src/backend/AGENTS.md` › *Dapper y SQL*): **SQL como `private const string` a nivel de clase en UPPERCASE terminado en `_QUERY`** + **parámetros con `DynamicParameters`**.
+
+**Decisión**: NO se reabre la Task 7 ya mergeada dentro de Plan 2A. El refactor de `ExchangeRateApiClient` a la convención se ejecuta como **tarea propia dentro de Plan 2B** (donde se toca intensivamente la capa Dapper y la convención está fresca). Es un cambio de **estilo/consistencia, sin cambio de comportamiento**; los tests de integración de Task 8 (cache hit/miss) sirven de red de seguridad para el refactor.
+
+**Alcance del refactor pendiente** (4 queries del cliente): `ReadCacheAsync`, `ReadLastKnownAsync`, `UpsertCacheAsync` y la lectura asociada → extraer a `private const string ..._QUERY` a nivel de clase y migrar los objetos anónimos a `DynamicParameters`.
+
+**Seguimiento**: planificado como la última tarea de `docs/superpowers/plans/2026-06-18-backend-finanzas-transactions.md` (Plan 2B).
