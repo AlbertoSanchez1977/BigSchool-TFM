@@ -18,7 +18,29 @@ public class Transaction : BaseEntity, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Transaction() { }
+    protected Transaction() { } // EF Core
+
+    private Transaction(
+        int userId,
+        TransactionType type,
+        MainCategory category,
+        int? subCategoryId,
+        string? description,
+        DateOnly transactionDate,
+        MoneyConversion conversion,
+        EntityStatus idStatus,
+        DateTime createdAt)
+    {
+        IdUser = userId;
+        Type = type;
+        IdMainCategory = category;
+        IdSubCategory = subCategoryId;
+        Description = description;
+        TransactionDate = transactionDate;
+        Conversion = conversion;
+        IdStatus = idStatus;
+        CreatedAt = createdAt;
+    }
 
     public static Transaction Create(
         int userId,
@@ -37,18 +59,16 @@ public class Transaction : BaseEntity, IAggregateRoot
         if (original.Amount <= 0m)
             throw new ArgumentException("El importe debe ser mayor que cero.", nameof(original));
 
-        var transaction = new Transaction
-        {
-            IdUser = userId,
-            Type = type,
-            IdMainCategory = category,
-            IdSubCategory = subCategoryId,
-            Description = description?.Trim(),
-            TransactionDate = transactionDate,
-            Conversion = MoneyConversion.Create(original, baseCurrency, rate, rateDate),
-            IdStatus = EntityStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+        var transaction = new Transaction(
+            userId,
+            type,
+            category,
+            subCategoryId,
+            description?.Trim(),
+            transactionDate,
+            MoneyConversion.Create(original, baseCurrency, rate, rateDate),
+            EntityStatus.Active,
+            DateTime.UtcNow);
 
         transaction.RaiseDomainEvent(new TransactionCreatedEvent(transaction));
 
