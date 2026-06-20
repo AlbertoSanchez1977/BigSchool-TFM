@@ -116,8 +116,10 @@ try
     // HttpClient factory (para IHttpClientFactory en ExchangeRateApiClient)
     builder.Services.AddHttpClient();
 
-    // Controllers
-    builder.Services.AddControllers();
+    // Controllers — JsonStringEnumConverter: acepta nombres string ("USD") e ints (840) para enums
+    builder.Services.AddControllers()
+        .AddJsonOptions(o =>
+            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
     // Health checks
     builder.Services.AddHealthChecks();
