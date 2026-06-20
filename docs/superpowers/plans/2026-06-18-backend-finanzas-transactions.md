@@ -74,7 +74,7 @@
 
 **Nota de diseño:** `Transaction.Create(int userId, TransactionType type, MainCategory category, int? subCategoryId, string? description, Money original, Currency baseCurrency, decimal rate, DateOnly transactionDate, DateOnly rateDate)`. La factory valida (importe > 0, userId > 0) y construye el `MoneyConversion` vía `MoneyConversion.Create(original, baseCurrency, rate, rateDate)`. `Update` permite cambiar categoría/descr./fecha/importe re-construyendo el snapshot (recibe `rate` ya resuelto). `Delete` marca `IdStatus = Deleted`. Implementa `IAggregateRoot` y hereda `BaseEntity`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```csharp
 // src/backend/tests/BigSchool.Domain.Tests/Entities/TransactionTests.cs
@@ -171,12 +171,12 @@ public class TransactionTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test y ver que falla**
+- [x] **Step 2: Ejecutar el test y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~TransactionTests"`
 Expected: FAIL de compilación — `Transaction`/`TransactionCreatedEvent` no existen.
 
-- [ ] **Step 3: Crear el evento de dominio**
+- [x] **Step 3: Crear el evento de dominio**
 
 **Convención de eventos de dominio (obligatoria):** los `DomainEvent` reciben **la entidad de dominio completa** (es una referencia/puntero), no parámetros individuales. El handler extrae del agregado lo que necesite. Solo si un dato necesario no estuviera en la entidad se añadiría como parámetro extra del record. Esto mantiene el evento desacoplado de la forma concreta del consumidor.
 
@@ -192,7 +192,7 @@ public sealed record TransactionCreatedEvent(Transaction Transaction) : IDomainE
 }
 ```
 
-- [ ] **Step 4: Implementar la entidad `Transaction`**
+- [x] **Step 4: Implementar la entidad `Transaction`**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Entities/Transaction.cs
@@ -304,12 +304,12 @@ public class Transaction : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 5: Ejecutar el test y ver que pasa**
+- [x] **Step 5: Ejecutar el test y ver que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests --filter "FullyQualifiedName~TransactionTests"`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: implementar agregado Transaction con snapshot MoneyConversion y evento"
@@ -326,7 +326,7 @@ git add -A && git commit -m "feat: implementar agregado Transaction con snapshot
 
 **Nota de diseño:** `Conversion` es owned type anidado: `OwnsOne(t => t.Conversion, ...)` que a su vez `OwnsOne` sobre `Original` y `Base` (cada uno → columnas `*Amount`/`*Currency`). El `Currency` se mapea con `CurrencyConverter.CharIso`. La FK a `Users` es escalar (`IdUser`), sin navegación. Global Query Filter por `IdStatus != Deleted` (igual que `User`). Se añade `DbSet<Transaction>` al contexto.
 
-- [ ] **Step 1: Crear la configuración**
+- [x] **Step 1: Crear la configuración**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/TransactionConfiguration.cs
@@ -401,7 +401,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 }
 ```
 
-- [ ] **Step 2: Registrar el DbSet en el contexto**
+- [x] **Step 2: Registrar el DbSet en el contexto**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`, sustituir la línea comentada `// public DbSet<Transaction> Transactions => Set<Transaction>();` por:
 
@@ -409,7 +409,7 @@ En `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`,
     public DbSet<Transaction> Transactions => Set<Transaction>();
 ```
 
-- [ ] **Step 3: Generar la migración**
+- [x] **Step 3: Generar la migración**
 
 Run (desde `src/backend`):
 ```bash
@@ -420,12 +420,12 @@ dotnet ef migrations add CreateTransactions \
 ```
 Expected: `CreateTable("Transactions", ...)` con las columnas del snapshot (`OriginalAmount`, `OriginalCurrency`, `ExchangeRate`, `BaseAmount`, `BaseCurrency`, `RateDate`), FKs a `Users` y `SubCategories`, índice `(IdUser, TransactionDate)`.
 
-- [ ] **Step 4: Verificar build**
+- [x] **Step 4: Verificar build**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: configurar persistencia de Transactions (owned MoneyConversion) y migración"

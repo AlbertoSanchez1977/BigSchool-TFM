@@ -9,6 +9,10 @@ namespace BigSchool.Domain.ValueObjects;
 /// </summary>
 public sealed record MoneyConversion(Money Original, decimal Rate, Money Base, DateOnly RateDate)
 {
+    // EF Core no puede pasar owned navigations como parámetros de constructor;
+    // este ctor vacío le permite materializar el tipo y rellenar propiedades vía init.
+    private MoneyConversion() : this(null!, 0m, null!, default) { }
+
     public static MoneyConversion Create(Money original, Currency baseCurrency, decimal rate, DateOnly rateDate)
     {
         if (rate <= 0m)
