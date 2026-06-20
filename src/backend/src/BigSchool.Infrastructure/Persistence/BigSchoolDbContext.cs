@@ -25,8 +25,8 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     // Entidades hijas — DbSet necesario para EF Core migrations/queries
     // El acceso de escritura se hace siempre a través del Aggregate Root
     public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
     // TODO: Tasks futuras — Entidades no implementadas aún
-    // public DbSet<Transaction> Transactions => Set<Transaction>();
     // public DbSet<Holding> Holdings => Set<Holding>();
     // public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
 
