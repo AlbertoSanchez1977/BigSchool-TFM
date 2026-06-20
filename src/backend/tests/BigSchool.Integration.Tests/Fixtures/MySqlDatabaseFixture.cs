@@ -53,12 +53,16 @@ public sealed class MySqlDatabaseFixture : IAsyncLifetime
         await admin.ExecuteAsync($"DROP DATABASE IF EXISTS `{TestDatabase}`;");
     }
 
-    /// <summary>Reset entre tests: conserva esquema + seed global, limpia datos mutables.</summary>
+    /// <summary>Reset entre tests: conserva esquema + seed global (SubCategories globales, ExchangeRates 'seed'), limpia datos mutables.</summary>
     public async Task ResetAsync()
     {
         await using var conn = new MySqlConnection(ConnectionString);
         await conn.OpenAsync();
-        // Plan 2A solo tiene ExchangeRates como dato mutable. Plan 2B amplía este reset (Transactions, Users).
+        await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 0;");
+        await conn.ExecuteAsync("TRUNCATE TABLE Transactions;");
+        await conn.ExecuteAsync("DELETE FROM SubCategories WHERE IdUser IS NOT NULL;");
+        await conn.ExecuteAsync("DELETE FROM Users;");
         await conn.ExecuteAsync("DELETE FROM ExchangeRates WHERE Source <> 'seed';");
+        await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 1;");
     }
 }

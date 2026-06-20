@@ -1694,7 +1694,7 @@ git add -A && git commit -m "feat: añadir endpoints de transacciones y categor�
 
 **Nota sobre el body:** en el happy path se **omite `currency`** (la API la default-ea a la moneda base del usuario, EUR, con `rate = 1` y sin red). Así el E2E no se acopla a la (de)serialización de enums del controller (hoy numérica). Ejercitar conversión USD→EUR por endpoint queda fuera del mínimo E2E (ya cubierto en unit + en el flujo de `CreateTransactionCommandHandler`).
 
-- [ ] **Step 1: Ampliar el reset del fixture compartido (de Plan 2A) con `Transactions`/`Users`**
+- [x] **Step 1: Ampliar el reset del fixture compartido (de Plan 2A) con `Transactions`/`Users`**
 
 En `src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs`, sustituir el cuerpo de `ResetAsync` por:
 
@@ -1717,7 +1717,7 @@ En `src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.
 
 **Fallback** si MySqlConnector rechazara el multi-statement en un solo `ExecuteAsync`: separar en llamadas `ExecuteAsync` individuales (una por sentencia), manteniendo el `SET FOREIGN_KEY_CHECKS` al principio/fin.
 
-- [ ] **Step 2: Crear el `WebApplicationFactory` que apunta a la BD de test**
+- [x] **Step 2: Crear el `WebApplicationFactory` que apunta a la BD de test**
 
 ```csharp
 // src/backend/tests/BigSchool.Integration.Tests/Fixtures/BigSchoolWebAppFactory.cs
@@ -1752,7 +1752,7 @@ public sealed class BigSchoolWebAppFactory : WebApplicationFactory<Program>
 
 **Nota:** el resto de configuración (`Jwt:Secret`/`Issuer`/`Audience`, etc.) sale del `appsettings*.json` del WebApi que el factory carga por defecto, de modo que el token acuñado por `IJwtService` y la validación `JwtBearer` comparten el mismo secreto.
 
-- [ ] **Step 3: Escribir los tests E2E (happy path + 401)**
+- [x] **Step 3: Escribir los tests E2E (happy path + 401)**
 
 ```csharp
 // src/backend/tests/BigSchool.Integration.Tests/Transactions/TransactionsEndpointTests.cs
@@ -1862,14 +1862,14 @@ public class TransactionsEndpointTests : IAsyncLifetime
 }
 ```
 
-- [ ] **Step 4: Ejecutar los tests de integración**
+- [x] **Step 4: Ejecutar los tests de integración**
 
 Prerequisito: el servicio `mysql` de `infra/docker-compose` levantado (ver Plan 2A, Task 8). El fixture compartido ya creó/migró `bigschool_test`; estos tests reusan esa BD.
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests`
 Expected: PASS. Happy path (200 + summary en EUR + fila persistida) y 401 sin token.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "test: E2E de endpoints de transacciones (happy path + 401) con JWT real"
