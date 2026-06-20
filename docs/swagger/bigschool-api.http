@@ -1,0 +1,173 @@
+# BigSchool-TFM — API REST Test Stack
+# Formato: VS Code REST Client (extensión humao.rest-client)
+# Instalar: code --install-extension humao.rest-client
+#
+# WORKFLOW:
+#   1. docker-compose up -d mysql
+#   2. dotnet run --project src/backend/src/BigSchool.WebApi/BigSchool.WebApi.csproj
+#   3. Ejecutar "01 Registro" → crea demo@bigschool.com (IdUser=1)
+#   4. Ejecutar "02 Login"    → copiar data.accessToken → pegar en @token (abajo)
+#   5. Ejecutar seed.sql en Workbench: mysql -u bigschool -p bigschool < infra/docker/mysql/seed.sql
+#   6. Probar el resto de endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+@baseUrl = http://localhost:5285
+
+# ⬇ Pegar aquí el accessToken devuelto por "02 Login"
+@token = PEGAR_ACCESS_TOKEN_AQUI
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# AUTH
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 01 Registro — crear cuenta demo (ejecutar UNA sola vez)
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@bigschool.com",
+  "password": "Demo2026!",
+  "fullName": "Usuario Demo"
+}
+
+###
+
+### 02 Login — obtener token JWT (copiar data.accessToken → @token)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@bigschool.com",
+  "password": "Demo2026!"
+}
+
+###
+
+### 03 Refresh — renovar token expirado (sin body, usa el Bearer actual)
+POST {{baseUrl}}/api/v1/auth/refresh
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CATEGORIES
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 04 Listar categorías (MainCategories + SubCategories globales y propias)
+GET {{baseUrl}}/api/v1/categories
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# TRANSACTIONS — CRUD
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 05 Crear gasto en EUR (sin currency → usa BaseCurrency=EUR, rate=1, sin llamada externa)
+# Type: 0=Income | 1=Expense
+# IdMainCategory: 1=EssentialExpenses, 2=Investment, 3=Savings, 4=Donations, 5=Luxuries,
+#                 6=Education, 7=Amortizations, 10=Salary, 11=Rentals, 12=Dividends, 13=Other
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "type": 1,
+  "idMainCategory": 1,
+  "idSubCategory": 1,
+  "description": "Compra test Mercadona",
+  "transactionDate": "2026-06-20",
+  "amount": 75.50
+}
+
+###
+
+### 06 Crear ingreso con moneda explícita USD → llama a Frankfurter o usa caché ExchangeRates
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "type": 0,
+  "idMainCategory": 13,
+  "idSubCategory": 28,
+  "description": "Pago plataforma online USD",
+  "transactionDate": "2026-06-15",
+  "amount": 100.00,
+  "currency": "USD"
+}
+
+###
+
+### 07 Obtener transacción por ID (cambiar 1 por el ID real devuelto en 05/06)
+GET {{baseUrl}}/api/v1/transactions/1
+Authorization: Bearer {{token}}
+
+###
+
+### 08 Listar transacciones — sin filtros, página 1
+GET {{baseUrl}}/api/v1/transactions?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+### 09 Listar transacciones — filtros: solo gastos de marzo-mayo 2026
+GET {{baseUrl}}/api/v1/transactions?type=1&from=2026-03-01&to=2026-05-31&page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+###
+
+### 10 Listar transacciones — solo ingresos, categoría Salary (10)
+GET {{baseUrl}}/api/v1/transactions?type=0&category=10&page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+###
+
+### 11 Actualizar transacción (reemplazar 1 por un ID existente)
+PUT {{baseUrl}}/api/v1/transactions/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "type": 1,
+  "idMainCategory": 1,
+  "idSubCategory": 3,
+  "description": "Factura luz actualizada",
+  "transactionDate": "2026-06-20",
+  "amount": 118.00
+}
+
+###
+
+### 12 Eliminar transacción — soft-delete (IdStatus=Deleted, Global Query Filter la oculta)
+DELETE {{baseUrl}}/api/v1/transactions/1
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# TRANSACTIONS — QUERIES AGREGADAS
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 13 Resumen total — todos los datos del usuario (sin rango de fechas)
+# Respuesta: { totalIncome, totalExpense, balance, baseCurrency }
+GET {{baseUrl}}/api/v1/transactions/summary
+Authorization: Bearer {{token}}
+
+###
+
+### 14 Resumen — rango marzo-mayo 2026 (los 3 meses del seed)
+GET {{baseUrl}}/api/v1/transactions/summary?from=2026-03-01&to=2026-05-31
+Authorization: Bearer {{token}}
+
+###
+
+### 15 Gráfica mensual — año 2026
+# Respuesta: lista de { year, month, totalIncome, totalExpense } para graficar barras
+GET {{baseUrl}}/api/v1/transactions/monthly-chart?year=2026
+Authorization: Bearer {{token}}
+
+###
