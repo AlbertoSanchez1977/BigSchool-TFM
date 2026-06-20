@@ -47,6 +47,7 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BigSchoolDbContext).Assembly);
         modelBuilder.SeedSubCategories();
+        modelBuilder.SeedExchangeRates();
     }
 
     private async Task DispatchDomainEvents()
