@@ -1051,7 +1051,7 @@ git add -A && git commit -m "feat: añadir UpdateTransaction y DeleteTransaction
 
 **Convención SQL/Dapper (ver Decisión 7 y `AGENTS.md`):** cada handler declara su SQL como `private const string ..._QUERY` (UPPERCASE) a nivel de clase y pasa los parámetros con `DynamicParameters`. Los bloques siguientes ya la aplican.
 
-- [ ] **Step 1: Crear `PagedResult<T>`**
+- [x] **Step 1: Crear `PagedResult<T>`**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Common/PagedResult.cs
@@ -1060,7 +1060,7 @@ namespace BigSchool.Application.Common;
 public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 ```
 
-- [ ] **Step 2: Escribir un test de query que falle (GetTransactionSummary, lógica de DTO/SQL params)**
+- [x] **Step 2: Escribir un test de query que falle (GetTransactionSummary, lógica de DTO/SQL params)**
 
 Las queries Dapper se validan principalmente en integración (Task 9). Aquí cubrimos que el handler construye el DTO y los parámetros correctos usando un `IDbConnectionFactory` real en memoria es inviable con MySQL; por tanto **este Step se cubre en integración**. Crear solo un test de contrato del `GetTransactionsQuery` (que la paginación normaliza valores):
 
@@ -1094,12 +1094,12 @@ public class GetTransactionsQueryTests
 }
 ```
 
-- [ ] **Step 3: Ejecutar y ver que falla**
+- [x] **Step 3: Ejecutar y ver que falla**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~GetTransactionsQueryTests"`
 Expected: FAIL de compilación.
 
-- [ ] **Step 4: Crear `GetTransactionById`**
+- [x] **Step 4: Crear `GetTransactionById`**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Queries/Transactions/GetTransactionById/GetTransactionByIdQuery.cs
@@ -1150,7 +1150,7 @@ public class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionById
 
 Reemplazar el tipo de retorno por `TransactionListItemDto` (definido en el Step 5) y el `SELECT` deja las monedas como `string`. (El `TransactionDto` con enums se mantiene solo para las respuestas de los commands, donde se construye desde el dominio.)
 
-- [ ] **Step 5: Crear `GetTransactions` (paginación + filtros) y `TransactionListItemDto`**
+- [x] **Step 5: Crear `GetTransactions` (paginación + filtros) y `TransactionListItemDto`**
 
 ```csharp
 // src/backend/src/BigSchool.Application/DTOs/Transactions/TransactionListItemDto.cs
@@ -1257,11 +1257,11 @@ public class GetTransactionsQueryHandler
 }
 ```
 
-- [ ] **Step 6: Refactor de `GetTransactionById` para devolver `TransactionListItemDto`**
+- [x] **Step 6: Refactor de `GetTransactionById` para devolver `TransactionListItemDto`**
 
 Actualizar `GetTransactionByIdQuery` a `IRequest<TransactionListItemDto?>` y el handler a `QuerySingleOrDefaultAsync<TransactionListItemDto>` (mismo `SELECT` del Step 4, monedas como `string`).
 
-- [ ] **Step 7: Crear `GetTransactionSummary` (consolidado en base)**
+- [x] **Step 7: Crear `GetTransactionSummary` (consolidado en base)**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Queries/Transactions/GetTransactionSummary/TransactionSummaryDto.cs
@@ -1324,7 +1324,7 @@ public class GetTransactionSummaryQueryHandler : IRequestHandler<GetTransactionS
 }
 ```
 
-- [ ] **Step 8: Crear `GetMonthlyChart`**
+- [x] **Step 8: Crear `GetMonthlyChart`**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Queries/Transactions/GetMonthlyChart/MonthlyChartPointDto.cs
@@ -1385,14 +1385,14 @@ public class GetMonthlyChartQueryHandler
 }
 ```
 
-- [ ] **Step 9: Ejecutar los tests de query y build**
+- [x] **Step 9: Ejecutar los tests de query y build**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests --filter "FullyQualifiedName~GetTransactionsQueryTests"`
 Expected: PASS.
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir queries Dapper de transacciones consolidadas en moneda base"
