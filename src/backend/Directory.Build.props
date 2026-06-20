@@ -35,5 +35,7 @@
     <!-- Infrastructure -->
     <OptionsVersion>9.0.0</OptionsVersion>
     <HttpExtensionsVersion>8.0.1</HttpExtensionsVersion>
+    <WireMockVersion>1.6.7</WireMockVersion>
+    <MySqlConnectorVersion>2.3.7</MySqlConnectorVersion>
   </PropertyGroup>
 </Project>

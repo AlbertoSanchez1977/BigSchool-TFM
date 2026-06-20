@@ -946,7 +946,7 @@ Con esto se prueba: (a) la tabla `ExchangeRates` existe con el seed (migraciones
 
 **Requisito:** el servicio `mysql` de `infra/docker-compose` debe estar levantado antes de correr los tests de integración (no son CI-friendly sin compose; es una decisión consciente para esta entrega de TFM).
 
-- [ ] **Step 1: Añadir las versiones a `Directory.Build.props`**
+- [x] **Step 1: Añadir las versiones a `Directory.Build.props`**
 
 En `src/backend/Directory.Build.props`, dentro del `<PropertyGroup>` de versiones, añadir:
 
@@ -955,7 +955,7 @@ En `src/backend/Directory.Build.props`, dentro del `<PropertyGroup>` de versione
     <MySqlConnectorVersion>2.3.7</MySqlConnectorVersion>
 ```
 
-- [ ] **Step 2: Ajustar paquetes del csproj de integración**
+- [x] **Step 2: Ajustar paquetes del csproj de integración**
 
 En `src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj`:
 
@@ -976,7 +976,7 @@ En `src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.cs
 
 (Conservar `Microsoft.AspNetCore.Mvc.Testing`: lo usa el E2E de Plan 2B.)
 
-- [ ] **Step 3: Crear el fixture compartido + la colección de integración**
+- [x] **Step 3: Crear el fixture compartido + la colección de integración**
 
 ```csharp
 // src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs
@@ -1063,7 +1063,7 @@ public class IntegrationCollection : ICollectionFixture<MySqlDatabaseFixture>
 }
 ```
 
-- [ ] **Step 4: Test del seed de `ExchangeRates` (migraciones ya aplicadas por el fixture)**
+- [x] **Step 4: Test del seed de `ExchangeRates` (migraciones ya aplicadas por el fixture)**
 
 ```csharp
 // src/backend/tests/BigSchool.Integration.Tests/Persistence/ExchangeRateSeedTests.cs
@@ -1095,7 +1095,7 @@ public class ExchangeRateSeedTests
 }
 ```
 
-- [ ] **Step 5: Test de cache hit/miss con WireMock**
+- [x] **Step 5: Test de cache hit/miss con WireMock**
 
 ```csharp
 // src/backend/tests/BigSchool.Integration.Tests/Services/ExchangeRateApiClientIntegrationTests.cs
@@ -1181,14 +1181,14 @@ public class ExchangeRateApiClientIntegrationTests : IAsyncLifetime
 }
 ```
 
-- [ ] **Step 6: Ejecutar los tests de integración**
+- [x] **Step 6: Ejecutar los tests de integración**
 
 Prerequisito: el servicio `mysql` de `infra/docker-compose` debe estar levantado (`docker compose -f infra/docker-compose.yml -f infra/docker-compose.override.yml up -d mysql`). Si las credenciales del `.env` difieren del default, exportar `BIGSCHOOL_TEST_MYSQL` (p. ej. `Server=localhost;Port=3306;User ID=root;Password=<MYSQL_ROOT_PASSWORD>;`).
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests`
 Expected: PASS. El fixture crea/migra/destruye `bigschool_test` una sola vez; no toca la BD `bigschool` de desarrollo.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "test: integración de ExchangeRates (migración + cache hit/miss con WireMock)"
