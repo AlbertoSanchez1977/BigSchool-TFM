@@ -150,15 +150,20 @@ public enum EntityStatus : short
 public enum EntityStatus : short { Pending = 1, Active = 2, Processing = 3, Deleted = 4 }
 ```
 
+**TransactionType** (SMALLINT en BD — persiste como entero):
+```csharp
+public enum TransactionType { Income = 0, Expense = 1 }
+```
+
 **MainCategory** (INT en BD):
 ```csharp
 public enum MainCategory
 {
-    // EXPENSE
-    GastosNecesarios = 1, Inversion = 2, Ahorro = 3, Donaciones = 4,
-    Lujos = 5, Educacion = 6, Amortizaciones = 7,
-    // INCOME
-    Nomina = 10, Alquileres = 11, Dividendos = 12, Otros = 13
+    // Expense
+    EssentialExpenses = 1, Investment = 2, Savings = 3, Donations = 4,
+    Luxuries = 5, Education = 6, Amortizations = 7,
+    // Income
+    Salary = 10, Rentals = 11, Dividends = 12, Other = 13
 }
 ```
 
@@ -224,24 +229,23 @@ Subcategorías predefinidas (ejemplos):
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdTransaction | INT | PK, AUTO_INCREMENT |
-| IdUser | INT | FK → Users, NOT NULL |
-| Type | ENUM('INCOME','EXPENSE') | NOT NULL |
+| IdUser | INT | FK → Users ON DELETE CASCADE, NOT NULL |
+| Type | SMALLINT | NOT NULL (enum TransactionType: Income=0, Expense=1) |
 | IdMainCategory | INT | NOT NULL (enum MainCategory) |
-| IdSubCategory | INT | FK → SubCategories, NULL |
-| OriginalAmount | DECIMAL(18,2) | NOT NULL, > 0 (importe en moneda original) |
-| OriginalCurrency | CHAR(3) | NOT NULL (enum Currency) |
-| ExchangeRate | DECIMAL(18,6) | NOT NULL (tipo Original→Base; 1 si misma moneda) |
-| BaseAmount | DECIMAL(18,2) | NOT NULL (= OriginalAmount × ExchangeRate) |
-| BaseCurrency | CHAR(3) | NOT NULL (snapshot moneda base del usuario) |
-| RateDate | DATE | NOT NULL (fecha del tipo aplicado) |
+| IdSubCategory | INT | FK → SubCategories ON DELETE SET NULL, NULL |
 | Description | VARCHAR(500) | NULL |
-| Date | DATE | NOT NULL |
-| IsRecurrent | BOOLEAN | DEFAULT FALSE |
-| RecurrencePeriod | ENUM('MONTHLY','QUARTERLY','YEARLY') | NULL |
+| TransactionDate | DATE | NOT NULL |
+| OriginalAmount | DECIMAL(18,2) | NOT NULL, > 0 (importe en moneda original) |
+| OriginalCurrency | CHAR(3) | NOT NULL (enum Currency — snapshot) |
+| ExchangeRate | DECIMAL(18,6) | NOT NULL (tipo Original→Base; 1 si misma moneda) |
+| BaseAmount | DECIMAL(18,2) | NOT NULL (= OriginalAmount × ExchangeRate, moneda base del usuario) |
+| BaseCurrency | CHAR(3) | NOT NULL (snapshot moneda base del usuario en el momento de la transacción) |
+| RateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
-| | | _Las 6 columnas de importe/moneda son el VO `MoneyConversion` (owned type): `Original` (OriginalAmount+OriginalCurrency) + `Rate` + `Base` (BaseAmount+BaseCurrency) + `RateDate`._ |
+| | | INDEX `(IdUser, TransactionDate)` para consultas paginadas y gráficas |
+| | | _Las 6 columnas de importe/moneda son el VO `MoneyConversion` (EF owned type): `Original` (OriginalAmount+OriginalCurrency) + `Rate` + `Base` (BaseAmount+BaseCurrency) + `RateDate`. Se calculan en `Transaction.Create()` — el dominio recibe el `Rate` ya resuelto desde Application._ |
 
 #### Companies
 | Campo | Tipo | Restricciones |
@@ -408,7 +412,7 @@ var transactions = await connection.QueryAsync<TransactionDto>(sql, new { UserId
 | Transacciones | UnitOfWork (DbContext) | Conexión directa MySQL |
 | Rendimiento | Correcto para escritura | Óptimo (SQL puro) |
 
-**Consolidación multimoneda**: las queries de agregación (summary, gráficas, balance) operan sobre `BaseAmount` (moneda base del usuario) para que los totales sean coherentes. Opcionalmente pueden devolver desglose por `OriginalCurrency`.
+**Consolidación multimoneda**: las queries de agregación (summary, gráficas, balance) operan **exclusivamente sobre `BaseAmount`** (snapshot de la moneda base del usuario en el momento de la transacción). Esto garantiza totales coherentes independientemente de cuántas monedas originales haya en el periodo. `TransactionSummaryDto` expone `TotalIncome`, `TotalExpense`, `Balance` y `BaseCurrency` (el código ISO alpha-3 del snapshot). `GetMonthlyChartQuery` agrupa por `YEAR(TransactionDate), MONTH(TransactionDate)` y devuelve `IReadOnlyList<MonthlyChartPointDto>`. La moneda original queda en `OriginalAmount`/`OriginalCurrency` para desglose si se necesita en el futuro.
 
 ### Domain Events (patrón DDD puro)
 
@@ -580,22 +584,22 @@ public class PortfolioProfile : Profile
 ### Transactions (Gastos/Ingresos)
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | /api/v1/transactions | Listar (filtros, paginación) — Dapper |
-| GET | /api/v1/transactions/{id} | Detalle — Dapper |
 | POST | /api/v1/transactions | Crear — EF Core |
-| PUT | /api/v1/transactions/{id} | Actualizar — EF Core |
+| PUT | /api/v1/transactions/{id} | Actualizar (re-convierte importe) — EF Core |
 | DELETE | /api/v1/transactions/{id} | Borrado lógico — EF Core |
-| GET | /api/v1/transactions/summary | Resumen por periodo — Dapper |
-| GET | /api/v1/transactions/chart/monthly | Datos gráfica — Dapper |
+| GET | /api/v1/transactions/{id} | Detalle — Dapper |
+| GET | /api/v1/transactions | Listar con filtros opcionales (type, category, from, to) y paginación — Dapper |
+| GET | /api/v1/transactions/summary | Resumen Income/Expense/Balance por periodo — Dapper |
+| GET | /api/v1/transactions/monthly-chart | Datos de gráfica mensual (agrupados por año) — Dapper |
 
-> El body de `POST`/`PUT` incluye `currency` (enum `Currency`); si se omite, se asume la `BaseCurrency` del usuario. La respuesta expone importe original y `BaseAmount` consolidado.
+> El campo `currency` en el body de `POST`/`PUT` es opcional; si se omite, se asume la `BaseCurrency` del usuario (rate=1, sin red). Todas las queries de agregación consolidan sobre `BaseAmount` (moneda base del usuario). La respuesta de lista/detalle usa `TransactionListItemDto` con `string` para las monedas (Dapper no convierte CHAR(3) a enum automáticamente); las respuestas de command (`TransactionDto`) usan el enum `Currency` tipado.
 
-### SubCategories
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | /api/v1/categories | Principales + sub — Dapper |
-| POST | /api/v1/categories/sub | Crear subcategoría — EF Core |
-| DELETE | /api/v1/categories/sub/{id} | Borrado lógico — EF Core |
+### Categories
+| Método | Ruta | Descripción | Estado |
+|--------|------|-------------|--------|
+| GET | /api/v1/categories | `MainCategory`s con sus subcategorías (globales + del usuario) — Dapper | ✅ Plan 2B |
+| POST | /api/v1/categories/sub | Crear subcategoría personalizada — EF Core | ⬜ Plan futuro |
+| DELETE | /api/v1/categories/sub/{id} | Borrado lógico de subcategoría — EF Core | ⬜ Plan futuro |
 
 ### Companies
 | Método | Ruta | Descripción |

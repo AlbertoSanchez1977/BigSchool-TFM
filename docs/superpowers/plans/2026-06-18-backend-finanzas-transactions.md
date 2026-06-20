@@ -1883,17 +1883,17 @@ git add -A && git commit -m "test: E2E de endpoints de transacciones (happy path
 - Modify: `docs/02-backend-design.md`
 - Modify: `docs/diario.md`
 
-- [ ] **Step 1: Actualizar `docs/02-backend-design.md`**
+- [x] **Step 1: Actualizar `docs/02-backend-design.md`**
 
 - Completar la tabla `Transactions` con las columnas del snapshot (`OriginalAmount`, `OriginalCurrency`, `ExchangeRate`, `BaseAmount`, `BaseCurrency`, `RateDate`, FKs, índice `(IdUser, TransactionDate)`).
 - Listar los endpoints implementados de `/api/v1/transactions` (POST, PUT/{id}, DELETE/{id}, GET, GET/{id}, GET/summary, GET/monthly-chart) y `/api/v1/categories` (GET), indicando que el `currency` es opcional en creación (default a moneda base).
 - Añadir la nota CQRS: queries consolidan sobre `BaseAmount`.
 
-- [ ] **Step 2: Actualizar `docs/diario.md`**
+- [x] **Step 2: Actualizar `docs/diario.md`**
 
 Añadir entrada: BC Finanzas Personales (Plan 2B) implementado — agregado `Transaction` con snapshot multimoneda, CQRS completo (Create/Update/Delete + queries consolidadas en base), endpoints REST y tests (unit + integración). Cierra el Plan 2.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A && git commit -m "docs: actualizar diseño backend y diario con BC Transaction (Plan 2B)"
