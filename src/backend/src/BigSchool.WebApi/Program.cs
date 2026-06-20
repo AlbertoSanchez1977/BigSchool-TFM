@@ -29,6 +29,8 @@ try
         options.Jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
         options.RagService = builder.Configuration.GetSection("RagService").Get<RagServiceSettings>()
             ?? new RagServiceSettings { BaseUrl = "http://localhost:8000" };
+        options.ExchangeRate = builder.Configuration.GetSection("ExchangeRate").Get<ExchangeRateSettings>()
+            ?? new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" };
     });
 
     // Autofac como DI container (simplified: one RegisterAssemblyTypes per layer)
@@ -110,6 +112,9 @@ try
             }
         });
     });
+
+    // HttpClient factory (para IHttpClientFactory en ExchangeRateApiClient)
+    builder.Services.AddHttpClient();
 
     // Controllers
     builder.Services.AddControllers();

@@ -28,7 +28,8 @@ public class JwtServiceTests
                 Audience = "BigSchool",
                 ExpirationMinutes = 60
             },
-            RagService = new RagServiceSettings { BaseUrl = "http://localhost" }
+            RagService = new RagServiceSettings { BaseUrl = "http://localhost" },
+            ExchangeRate = new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" }
         });
         _jwtService = new JwtService(settings, _encryptor);
     }
