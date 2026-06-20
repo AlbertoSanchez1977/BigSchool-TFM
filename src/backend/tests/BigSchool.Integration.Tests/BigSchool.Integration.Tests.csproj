@@ -11,7 +11,10 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="$(MvcTestingVersion)" />
-    <PackageReference Include="Testcontainers" Version="$(TestcontainersVersion)" />
+    <PackageReference Include="WireMock.Net" Version="$(WireMockVersion)" />
+    <PackageReference Include="Dapper" Version="$(DapperVersion)" />
+    <PackageReference Include="MySqlConnector" Version="$(MySqlConnectorVersion)" />
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 
   <ItemGroup>
