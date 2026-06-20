@@ -514,7 +514,7 @@ git add -A && git commit -m "feat: añadir Users.BaseCurrency y converter de Cur
 
 **Nota de diseño:** `ExchangeRate` NO hereda de `BaseEntity` ni implementa `IAggregateRoot`: es reference data plana. NO se añade `DbSet<ExchangeRate>` al contexto (el acceso es siempre vía Dapper); EF la incluye en el modelo porque `ApplyConfigurationsFromAssembly` recoge `ExchangeRateConfiguration`. Al no tener `IdStatus`, queda fuera del Global Query Filter automáticamente.
 
-- [ ] **Step 1: Crear la entidad**
+- [x] **Step 1: Crear la entidad**
 
 ```csharp
 // src/backend/src/BigSchool.Domain/Entities/ExchangeRate.cs
@@ -540,7 +540,7 @@ public class ExchangeRate
 }
 ```
 
-- [ ] **Step 2: Crear la configuración EF (esquema)**
+- [x] **Step 2: Crear la configuración EF (esquema)**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/ExchangeRateConfiguration.cs
@@ -573,7 +573,7 @@ public class ExchangeRateConfiguration : IEntityTypeConfiguration<ExchangeRate>
 
 **Fallback** si Pomelo diera problemas con `DateOnly`: añadir `b.Property(e => e.RateDate).HasConversion<DateOnly, DateTime>(d => d.ToDateTime(TimeOnly.MinValue), dt => DateOnly.FromDateTime(dt));`
 
-- [ ] **Step 3: Añadir el seed de tipos fijos**
+- [x] **Step 3: Añadir el seed de tipos fijos**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExtensions.cs`, añadir un método tras `SeedSubCategories`:
 
@@ -594,7 +594,7 @@ En `src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExte
 
 (El `using BigSchool.Domain.Enums;` ya está al inicio del fichero.)
 
-- [ ] **Step 4: Llamar al seed desde el contexto**
+- [x] **Step 4: Llamar al seed desde el contexto**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`, dentro de `OnModelCreating`, tras `modelBuilder.SeedSubCategories();`:
 
@@ -602,7 +602,7 @@ En `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`,
         modelBuilder.SeedExchangeRates();
 ```
 
-- [ ] **Step 5: Generar la migración**
+- [x] **Step 5: Generar la migración**
 
 Run (desde `src/backend`):
 ```bash
@@ -613,12 +613,12 @@ dotnet ef migrations add CreateExchangeRates \
 ```
 Expected: migración con `CreateTable("ExchangeRates", ...)`, índice único `(FromCurrency, ToCurrency, RateDate)` y 4 `InsertData` del seed.
 
-- [ ] **Step 6: Verificar build**
+- [x] **Step 6: Verificar build**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir tabla ExchangeRates (reference data) con seed de tipos fijos"
