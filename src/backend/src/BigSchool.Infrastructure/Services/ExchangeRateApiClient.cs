@@ -14,6 +14,18 @@ namespace BigSchool.Infrastructure.Services;
 /// </summary>
 public class ExchangeRateApiClient : IExchangeRateProvider
 {
+    private const string READCACHE_QUERY = @"SELECT Rate FROM ExchangeRates
+                                             WHERE FromCurrency = @From AND ToCurrency = @To AND RateDate = @Date
+                                             LIMIT 1;";
+
+    private const string READLASTKNOWN_QUERY = @"SELECT Rate FROM ExchangeRates
+                                                 WHERE FromCurrency = @From AND ToCurrency = @To
+                                                 ORDER BY RateDate DESC LIMIT 1;";
+
+    private const string UPSERTCACHE_QUERY = @"INSERT INTO ExchangeRates (FromCurrency, ToCurrency, Rate, RateDate, Source, FetchedAt)
+                                               VALUES (@From, @To, @Rate, @Date, @Source, @Now)
+                                               ON DUPLICATE KEY UPDATE Rate = @Rate, Source = @Source, FetchedAt = @Now;";
+
     private readonly IDbConnectionFactory _dbFactory;
     private readonly IHttpClientFactory _httpFactory;
     private readonly ExchangeRateSettings _settings;
@@ -57,45 +69,37 @@ public class ExchangeRateApiClient : IExchangeRateProvider
 
     private async Task<decimal?> ReadCacheAsync(Currency from, Currency to, DateOnly date)
     {
-        const string sql = """
-            SELECT Rate FROM ExchangeRates
-            WHERE FromCurrency = @From AND ToCurrency = @To AND RateDate = @Date
-            LIMIT 1;
-            """;
+        var parameters = new DynamicParameters();
+        parameters.Add("@From", from.ToString());
+        parameters.Add("@To", to.ToString());
+        parameters.Add("@Date", date.ToDateTime(TimeOnly.MinValue).Date);
+
         using var conn = _dbFactory.CreateConnection();
-        return await conn.QuerySingleOrDefaultAsync<decimal?>(sql,
-            new { From = from.ToString(), To = to.ToString(), Date = date.ToDateTime(TimeOnly.MinValue).Date });
+        return await conn.QuerySingleOrDefaultAsync<decimal?>(READCACHE_QUERY, parameters);
     }
 
     private async Task<decimal?> ReadLastKnownAsync(Currency from, Currency to)
     {
-        const string sql = """
-            SELECT Rate FROM ExchangeRates
-            WHERE FromCurrency = @From AND ToCurrency = @To
-            ORDER BY RateDate DESC LIMIT 1;
-            """;
+        var parameters = new DynamicParameters();
+        parameters.Add("@From", from.ToString());
+        parameters.Add("@To", to.ToString());
+
         using var conn = _dbFactory.CreateConnection();
-        return await conn.QuerySingleOrDefaultAsync<decimal?>(sql,
-            new { From = from.ToString(), To = to.ToString() });
+        return await conn.QuerySingleOrDefaultAsync<decimal?>(READLASTKNOWN_QUERY, parameters);
     }
 
     private async Task UpsertCacheAsync(Currency from, Currency to, decimal rate, DateOnly date, string source)
     {
-        const string sql = """
-            INSERT INTO ExchangeRates (FromCurrency, ToCurrency, Rate, RateDate, Source, FetchedAt)
-            VALUES (@From, @To, @Rate, @Date, @Source, @Now)
-            ON DUPLICATE KEY UPDATE Rate = @Rate, Source = @Source, FetchedAt = @Now;
-            """;
+        var parameters = new DynamicParameters();
+        parameters.Add("@From", from.ToString());
+        parameters.Add("@To", to.ToString());
+        parameters.Add("@Rate", rate);
+        parameters.Add("@Date", date.ToDateTime(TimeOnly.MinValue).Date);
+        parameters.Add("@Source", source);
+        parameters.Add("@Now", DateTime.UtcNow);
+
         using var conn = _dbFactory.CreateConnection();
-        await conn.ExecuteAsync(sql, new
-        {
-            From = from.ToString(),
-            To = to.ToString(),
-            Rate = rate,
-            Date = date.ToDateTime(TimeOnly.MinValue).Date,
-            Source = source,
-            Now = DateTime.UtcNow
-        });
+        await conn.ExecuteAsync(UPSERTCACHE_QUERY, parameters);
     }
 
     private async Task<decimal> FetchFromProviderAsync(Currency from, Currency to, DateOnly date, CancellationToken ct)

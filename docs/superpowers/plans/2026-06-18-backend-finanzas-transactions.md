@@ -1908,7 +1908,7 @@ git add -A && git commit -m "docs: actualizar diseño backend y diario con BC Tr
 
 **Nota de diseño:** `ExchangeRateApiClient` (Plan 2A, Task 7) se implementó con el SQL incrustado en línea (`const string sql` local) y parámetros como objetos anónimos, antes de consolidar la convención (ver Anexo A de Plan 2A y `AGENTS.md` › *Dapper y SQL*). Esta tarea lo alinea: **`private const string ..._QUERY` a nivel de clase (UPPERCASE) + `DynamicParameters`**. Es **estilo/consistencia, sin cambio de comportamiento**; los tests de integración de Plan 2A (Task 8: cache hit/miss + seed) son la red de seguridad y **deben seguir en verde** sin tocarlos.
 
-- [ ] **Step 1: Extraer las queries a `const` UPPERCASE `_QUERY` a nivel de clase**
+- [x] **Step 1: Extraer las queries a `const` UPPERCASE `_QUERY` a nivel de clase**
 
 En `ExchangeRateApiClient`, mover el SQL de `ReadCacheAsync`, `ReadLastKnownAsync` y `UpsertCacheAsync` a constantes de clase:
 
@@ -1926,7 +1926,7 @@ En `ExchangeRateApiClient`, mover el SQL de `ReadCacheAsync`, `ReadLastKnownAsyn
                                                ON DUPLICATE KEY UPDATE Rate = @Rate, Source = @Source, FetchedAt = @Now;";
 ```
 
-- [ ] **Step 2: Migrar los parámetros de objeto anónimo a `DynamicParameters`**
+- [x] **Step 2: Migrar los parámetros de objeto anónimo a `DynamicParameters`**
 
 En cada método, sustituir el objeto anónimo por `DynamicParameters` y usar la query nombrada. Ejemplo (`ReadCacheAsync`):
 
@@ -1945,7 +1945,7 @@ En cada método, sustituir el objeto anónimo por `DynamicParameters` y usar la 
 
 Aplicar lo análogo a `ReadLastKnownAsync` (parámetros `@From`, `@To`) y `UpsertCacheAsync` (`@From`, `@To`, `@Rate`, `@Date`, `@Source`, `@Now`).
 
-- [ ] **Step 3: Verificar build + tests de integración (red de seguridad de Plan 2A)**
+- [x] **Step 3: Verificar build + tests de integración (red de seguridad de Plan 2A)**
 
 Prerequisito: `mysql` de docker-compose levantado.
 Run: `dotnet build src/backend/Backend.slnx`
@@ -1953,11 +1953,11 @@ Expected: 0 errors.
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests --filter "FullyQualifiedName~ExchangeRateApiClientIntegrationTests"`
 Expected: PASS (mismo comportamiento; cache miss→hit intacto).
 
-- [ ] **Step 4: Actualizar el diario**
+- [x] **Step 4: Actualizar el diario**
 
 En `docs/diario.md`, añadir una nota a la entrada de Plan 2B: `ExchangeRateApiClient` refactorizado a la convención SQL/Dapper (cierre de la deuda registrada en el Anexo A de Plan 2A).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "refactor: alinear ExchangeRateApiClient con la convención SQL/Dapper (const _QUERY + DynamicParameters)"

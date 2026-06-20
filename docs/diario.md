@@ -327,8 +327,9 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - 2 tests: `GetCategories` (subcategorías globales + de usuario)
 - 2 tests E2E: POST crear → GET summary → verificación física MySQL + 401 sin token
 
+**Task 11** (PR independiente, cierre de deuda Plan 2A Anexo A): `ExchangeRateApiClient` refactorizado a la convención SQL/Dapper — SQL extraído a `private const string READCACHE_QUERY / READLASTKNOWN_QUERY / UPSERTCACHE_QUERY` a nivel de clase (UPPERCASE), parámetros migrados de objeto anónimo a `DynamicParameters`. Sin cambio de comportamiento; test de integración cache miss→hit sigue en verde.
+
 **Siguiente paso:**
-- [ ] Task 11: Refactor `ExchangeRateApiClient` a convención SQL/Dapper (deuda técnica Plan 2A Anexo A)
 - [ ] Plan 3: BC Inversiones (Portfolio, Holding, Company, Valuation)
 
 ---
