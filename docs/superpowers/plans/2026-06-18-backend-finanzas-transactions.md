@@ -441,7 +441,7 @@ git add -A && git commit -m "feat: configurar persistencia de Transactions (owne
 
 **Nota de diseño:** El repo se usa solo para escrituras (commands). Hereda de `EFRepository<Transaction, int>` (aporta `AddAsync`, `GetByIdAsync`, `UnitOfWork`). `GetByIdAsync` con el Global Query Filter ya excluye borradas. Las lecturas de listados/reportes van por Dapper (Tasks 6-7), no por el repo.
 
-- [ ] **Step 1: Crear la interfaz**
+- [x] **Step 1: Crear la interfaz**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Interfaces/Repositories/ITransactionRepository.cs
@@ -455,7 +455,7 @@ public interface ITransactionRepository : IRepository<Transaction, int>
 }
 ```
 
-- [ ] **Step 2: Crear la implementación**
+- [x] **Step 2: Crear la implementación**
 
 ```csharp
 // src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/TransactionRepository.cs
@@ -472,12 +472,12 @@ public class TransactionRepository : EFRepository<Transaction, int>, ITransactio
 }
 ```
 
-- [ ] **Step 3: Verificar build**
+- [x] **Step 3: Verificar build**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors (Autofac auto-registra `ITransactionRepository` → `TransactionRepository` por `AsImplementedInterfaces`).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir ITransactionRepository y repositorio EF de Transaction"
