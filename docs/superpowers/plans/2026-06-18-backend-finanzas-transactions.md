@@ -1407,7 +1407,7 @@ git add -A && git commit -m "feat: añadir queries Dapper de transacciones conso
 
 **Nota de diseño:** Devuelve las `MainCategory` (enum, estáticas) con sus `SubCategories` del usuario (las `IsDefault` con `IdUser IS NULL` + las propias del usuario), leídas por Dapper. Estructura: lista de `CategoryDto { Id, Name, SubCategories[] }`. SQL como `const` UPPERCASE `_QUERY` + `DynamicParameters` (Decisión 7 / `AGENTS.md`).
 
-- [ ] **Step 1: Crear DTOs + query + handler**
+- [x] **Step 1: Crear DTOs + query + handler**
 
 ```csharp
 // src/backend/src/BigSchool.Application/Queries/Categories/GetCategories/CategoryDto.cs
@@ -1468,12 +1468,12 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, IRe
 }
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `dotnet build src/backend/Backend.slnx`
 Expected: 0 errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A && git commit -m "feat: añadir query GetCategories (MainCategory + subcategorías del usuario)"
