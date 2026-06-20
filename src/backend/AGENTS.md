@@ -57,6 +57,19 @@ backend/
 - Interfaces: Prefijo I (`IExpenseRepository`, `IPortfolioService`)
 - Archivos: Mismo nombre que la clase principal
 
+### Dominio (DDD) — Entidades y Eventos
+
+**Constructores de entidades/agregados** (referencia canónica: `Domain/Entities/User.cs`):
+- `protected EntityName() { }` — solo para EF Core (materialización), nunca para lógica de negocio.
+- `private EntityName(...)` con **todos los campos** como parámetros: asigna y no valida.
+- `public static EntityName Create(...)` — factory que **valida** las invariantes (lanzando `ArgumentException`/excepciones de dominio) y llama al constructor privado.
+- **No** usar object initializer (`new Entity { ... }`) en las factories: construir siempre vía el constructor privado para mantener encapsulado el estado.
+
+**Eventos de dominio** (`Domain/Events/`, implementan `IDomainEvent`):
+- El record del evento recibe **la entidad de dominio completa** (es una referencia), no campos sueltos: `record TransactionCreatedEvent(Transaction Transaction) : IDomainEvent`. El handler extrae del agregado lo que necesite.
+- Solo si un dato necesario **no** estuviera en la entidad se añade como parámetro extra del record.
+- Esto desacopla el evento de la forma concreta del consumidor y evita re-firmar el evento cada vez que un handler necesita un campo distinto.
+
 ### CQRS
 - Commands en `Application/Commands/{Feature}/`
 - Queries en `Application/Queries/{Feature}/`

@@ -178,11 +178,15 @@ Expected: FAIL de compilación — `Transaction`/`TransactionCreatedEvent` no ex
 
 - [ ] **Step 3: Crear el evento de dominio**
 
+**Convención de eventos de dominio (obligatoria):** los `DomainEvent` reciben **la entidad de dominio completa** (es una referencia/puntero), no parámetros individuales. El handler extrae del agregado lo que necesite. Solo si un dato necesario no estuviera en la entidad se añadiría como parámetro extra del record. Esto mantiene el evento desacoplado de la forma concreta del consumidor.
+
 ```csharp
 // src/backend/src/BigSchool.Domain/Events/TransactionCreatedEvent.cs
+using BigSchool.Domain.Entities;
+
 namespace BigSchool.Domain.Events;
 
-public sealed record TransactionCreatedEvent(int IdTransaction, int IdUser, decimal BaseAmount) : IDomainEvent
+public sealed record TransactionCreatedEvent(Transaction Transaction) : IDomainEvent
 {
     public DateTime OccurredOn { get; } = DateTime.UtcNow;
 }
@@ -212,7 +216,29 @@ public class Transaction : BaseEntity, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Transaction() { } // EF Core
+    protected Transaction() { } // EF Core
+
+    private Transaction(
+        int userId,
+        TransactionType type,
+        MainCategory category,
+        int? subCategoryId,
+        string? description,
+        DateOnly transactionDate,
+        MoneyConversion conversion,
+        EntityStatus idStatus,
+        DateTime createdAt)
+    {
+        IdUser = userId;
+        Type = type;
+        IdMainCategory = category;
+        IdSubCategory = subCategoryId;
+        Description = description;
+        TransactionDate = transactionDate;
+        Conversion = conversion;
+        IdStatus = idStatus;
+        CreatedAt = createdAt;
+    }
 
     public static Transaction Create(
         int userId,
@@ -231,21 +257,18 @@ public class Transaction : BaseEntity, IAggregateRoot
         if (original.Amount <= 0m)
             throw new ArgumentException("El importe debe ser mayor que cero.", nameof(original));
 
-        var transaction = new Transaction
-        {
-            IdUser = userId,
-            Type = type,
-            IdMainCategory = category,
-            IdSubCategory = subCategoryId,
-            Description = description?.Trim(),
-            TransactionDate = transactionDate,
-            Conversion = MoneyConversion.Create(original, baseCurrency, rate, rateDate),
-            IdStatus = EntityStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+        var transaction = new Transaction(
+            userId,
+            type,
+            category,
+            subCategoryId,
+            description?.Trim(),
+            transactionDate,
+            MoneyConversion.Create(original, baseCurrency, rate, rateDate),
+            EntityStatus.Active,
+            DateTime.UtcNow);
 
-        transaction.RaiseDomainEvent(new TransactionCreatedEvent(
-            transaction.IdTransaction, userId, transaction.Conversion.Base.Amount));
+        transaction.RaiseDomainEvent(new TransactionCreatedEvent(transaction));
 
         return transaction;
     }
