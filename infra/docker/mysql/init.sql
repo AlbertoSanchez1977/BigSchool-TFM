@@ -23,7 +23,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260619182857_AlterUsersAddBaseCurrency', '8.0.11'),
     ('20260620054007_CreateExchangeRates',        '8.0.11'),
     ('20260620085001_CreateTransactions',         '8.0.11'),
-    ('20260621101518_CreateCompanies',            '8.0.11');
+    ('20260621101518_CreateCompanies',            '8.0.11'),
+    ('20260621173448_AddSectorMarketEnums',       '8.0.11');
 
 -- ============================================================
 -- Tabla: Users

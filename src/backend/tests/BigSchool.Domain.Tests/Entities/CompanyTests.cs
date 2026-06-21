@@ -11,7 +11,7 @@ public class CompanyTests
     private static readonly DateOnly D2 = new(2026, 3, 2);
 
     private static Company NewCompany()
-        => Company.Create("Apple Inc.", "aapl", "Technology", "NASDAQ", Currency.USD);
+        => Company.Create("Apple Inc.", "aapl", Sector.Technology, Market.NASDAQ, Currency.USD);
 
     [Fact]
     public void Create_NormalizesTicker_AndSetsActive()
@@ -20,8 +20,8 @@ public class CompanyTests
 
         company.Name.Should().Be("Apple Inc.");
         company.Ticker.Should().Be("AAPL");            // normaliza a mayúsculas
-        company.Sector.Should().Be("Technology");
-        company.Market.Should().Be("NASDAQ");
+        company.Sector.Should().Be(Sector.Technology);
+        company.Market.Should().Be(Market.NASDAQ);
         company.Currency.Should().Be(Currency.USD);
         company.IdStatus.Should().Be(EntityStatus.Active);
         company.Valuations.Should().BeEmpty();
@@ -32,7 +32,7 @@ public class CompanyTests
     [InlineData("Apple", "")]
     public void Create_WithEmptyNameOrTicker_Throws(string name, string ticker)
     {
-        var act = () => Company.Create(name, ticker, null, null, Currency.USD);
+        var act = () => Company.Create(name, ticker, (Sector?)null, (Market?)null, Currency.USD);
 
         act.Should().Throw<ArgumentException>();
     }

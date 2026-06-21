@@ -28,8 +28,8 @@ public class GetCompaniesQueryHandler : IRequestHandler<GetCompaniesQuery, IRead
     {
         var parameters = new DynamicParameters();
         parameters.Add("@StatusDeleted", EntityStatus.Deleted);
-        parameters.Add("@Sector", request.Sector);
-        parameters.Add("@Market", request.Market);
+        parameters.Add("@Sector", request.Sector?.ToString());
+        parameters.Add("@Market", request.Market?.ToString());
 
         using var conn = _dbFactory.CreateConnection();
         var rows = await conn.QueryAsync<CompanyListItemDto>(GETCOMPANIES_QUERY, parameters);

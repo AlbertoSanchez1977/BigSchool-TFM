@@ -24,8 +24,8 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.IdCompany).ValueGeneratedOnAdd();
         builder.Property(c => c.Name).IsRequired().HasMaxLength(200);
         builder.Property(c => c.Ticker).IsRequired().HasMaxLength(10);
-        builder.Property(c => c.Sector).HasMaxLength(100);
-        builder.Property(c => c.Market).HasMaxLength(50);
+        builder.Property(c => c.Sector).HasConversion<string>().HasMaxLength(100);
+        builder.Property(c => c.Market).HasConversion<string>().HasMaxLength(50);
         builder.Property(c => c.Currency).IsRequired()
            .HasConversion(CurrencyConverter.CharIso).HasColumnType("char(3)").HasDefaultValueSql("'EUR'");
         builder.Property(c => c.IdStatus).IsRequired().HasDefaultValue(EntityStatus.Active).HasConversion<short>();

@@ -8,7 +8,7 @@ public class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyComm
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Ticker).NotEmpty().MaximumLength(10);
         RuleFor(x => x.Currency).IsInEnum();
-        RuleFor(x => x.Sector).MaximumLength(100);
-        RuleFor(x => x.Market).MaximumLength(50);
+        RuleFor(x => x.Sector).IsInEnum();
+        RuleFor(x => x.Market).IsInEnum();
     }
 }
