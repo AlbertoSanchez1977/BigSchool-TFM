@@ -644,7 +644,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Create: `src/backend/src/BigSchool.Application/Commands/Investments/CreateCompany/CreateCompanyCommandHandler.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/CreateCompanyCommandHandlerTests.cs`
 
-- [ ] **Step 1: Escribir el test del handler (falla al no existir)**
+- [x] **Step 1: Escribir el test del handler (falla al no existir)**
 
 Crear `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/CreateCompanyCommandHandlerTests.cs`:
 
@@ -702,12 +702,12 @@ public class CreateCompanyCommandHandlerTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar para verificar que falla a compilar**
+- [x] **Step 2: Ejecutar para verificar que falla a compilar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj --filter "FullyQualifiedName~CreateCompanyCommandHandlerTests"`
 Expected: FAIL de compilación (tipos no existen).
 
-- [ ] **Step 3: Crear la excepción de ticker duplicado**
+- [x] **Step 3: Crear la excepción de ticker duplicado**
 
 Crear `src/backend/src/BigSchool.Domain/Exceptions/DuplicateTickerDomainException.cs`:
 
@@ -721,7 +721,7 @@ public class DuplicateTickerDomainException : ConflictException
 }
 ```
 
-- [ ] **Step 4: Crear el `CompanyDto`**
+- [x] **Step 4: Crear el `CompanyDto`**
 
 Crear `src/backend/src/BigSchool.Application/DTOs/Investments/CompanyDto.cs`:
 
@@ -734,7 +734,7 @@ namespace BigSchool.Application.DTOs.Investments;
 public record CompanyDto(int IdCompany, string Name, string Ticker, string? Sector, string? Market, Currency Currency);
 ```
 
-- [ ] **Step 5: Crear el command y el validator**
+- [x] **Step 5: Crear el command y el validator**
 
 Crear `src/backend/src/BigSchool.Application/Commands/Investments/CreateCompany/CreateCompanyCommand.cs`:
 
@@ -769,7 +769,7 @@ public class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyComm
 }
 ```
 
-- [ ] **Step 6: Crear el handler**
+- [x] **Step 6: Crear el handler**
 
 Crear `src/backend/src/BigSchool.Application/Commands/Investments/CreateCompany/CreateCompanyCommandHandler.cs`:
 
@@ -804,12 +804,12 @@ public class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand,
 }
 ```
 
-- [ ] **Step 7: Ejecutar el test**
+- [x] **Step 7: Ejecutar el test**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj --filter "FullyQualifiedName~CreateCompanyCommandHandlerTests"`
 Expected: PASS los 2 tests.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Domain/Exceptions/DuplicateTickerDomainException.cs src/backend/src/BigSchool.Application/DTOs/Investments/CompanyDto.cs src/backend/src/BigSchool.Application/Commands/Investments/CreateCompany/ src/backend/tests/BigSchool.Application.Tests/Commands/Investments/CreateCompanyCommandHandlerTests.cs
