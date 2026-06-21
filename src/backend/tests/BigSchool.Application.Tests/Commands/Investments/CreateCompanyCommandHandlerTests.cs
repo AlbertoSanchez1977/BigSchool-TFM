@@ -27,7 +27,7 @@ public class CreateCompanyCommandHandlerTests
     {
         _repo.Setup(r => r.GetByTickerAsync("AAPL", It.IsAny<CancellationToken>())).ReturnsAsync((Company?)null);
 
-        var command = new CreateCompanyCommand("Apple Inc.", "AAPL", "Technology", "NASDAQ", Currency.USD);
+        var command = new CreateCompanyCommand("Apple Inc.", "AAPL", Sector.Technology, Market.NASDAQ, Currency.USD);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Ticker.Should().Be("AAPL");

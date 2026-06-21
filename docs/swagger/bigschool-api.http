@@ -171,3 +171,79 @@ GET {{baseUrl}}/api/v1/transactions/monthly-chart?year=2026
 Authorization: Bearer {{token}}
 
 ###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# COMPANIES — Catálogo global de empresas cotizadas (Plan 3A)
+# Endpoints [Authorize]: requieren Bearer token aunque el catálogo sea global.
+# IDs 1-4 sembrados por EF Core (AAPL, MSFT, SAN, SHEL).
+# IDs 5-9 añadidos por seed.sql (NVDA, ITX, IBE, AMZN, TSLA).
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 16 Listar todas las empresas (con última cotización por empresa)
+# Respuesta: [{ idCompany, name, ticker, sector, market, currency, lastPrice, lastValuationDate }]
+GET {{baseUrl}}/api/v1/companies
+Authorization: Bearer {{token}}
+
+###
+
+### 17 Listar empresas — filtro por sector
+GET {{baseUrl}}/api/v1/companies?sector=Technology
+Authorization: Bearer {{token}}
+
+###
+
+### 18 Listar empresas — filtro por mercado
+GET {{baseUrl}}/api/v1/companies?market=NASDAQ
+Authorization: Bearer {{token}}
+
+###
+
+### 19 Crear empresa nueva
+# Currency: EUR | USD | GBP | CHF | JPY
+# Ticker se normaliza a mayúsculas en el dominio.
+POST {{baseUrl}}/api/v1/companies
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Alphabet Inc.",
+  "ticker": "googl",
+  "sector": "Technology",
+  "market": "NASDAQ",
+  "currency": "USD"
+}
+
+###
+
+### 20 Detalle de empresa por ID (incluye última cotización)
+# Cambiar 1 por el IdCompany deseado. Devuelve 404 si no existe.
+GET {{baseUrl}}/api/v1/companies/1
+Authorization: Bearer {{token}}
+
+###
+
+### 21 Historial de cotizaciones de una empresa (orden fecha DESC)
+# Respuesta: [{ idValuation, idCompany, price, priceCurrency, date, source }]
+# Devuelve lista vacía si la empresa no existe o no tiene valoraciones.
+GET {{baseUrl}}/api/v1/companies/1/valuations
+Authorization: Bearer {{token}}
+
+###
+
+### 22 Añadir cotización a una empresa
+# price > 0 (validación FluentValidation). date obligatoria.
+# PriceCurrency se hereda automáticamente de la moneda de la empresa.
+# 409 si ya existe una valoración para esa fecha en esa empresa.
+# 404 si la empresa no existe.
+POST {{baseUrl}}/api/v1/companies/1/valuations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "price": 198.75,
+  "date": "2026-06-15",
+  "source": "Yahoo Finance"
+}
+
+###

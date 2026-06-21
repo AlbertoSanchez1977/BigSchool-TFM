@@ -21,12 +21,12 @@ public class CompaniesController : ControllerBase
 
     public CompaniesController(IMediator mediator) => _mediator = mediator;
 
-    public record CreateCompanyRequest(string Name, string Ticker, string? Sector, string? Market, Currency Currency);
+    public record CreateCompanyRequest(string Name, string Ticker, Sector? Sector, Market? Market, Currency Currency);
     public record AddValuationRequest(decimal Price, DateOnly Date, string? Source);
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CompanyListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get([FromQuery] string? sector, [FromQuery] string? market)
+    public async Task<IActionResult> Get([FromQuery] Sector? sector, [FromQuery] Market? market)
     {
         var result = await _mediator.Send(new GetCompaniesQuery(sector, market));
         return Ok(ApiResponse<IReadOnlyList<CompanyListItemDto>>.Success(result));

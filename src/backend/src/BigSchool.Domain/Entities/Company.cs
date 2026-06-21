@@ -12,8 +12,8 @@ public class Company : BaseEntity, IAggregateRoot
     public int IdCompany { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Ticker { get; private set; } = string.Empty;
-    public string? Sector { get; private set; }
-    public string? Market { get; private set; }
+    public Sector? Sector { get; private set; }
+    public Market? Market { get; private set; }
     public Currency Currency { get; private set; }
     public EntityStatus IdStatus { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -24,7 +24,7 @@ public class Company : BaseEntity, IAggregateRoot
 
     protected Company() { } // EF Core
 
-    private Company(string name, string ticker, string? sector, string? market,
+    private Company(string name, string ticker, Sector? sector, Market? market,
         Currency currency, EntityStatus idStatus, DateTime createdAt)
     {
         Name = name;
@@ -36,7 +36,7 @@ public class Company : BaseEntity, IAggregateRoot
         CreatedAt = createdAt;
     }
 
-    public static Company Create(string name, string ticker, string? sector, string? market, Currency currency)
+    public static Company Create(string name, string ticker, Sector? sector, Market? market, Currency currency)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
@@ -46,8 +46,8 @@ public class Company : BaseEntity, IAggregateRoot
         return new Company(
             name.Trim(),
             ticker.Trim().ToUpperInvariant(),
-            string.IsNullOrWhiteSpace(sector) ? null : sector.Trim(),
-            string.IsNullOrWhiteSpace(market) ? null : market.Trim(),
+            sector,
+            market,
             currency,
             EntityStatus.Active,
             DateTime.UtcNow);

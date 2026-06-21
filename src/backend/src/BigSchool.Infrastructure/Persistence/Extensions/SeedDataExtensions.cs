@@ -72,10 +72,10 @@ public static class SeedDataExtensions
         // Catálogo global de demo (4 empresas en 3 monedas). IDs fijos 1-4 → el fixture de tests
         // los preserva y limpia solo las creadas por tests (IdCompany > 4).
         modelBuilder.Entity<Domain.Entities.Company>().HasData(
-            new { IdCompany = 1, Name = "Apple Inc.", Ticker = "AAPL", Sector = (string?)"Technology", Market = (string?)"NASDAQ", Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
-            new { IdCompany = 2, Name = "Microsoft Corp.", Ticker = "MSFT", Sector = (string?)"Technology", Market = (string?)"NASDAQ", Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
-            new { IdCompany = 3, Name = "Banco Santander", Ticker = "SAN", Sector = (string?)"Financials", Market = (string?)"BME", Currency = Currency.EUR, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
-            new { IdCompany = 4, Name = "Shell plc", Ticker = "SHEL", Sector = (string?)"Energy", Market = (string?)"LSE", Currency = Currency.GBP, IdStatus = EntityStatus.Active, CreatedAt = SeedDate }
+            new { IdCompany = 1, Name = "Apple Inc.", Ticker = "AAPL", Sector = (Sector?)Sector.Technology, Market = (Market?)Market.NASDAQ, Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 2, Name = "Microsoft Corp.", Ticker = "MSFT", Sector = (Sector?)Sector.Technology, Market = (Market?)Market.NASDAQ, Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 3, Name = "Banco Santander", Ticker = "SAN", Sector = (Sector?)Sector.Financials, Market = (Market?)Market.BME, Currency = Currency.EUR, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 4, Name = "Shell plc", Ticker = "SHEL", Sector = (Sector?)Sector.Energy, Market = (Market?)Market.LSE, Currency = Currency.GBP, IdStatus = EntityStatus.Active, CreatedAt = SeedDate }
         );
 
         // Valuations: fila base (FK shadow IdCompany incluida en el objeto anónimo).
