@@ -60,6 +60,10 @@ public sealed class MySqlDatabaseFixture : IAsyncLifetime
         await conn.OpenAsync();
         await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 0;");
         await conn.ExecuteAsync("TRUNCATE TABLE Transactions;");
+        // Catálogo de inversiones: preservar las 4 empresas semilla (IdCompany 1-4) y sus valoraciones;
+        // limpiar solo las creadas por tests.
+        await conn.ExecuteAsync("DELETE FROM Valuations WHERE IdCompany > 4;");
+        await conn.ExecuteAsync("DELETE FROM Companies WHERE IdCompany > 4;");
         await conn.ExecuteAsync("DELETE FROM SubCategories WHERE IdUser IS NOT NULL;");
         await conn.ExecuteAsync("DELETE FROM Users;");
         await conn.ExecuteAsync("DELETE FROM ExchangeRates WHERE Source <> 'seed';");

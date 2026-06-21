@@ -1304,7 +1304,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Modify: `src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/CompanyEndpointTestBase.cs`
 
-- [ ] **Step 1: Ampliar `ResetAsync` para limpiar companies/valuations creadas por tests**
+- [x] **Step 1: Ampliar `ResetAsync` para limpiar companies/valuations creadas por tests**
 
 En `src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs`, dentro de `ResetAsync`, entre `TRUNCATE TABLE Transactions;` y `DELETE FROM SubCategories...`, añadir las dos líneas de limpieza de catálogo (preservan las 4 empresas semilla con IdCompany 1-4 y sus valoraciones):
 
@@ -1328,7 +1328,7 @@ por:
         await conn.ExecuteAsync("DELETE FROM SubCategories WHERE IdUser IS NOT NULL;");
 ```
 
-- [ ] **Step 2: Crear la base de tests E2E de inversiones**
+- [x] **Step 2: Crear la base de tests E2E de inversiones**
 
 Crear `src/backend/tests/BigSchool.Integration.Tests/Investments/CompanyEndpointTestBase.cs`:
 
@@ -1402,12 +1402,12 @@ public abstract class CompanyEndpointTestBase : IntegrationTestBase
 }
 ```
 
-- [ ] **Step 3: Compilar el proyecto de tests de integración**
+- [x] **Step 3: Compilar el proyecto de tests de integración**
 
 Run: `dotnet build src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj -c Release`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs src/backend/tests/BigSchool.Integration.Tests/Investments/CompanyEndpointTestBase.cs
