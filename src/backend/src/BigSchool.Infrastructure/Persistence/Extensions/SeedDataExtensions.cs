@@ -66,4 +66,42 @@ public static class SeedDataExtensions
 
         return modelBuilder;
     }
+
+    public static ModelBuilder SeedCompanies(this ModelBuilder modelBuilder)
+    {
+        // Catálogo global de demo (4 empresas en 3 monedas). IDs fijos 1-4 → el fixture de tests
+        // los preserva y limpia solo las creadas por tests (IdCompany > 4).
+        modelBuilder.Entity<Domain.Entities.Company>().HasData(
+            new { IdCompany = 1, Name = "Apple Inc.", Ticker = "AAPL", Sector = (string?)"Technology", Market = (string?)"NASDAQ", Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 2, Name = "Microsoft Corp.", Ticker = "MSFT", Sector = (string?)"Technology", Market = (string?)"NASDAQ", Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 3, Name = "Banco Santander", Ticker = "SAN", Sector = (string?)"Financials", Market = (string?)"BME", Currency = Currency.EUR, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdCompany = 4, Name = "Shell plc", Ticker = "SHEL", Sector = (string?)"Energy", Market = (string?)"LSE", Currency = Currency.GBP, IdStatus = EntityStatus.Active, CreatedAt = SeedDate }
+        );
+
+        // Valuations: fila base (FK shadow IdCompany incluida en el objeto anónimo).
+        modelBuilder.Entity<Domain.Entities.Valuation>().HasData(
+            new { IdValuation = 1, IdCompany = 1, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 2, IdCompany = 1, Date = new DateOnly(2026, 3, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 3, IdCompany = 2, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 4, IdCompany = 2, Date = new DateOnly(2026, 3, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 5, IdCompany = 3, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 6, IdCompany = 3, Date = new DateOnly(2026, 3, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 7, IdCompany = 4, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
+            new { IdValuation = 8, IdCompany = 4, Date = new DateOnly(2026, 3, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate }
+        );
+
+        // Owned type Price (Money): FK shadow del owned = "{Owner}{OwnerPk}" = "ValuationIdValuation".
+        modelBuilder.Entity<Domain.Entities.Valuation>().OwnsOne(v => v.Price).HasData(
+            new { ValuationIdValuation = 1, Amount = 195.0000m, Currency = Currency.USD },
+            new { ValuationIdValuation = 2, Amount = 210.0000m, Currency = Currency.USD },
+            new { ValuationIdValuation = 3, Amount = 420.0000m, Currency = Currency.USD },
+            new { ValuationIdValuation = 4, Amount = 440.0000m, Currency = Currency.USD },
+            new { ValuationIdValuation = 5, Amount = 4.5000m, Currency = Currency.EUR },
+            new { ValuationIdValuation = 6, Amount = 4.8000m, Currency = Currency.EUR },
+            new { ValuationIdValuation = 7, Amount = 28.0000m, Currency = Currency.GBP },
+            new { ValuationIdValuation = 8, Amount = 30.0000m, Currency = Currency.GBP }
+        );
+
+        return modelBuilder;
+    }
 }

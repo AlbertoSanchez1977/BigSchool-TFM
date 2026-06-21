@@ -321,7 +321,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Modify: `src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExtensions.cs`
 - Create (generado): `src/backend/src/BigSchool.Infrastructure/Persistence/Migrations/*_CreateCompanies.cs`
 
-- [ ] **Step 1: Crear `ValuationConfiguration`**
+- [x] **Step 1: Crear `ValuationConfiguration`**
 
 Crear `src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/ValuationConfiguration.cs`:
 
@@ -333,40 +333,60 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BigSchool.Infrastructure.Persistence.Configurations;
-
 public class ValuationConfiguration : IEntityTypeConfiguration<Valuation>
 {
-    public void Configure(EntityTypeBuilder<Valuation> b)
+    public void Configure(EntityTypeBuilder<Valuation> builder)
     {
-        b.ToTable("Valuations");
-        b.HasKey(v => v.IdValuation);
+        builder.ToTable("Valuations");
+        builder.HasKey(v => v.IdValuation);
 
-        b.Property(v => v.IdValuation).ValueGeneratedOnAdd();
-        b.Property(v => v.Date).HasColumnType("date").IsRequired();
-        b.Property(v => v.Source).HasMaxLength(100);
-        b.Property(v => v.IdStatus).IsRequired().HasDefaultValue(EntityStatus.Active).HasConversion<short>();
-        b.Property(v => v.CreatedAt).IsRequired();
-        b.Property(v => v.UpdatedAt);
+        ConfigureProperties(builder);
+        ConfigureRelationships(builder);
+        ConfigureIndexes(builder);
+        ConfigureFilters(builder);
+        
+        builder.Ignore(v => v.DomainEvents);
+    }
 
-        b.OwnsOne(v => v.Price, p =>
+    private static void ConfigureProperties(EntityTypeBuilder<Valuation> builder)
+    {
+        builder.Property(v => v.IdValuation).ValueGeneratedOnAdd();
+        builder.Property(v => v.Date).HasColumnType("date").IsRequired();
+        builder.Property(v => v.Source).HasMaxLength(100);
+        builder.Property(v => v.IdStatus).IsRequired().HasDefaultValue(EntityStatus.Active).HasConversion<short>();
+        builder.Property(v => v.CreatedAt).IsRequired();
+        builder.Property(v => v.UpdatedAt);
+
+        // Shadow FK IdCompany (la relación la declara CompanyConfiguration).
+        builder.Property<int>("IdCompany");
+
+    }
+
+    private static void ConfigureRelationships(EntityTypeBuilder<Valuation> builder)
+    {
+        builder.OwnsOne(v => v.Price, p =>
         {
             p.Property(m => m.Amount).HasColumnName("Price").HasColumnType("decimal(18,4)");
             p.Property(m => m.Currency).HasColumnName("PriceCurrency")
                 .HasConversion(CurrencyConverter.CharIso).HasColumnType("char(3)");
         });
-        b.Navigation(v => v.Price).IsRequired();
+        builder.Navigation(v => v.Price).IsRequired();
 
-        // Shadow FK IdCompany (la relación la declara CompanyConfiguration).
-        b.Property<int>("IdCompany");
+    }
 
-        b.HasIndex("IdCompany", nameof(Valuation.Date)).IsUnique();
-        b.HasQueryFilter(v => v.IdStatus != EntityStatus.Deleted);
-        b.Ignore(v => v.DomainEvents);
+    private static void ConfigureIndexes(EntityTypeBuilder<Valuation> builder)
+    {
+        builder.HasIndex("IdCompany", nameof(Valuation.Date)).IsUnique();
+    }
+
+    private static void ConfigureFilters(EntityTypeBuilder<Valuation> builder)
+    {
+        builder.HasQueryFilter(v => v.IdStatus != EntityStatus.Deleted);
     }
 }
 ```
 
-- [ ] **Step 2: Crear `CompanyConfiguration`**
+- [x] **Step 2: Crear `CompanyConfiguration`**
 
 Crear `src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/CompanyConfiguration.cs`:
 
@@ -378,39 +398,56 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BigSchool.Infrastructure.Persistence.Configurations;
-
 public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 {
-    public void Configure(EntityTypeBuilder<Company> b)
+    public void Configure(EntityTypeBuilder<Company> builder)
     {
-        b.ToTable("Companies");
-        b.HasKey(c => c.IdCompany);
+        builder.ToTable("Companies");
+        builder.HasKey(c => c.IdCompany);
 
-        b.Property(c => c.IdCompany).ValueGeneratedOnAdd();
-        b.Property(c => c.Name).IsRequired().HasMaxLength(200);
-        b.Property(c => c.Ticker).IsRequired().HasMaxLength(10);
-        b.Property(c => c.Sector).HasMaxLength(100);
-        b.Property(c => c.Market).HasMaxLength(50);
-        b.Property(c => c.Currency).IsRequired()
-            .HasConversion(CurrencyConverter.CharIso).HasColumnType("char(3)").HasDefaultValueSql("'EUR'");
-        b.Property(c => c.IdStatus).IsRequired().HasDefaultValue(EntityStatus.Active).HasConversion<short>();
-        b.Property(c => c.CreatedAt).IsRequired();
-        b.Property(c => c.UpdatedAt);
+        ConfigureProperties(builder);
+        ConfigureRelationships(builder);
+        ConfigureIndexes(builder);
+        ConfigureFilters(builder);
 
-        b.HasMany(c => c.Valuations)
+        builder.Ignore(c => c.DomainEvents);
+    }
+    private void ConfigureProperties(EntityTypeBuilder<Company> builder)
+    {
+        builder.Property(c => c.IdCompany).ValueGeneratedOnAdd();
+        builder.Property(c => c.Name).IsRequired().HasMaxLength(200);
+        builder.Property(c => c.Ticker).IsRequired().HasMaxLength(10);
+        builder.Property(c => c.Sector).HasMaxLength(100);
+        builder.Property(c => c.Market).HasMaxLength(50);
+        builder.Property(c => c.Currency).IsRequired()
+           .HasConversion(CurrencyConverter.CharIso).HasColumnType("char(3)").HasDefaultValueSql("'EUR'");
+        builder.Property(c => c.IdStatus).IsRequired().HasDefaultValue(EntityStatus.Active).HasConversion<short>();
+        builder.Property(c => c.CreatedAt).IsRequired();
+        builder.Property(c => c.UpdatedAt);
+    }
+
+    private void ConfigureRelationships(EntityTypeBuilder<Company> builder)
+    {
+        builder.HasMany(c => c.Valuations)
             .WithOne()
             .HasForeignKey("IdCompany")
             .OnDelete(DeleteBehavior.Cascade);
-        b.Navigation(c => c.Valuations).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(c => c.Valuations).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+    private void ConfigureIndexes(EntityTypeBuilder<Company> builder)
+    {
+        builder.HasIndex(c => c.Ticker).IsUnique();
+    }
 
-        b.HasIndex(c => c.Ticker).IsUnique();
-        b.HasQueryFilter(c => c.IdStatus != EntityStatus.Deleted);
-        b.Ignore(c => c.DomainEvents);
+
+    private void ConfigureFilters(EntityTypeBuilder<Company> builder)
+    {
+        builder.HasQueryFilter(c => c.IdStatus != EntityStatus.Deleted);
     }
 }
 ```
 
-- [ ] **Step 3: Registrar los DbSets en `BigSchoolDbContext`**
+- [x] **Step 3: Registrar los DbSets en `BigSchoolDbContext`**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`, sustituir el bloque de comentarios de Portfolio/entidades futuras. Reemplazar:
 
@@ -457,7 +494,7 @@ Y en `OnModelCreating`, tras `modelBuilder.SeedExchangeRates();`, añadir `model
         modelBuilder.SeedCompanies();
 ```
 
-- [ ] **Step 4: Añadir el seed de empresas y valoraciones**
+- [x] **Step 4: Añadir el seed de empresas y valoraciones**
 
 En `src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExtensions.cs`, añadir este método dentro de la clase `SeedDataExtensions` (después de `SeedExchangeRates`):
 
@@ -503,7 +540,7 @@ En `src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExte
 
 > Si `dotnet ef migrations add` se queja del nombre de la FK shadow del owned type, el mensaje indicará el nombre esperado; ajustar `ValuationIdValuation` a lo que reporte (el valor por convención de EF es `ValuationIdValuation`).
 
-- [ ] **Step 5: Generar la migración**
+- [x] **Step 5: Generar la migración**
 
 Run:
 ```bash
@@ -511,12 +548,12 @@ dotnet ef migrations add CreateCompanies --project src/backend/src/BigSchool.Inf
 ```
 Expected: se genera `*_CreateCompanies.cs` con `CreateTable("Companies")`, `CreateTable("Valuations")`, índices únicos `(Ticker)` y `(IdCompany, Date)`, y los `InsertData` del seed (4 companies + 8 valuations). 0 errores.
 
-- [ ] **Step 6: Compilar Infrastructure**
+- [x] **Step 6: Compilar Infrastructure**
 
 Run: `dotnet build src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj -c Release`
 Expected: BUILD SUCCEEDED (puede haber warning MSB3277 pre-existente de versiones EF, ignorable).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/CompanyConfiguration.cs src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/ValuationConfiguration.cs src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs src/backend/src/BigSchool.Infrastructure/Persistence/Extensions/SeedDataExtensions.cs src/backend/src/BigSchool.Infrastructure/Persistence/Migrations/
