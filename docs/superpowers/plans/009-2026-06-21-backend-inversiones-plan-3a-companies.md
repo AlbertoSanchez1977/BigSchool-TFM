@@ -1828,7 +1828,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 **Files:**
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyValuationsTests.cs`
 
-- [ ] **Step 1: Escribir el fichero**
+- [x] **Step 1: Escribir el fichero**
 
 Crear `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyValuationsTests.cs`:
 
@@ -1893,12 +1893,12 @@ public class GetCompanyValuationsTests : CompanyEndpointTestBase
 }
 ```
 
-- [ ] **Step 2: Ejecutar**
+- [x] **Step 2: Ejecutar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj --filter "FullyQualifiedName~GetCompanyValuationsTests" -c Release`
 Expected: PASS los 3 tests.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyValuationsTests.cs
