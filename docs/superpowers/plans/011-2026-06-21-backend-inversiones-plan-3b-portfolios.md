@@ -683,7 +683,7 @@ git commit -m "feat: agregado Portfolio (AddHolding, SellShares FIFO, RealizedPn
 - Modify: `src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs`
 - Generate: `src/backend/src/BigSchool.Infrastructure/Persistence/Migrations/<timestamp>_CreatePortfolios.cs`
 
-- [ ] **Step 1: `PortfolioConfiguration`**
+- [x] **Step 1: `PortfolioConfiguration`**
 
 ```csharp
 using BigSchool.Domain.Entities;
@@ -752,7 +752,7 @@ public class PortfolioConfiguration : IEntityTypeConfiguration<Portfolio>
 }
 ```
 
-- [ ] **Step 2: `HoldingConfiguration`**
+- [x] **Step 2: `HoldingConfiguration`**
 
 ```csharp
 using BigSchool.Domain.Entities;
@@ -839,7 +839,7 @@ public class HoldingConfiguration : IEntityTypeConfiguration<Holding>
 }
 ```
 
-- [ ] **Step 3: `DisposalConfiguration`**
+- [x] **Step 3: `DisposalConfiguration`**
 
 ```csharp
 using BigSchool.Domain.Entities;
@@ -926,7 +926,7 @@ public class DisposalConfiguration : IEntityTypeConfiguration<Disposal>
 }
 ```
 
-- [ ] **Step 4: Modificar `BigSchoolDbContext`** — añadir DbSets y quitar los TODO
+- [x] **Step 4: Modificar `BigSchoolDbContext`** — añadir DbSets y quitar los TODO
 
 Reemplazar el bloque de DbSets para que quede:
 
@@ -947,7 +947,7 @@ Reemplazar el bloque de DbSets para que quede:
 
 > Eliminar las líneas `// TODO: ... Portfolio no está implementado` y `// TODO: Tasks futuras ... Holding`. Dejar el `// public DbSet<RagDocument>` como está (sigue pendiente).
 
-- [ ] **Step 5: Generar la migración**
+- [x] **Step 5: Generar la migración**
 
 Run (desde la raíz del repo):
 ```bash
@@ -958,16 +958,16 @@ dotnet ef migrations add CreatePortfolios \
 ```
 Expected: crea `<timestamp>_CreatePortfolios.cs` + `.Designer.cs` y actualiza `BigSchoolDbContextModelSnapshot.cs`.
 
-- [ ] **Step 6: Revisar la migración generada**
+- [x] **Step 6: Revisar la migración generada**
 
 Abrir el `_CreatePortfolios.cs` y verificar que crea las tablas `Portfolios`, `Holdings`, `Disposals` con las columnas owned esperadas (`RealizedPnL`/`RealizedPnLCurrency`; `BuyOriginalAmount`…`BuyRateDate`; `SellOriginalAmount`…`SellRateDate`; `RealizedPnL`/`RealizedPnLCurrency` en Disposals), las FK (`Portfolios.IdUser`→Users, `Holdings.IdPortfolio`→Portfolios, `Holdings.IdCompany`→Companies (Restrict), `Disposals.IdHolding`→Holdings) y los índices. **No** debe contener cambios espurios sobre tablas existentes (Companies/Valuations/Transactions); si los hay, descartar y revisar las configs.
 
-- [ ] **Step 7: Build**
+- [x] **Step 7: Build**
 
 Run: `dotnet build src/backend/Backend.sln -c Release`
 Expected: Build succeeded.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/PortfolioConfiguration.cs src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/HoldingConfiguration.cs src/backend/src/BigSchool.Infrastructure/Persistence/Configurations/DisposalConfiguration.cs src/backend/src/BigSchool.Infrastructure/Persistence/BigSchoolDbContext.cs src/backend/src/BigSchool.Infrastructure/Persistence/Migrations/
