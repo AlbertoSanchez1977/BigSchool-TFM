@@ -1915,17 +1915,17 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Modify: `docs/02-backend-design.md` (nota de `Valuation.Price` como `Money` owned, sin `MoneyConversion`)
 - Modify: `docs/diario.md` (entrada Plan 3A)
 
-- [ ] **Step 1: Ejecutar TODA la suite de integración**
+- [x] **Step 1: Ejecutar TODA la suite de integración**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj -c Release`
 Expected: PASS todos — los 37 previos (Auth + Transactions + Persistence/Services) + los nuevos de Investments (CreateCompany 6 + AddValuation 5 + GetCompanies 3 + GetCompanyById 3 + GetCompanyValuations 3 = 20).
 
-- [ ] **Step 2: Ejecutar las suites unitarias**
+- [x] **Step 2: Ejecutar las suites unitarias**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj -c Release` y `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release`
 Expected: PASS todos (incluidos `CompanyTests`, `CreateCompanyCommandHandlerTests`, `AddValuationCommandHandlerTests`).
 
-- [ ] **Step 3: Actualizar `docs/02-backend-design.md`**
+- [x] **Step 3: Actualizar `docs/02-backend-design.md`**
 
 En la sección `#### Valuations`, sustituir la nota de Plan 3 (`> **Plan 3 (multimoneda)**: cada Valuation snapshotea...`) por:
 
@@ -1935,7 +1935,7 @@ En la sección `#### Valuations`, sustituir la nota de Plan 3 (`> **Plan 3 (mult
 
 Y en `#### Holdings`, dejar la nota de `AvgBuyPrice` como referencia a Plan 3B (sin cambios; se implementa en 3B).
 
-- [ ] **Step 4: Añadir la entrada del diario**
+- [x] **Step 4: Añadir la entrada del diario**
 
 En `docs/diario.md`, antes de la línea `*Añadir nuevas entradas al final del documento con fecha y fase.*`, insertar:
 
@@ -1963,10 +1963,10 @@ En `docs/diario.md`, antes de la línea `*Añadir nuevas entradas al final del d
 - Plan 3A completado. Suite de integración en verde (37 previos + 20 nuevos). Catálogo de inversiones operativo end-to-end.
 
 **Siguiente paso:**
-- [ ] Plan 3B — Portfolio + Holding + Disposal + ventas FIFO + performance (consume el catálogo de 3A).
+- [x] Plan 3B — Portfolio + Holding + Disposal + ventas FIFO + performance (consume el catálogo de 3A).
 ```
 
-- [ ] **Step 5: Commit de documentación**
+- [x] **Step 5: Commit de documentación**
 
 ```bash
 git add docs/02-backend-design.md docs/diario.md
@@ -1975,7 +1975,7 @@ git commit -m "docs: actualizar diseño backend (Valuation.Price como Money) y d
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
 
-- [ ] **Step 6: Push + PR**
+- [x] **Step 6: Push + PR**
 
 ```bash
 git push -u origin feature/spec-bc-inversiones

@@ -364,6 +364,33 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-21 — BC Inversiones · Plan 3A: Catálogo (Company + Valuation)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan `docs/superpowers/plans/009-2026-06-21-backend-inversiones-plan-3a-companies.md` (13 tareas), primer plan del BC Inversiones (spec `002-2026-06-21-backend-inversiones-design.md`).
+- Dominio: `Company` (AR global) + `Valuation` (entidad hija, `Money` en moneda de la empresa) con `AddValuation` y unicidad `(IdCompany, Date)`; excepciones `DuplicateTickerDomainException` y `DuplicateValuationDomainException` (→409).
+- Infra: `CompanyConfiguration`/`ValuationConfiguration` (owned `Price`, FK shadow `IdCompany`, índices únicos), DbSets, seed de 4 empresas (USD/EUR/GBP) + 8 valoraciones, migración `CreateCompanies`.
+- Application: `ICompanyRepository`/`CompanyRepository`; commands `CreateCompany`/`AddValuation`; queries Dapper `GetCompanies`/`GetCompanyById` (con última cotización) y `GetCompanyValuations`.
+- WebApi: `CompaniesController` (5 endpoints `[Authorize]`).
+- Tests: unitarios Domain (`CompanyTests`) y Application (2 handlers); E2E por endpoint (CreateCompany 6, AddValuation 5, GetCompanies 3, GetCompanyById 3, GetCompanyValuations 3).
+
+**Decisiones / Problemas encontrados:**
+- Catálogo **global** (sin `IdUser`): `Valuation.Price` no snapshotea a base de usuario; la conversión es por-usuario en Plan 3B.
+- `ResetAsync` del fixture preserva las 4 empresas semilla (IdCompany 1-4) y limpia solo las creadas por tests.
+- Seed del owned type `Price` vía `OwnsOne(...).HasData` con FK shadow `ValuationIdValuation`.
+
+**Resultado / Estado:**
+- Plan 3A completado. Suite de integración en verde (37 previos + 20 nuevos = 57 total). Catálogo de inversiones operativo end-to-end.
+
+**Siguiente paso:**
+- [ ] Plan 3B — Portfolio + Holding + Disposal + ventas FIFO + performance (consume el catálogo de 3A).
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
