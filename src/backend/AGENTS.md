@@ -123,10 +123,22 @@ public sealed class ExchangeRateReader
 
 ### Testing
 - **Unitarios**: Domain y Application (mocking de Infrastructure)
-- **Integración**: BD MySQL real de docker-compose (BD dedicada `bigschool_test` migrada por EF, fixture `ICollectionFixture`) + `WebApplicationFactory<Program>` para E2E; WireMock.Net para fakear servidores HTTP externos
+- **Integración (E2E)**: BD MySQL real de docker-compose (BD dedicada `bigschool_test` migrada por EF, fixture `ICollectionFixture`) + `WebApplicationFactory<Program>` ejercitando el **pipeline completo** (JwtBearer, MediatR, FluentValidation, EF commands, Dapper queries, middleware de excepciones); WireMock.Net para fakear servidores HTTP externos.
 - Framework: xUnit + FluentAssertions + Moq + WireMock.Net + MySqlConnector/Dapper + Microsoft.AspNetCore.Mvc.Testing
 - Cobertura mínima: 80% en Domain y Application
-- **Un fichero de test por clase bajo prueba**, nombrado `{ClaseBajoPrueba}Tests.cs` (p. ej. `CreateExpenseCommandHandlerTests`). No agrupar varias clases/handlers en un mismo fichero de test.
+- **Un fichero de test por clase bajo prueba**, nombrado `{ClaseBajoPrueba}Tests.cs`. No agrupar varias clases/handlers en un mismo fichero.
+
+#### Reglas obligatorias de tests de integración E2E (Definition of Done por endpoint)
+Todo endpoint nuevo o modificado DEBE acompañarse de tests E2E que cumplan:
+1. **Un fichero por endpoint**, nombrado `{Verbo|Acción}{Recurso}Tests.cs` (p. ej. `RegisterTests`, `PostTransactionTests`, `GetTransactionsTests`), bajo carpeta por feature (`Auth/`, `Transactions/`). El plumbing común (ciclo de vida del factory, reset de BD, tipos de deserialización del envelope) vive en `IntegrationTestBase`; los helpers de cada feature en una base específica (`AuthEndpointTestBase`, `TransactionEndpointTestBase`).
+2. **Al menos un test EXHAUSTIVO por feature** sobre la operación principal (POST/register), que valide:
+   - **Request real serializado** (no se invoca el handler directamente): caza fallos de binding/serialización (enums string vía `JsonStringEnumConverter`, `DateOnly`, conversores Dapper como `DateOnlyTypeHandler`).
+   - **Cada campo de la response** (contrato del frontend), incluida la forma serializada de enums y fechas.
+   - **Persistencia física en BD** (consulta Dapper directa) verificando las columnas escritas.
+3. **Foco en seguridad/auth (crítico)**: para flujos de credenciales, ejercitar el **hashing real** (round-trip register→login con la misma password) y el **JWT real** (token emitido usable contra un endpoint `[Authorize]`); nunca mockear `IPasswordHasher`/`IJwtService` en E2E. Verificar que el password se persiste hasheado (nunca en claro) y que usuario inexistente y password incorrecta devuelven el **mismo** error (no filtrar existencia).
+4. **Tests de validación HTTP** de todos los códigos que el endpoint puede devolver: `401` (sin token en `[Authorize]`), `400` (`VALIDATION_ERROR` con `Field`; `INVALID_CREDENTIALS`), `404` (`ENTITY_NOT_FOUND`), `409` (`EMAIL_ALREADY_EXISTS` / `ConflictException`) cuando aplique.
+5. **Operaciones de borrado**: verificar el **soft-delete** (la fila persiste con `IdStatus=Deleted`) y que las lecturas posteriores la ocultan (404).
+6. **Deterministas**: para conversión multimoneda, sembrar la tasa en `ExchangeRates` con `RateDate = transactionDate` (nunca depender de la red); para servicios HTTP externos, WireMock.Net.
 
 ### API REST
 - Versionado: `/api/v1/`
