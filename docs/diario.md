@@ -334,6 +334,36 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-21 — Tests de integración E2E (Auth + Transactions) y normas en AGENTS.md (Plan 008)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan detallado en 15 tareas (`docs/superpowers/plans/008-2026-06-20-backend-integration-tests-e2e.md`), ejecutado con **Subagent-Driven Development** (un subagente fresco por tarea) en una única rama `feature/backend-integration-tests-e2e-task1-15` → **PR #50**.
+- Motivación: solo existía 1 test E2E del summary; faltaban los de **AuthController** (punto crítico: hashing Argon2 y JWT reales) y la cobertura por endpoint de Transactions. Se detectaron en sesiones previas dos bugs de integración (serialización) que un E2E sencillo habría cazado.
+- **Bases compartidas** (Tasks 1, 2, 6): `IntegrationTestBase` (ciclo de vida del factory + reset de BD + tipos de deserialización del envelope `ApiResponse<T>`), `AuthEndpointTestBase` (helpers de registro y BD) y `TransactionEndpointTestBase` (siembra de usuario/tasas, `AuthenticatedClient` con JWT real, verificación física con Dapper).
+- **Auth E2E** (Tasks 3-5, prioritario): `RegisterTests` (round-trip Argon2 real + persistencia de hash + 409 + 400), `LoginTests` (token usable contra endpoint `[Authorize]` + 400 credenciales/validación), `RefreshTests` (token válido + 401 sin token + 401 usuario eliminado).
+- **Transactions E2E** (Tasks 7-13): `PostTransactionTests` (exhaustivo: cada campo + conversión USD→EUR + persistencia + 401/400), `GetTransactionByIdTests`, `GetTransactionsTests` (lista/paginación/filtros), `PutTransactionTests`, `DeleteTransactionTests` (soft-delete + oculto en lecturas), `GetTransactionSummaryTests` (migra y elimina el monolítico `TransactionsEndpointTests.cs`), `GetMonthlyChartTests`.
+- **Normas fijadas** (Task 14): sección `### Testing` de `src/backend/AGENTS.md` ampliada con la **Definition of Done de tests E2E por endpoint** (un fichero por endpoint, ≥1 test exhaustivo con request real + cada campo de response + persistencia física, foco en hashing/JWT reales, validación de 401/400/404/409, soft-delete, determinismo multimoneda).
+
+**Decisiones clave / Problemas encontrados:**
+- **Un único branch/PR para las 15 tareas** (en vez de el flujo habitual task-por-PR): la naturaleza homogénea y acumulativa de los tests lo justifica; el nombre de rama `*-task1-15` lo refleja.
+- **Subagent-Driven con dos puertas de revisión** por tarea (spec + calidad) sobre el plan, sin pausa entre tareas.
+- **Fix de serialización previos consolidados** (de PR #49, ya en develop): `JsonStringEnumConverter` (acepta `"USD"`) y `DateOnlyTypeHandler` (Dapper mapea `DATE`→`DateOnly`); los E2E los blindan.
+- **Bloqueo de DLLs por Visual Studio** durante algunos builds (`devenv.exe` con la app corriendo): los subagentes compilaron/ejecutaron en `-c Release` para evitar el lock del directorio Debug; problema de entorno, no de código.
+
+**Resultado / Estado:**
+- Plan 008 completado (15/15 tareas). **37/37 tests de integración PASS**: Auth (Register 5 + Login 4 + Refresh 3 = 12) + Transactions (Post 5 + GetById 3 + GetList 5 + Put 3 + Delete 3 + Summary 2 + MonthlyChart 2 = 23) + 2 existentes de Persistence/Services.
+- `AuthController` cubierto E2E con hashing Argon2 y JWT reales (sin mocks); valor que los unitarios mockeados no aportan.
+- Reglas de testing E2E vinculantes en `AGENTS.md` para futuras implementaciones.
+
+**Siguiente paso:**
+- [ ] Plan 3: BC Inversiones — diseño aprobado (`docs/superpowers/specs/002-2026-06-21-backend-inversiones-design.md`); pendiente de planes 3A (Company + Valuation) y 3B (Portfolio + Holding + Disposal + FIFO + performance).
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
