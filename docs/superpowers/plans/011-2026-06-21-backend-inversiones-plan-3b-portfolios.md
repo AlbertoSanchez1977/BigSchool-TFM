@@ -294,7 +294,7 @@ Aquí está **toda** la lógica del agregado y **todos** los tests de dominio (e
 - Modify (replace stub): `src/backend/src/BigSchool.Domain/Entities/Portfolio.cs`
 - Test: `src/backend/tests/BigSchool.Domain.Tests/Entities/PortfolioTests.cs`
 
-- [ ] **Step 1: Escribir el test que falla** (`PortfolioTests.cs`)
+- [x] **Step 1: Escribir el test que falla** (`PortfolioTests.cs`)
 
 ```csharp
 using BigSchool.Domain.Entities;
@@ -503,12 +503,12 @@ public class PortfolioTests
 
 > Nota sobre `IdHolding == 0` en memoria: en los tests todos los lotes no persistidos tienen `IdHolding = 0`. Los tests que usan `UpdateHolding`/`DeleteHolding` por id operan sobre carteras con **un solo** lote (id 0). Los tests de FIFO no dependen de `IdHolding` porque ordenan por `BuyDate` (todas distintas). El desempate por `IdHolding` solo importa con BuyDates iguales, escenario que se cubre en E2E (Task 15) con ids reales de BD.
 
-- [ ] **Step 2: Ejecutar el test (debe fallar)**
+- [x] **Step 2: Ejecutar el test (debe fallar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj -c Release --filter FullyQualifiedName~PortfolioTests`
 Expected: FAIL (no compila: `Portfolio` es stub, `InsufficientSharesDomainException` no existe).
 
-- [ ] **Step 3: Crear `InsufficientSharesDomainException`**
+- [x] **Step 3: Crear `InsufficientSharesDomainException`**
 
 ```csharp
 namespace BigSchool.Domain.Exceptions;
@@ -525,7 +525,7 @@ public class InsufficientSharesDomainException : DomainException
 }
 ```
 
-- [ ] **Step 4: Implementar `Portfolio`** (reemplaza el stub vacío completo)
+- [x] **Step 4: Implementar `Portfolio`** (reemplaza el stub vacío completo)
 
 ```csharp
 using BigSchool.Domain.Enums;
@@ -655,17 +655,17 @@ public class Portfolio : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 5: Ejecutar el test (debe pasar)**
+- [x] **Step 5: Ejecutar el test (debe pasar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj -c Release --filter FullyQualifiedName~PortfolioTests`
 Expected: PASS (todos).
 
-- [ ] **Step 6: Suite de dominio completa**
+- [x] **Step 6: Suite de dominio completa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj -c Release`
 Expected: PASS (incluye los tests previos del proyecto sin regresiones).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Domain/Entities/Portfolio.cs src/backend/src/BigSchool.Domain/Exceptions/InsufficientSharesDomainException.cs src/backend/tests/BigSchool.Domain.Tests/Entities/PortfolioTests.cs
