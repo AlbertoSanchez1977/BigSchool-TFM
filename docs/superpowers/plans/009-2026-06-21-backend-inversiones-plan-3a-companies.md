@@ -1676,7 +1676,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompaniesTests.cs`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyByIdTests.cs`
 
-- [ ] **Step 1: Escribir `GetCompaniesTests`**
+- [x] **Step 1: Escribir `GetCompaniesTests`**
 
 Crear `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompaniesTests.cs`:
 
@@ -1742,7 +1742,7 @@ public class GetCompaniesTests : CompanyEndpointTestBase
 }
 ```
 
-- [ ] **Step 2: Escribir `GetCompanyByIdTests`**
+- [x] **Step 2: Escribir `GetCompanyByIdTests`**
 
 Crear `src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyByIdTests.cs`:
 
@@ -1807,12 +1807,12 @@ public class GetCompanyByIdTests : CompanyEndpointTestBase
 }
 ```
 
-- [ ] **Step 3: Ejecutar**
+- [x] **Step 3: Ejecutar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj --filter "FullyQualifiedName~GetCompaniesTests|FullyQualifiedName~GetCompanyByIdTests" -c Release`
 Expected: PASS los 6 tests (3 + 3).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompaniesTests.cs src/backend/tests/BigSchool.Integration.Tests/Investments/GetCompanyByIdTests.cs
