@@ -89,7 +89,7 @@ dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.
 **Files:**
 - Create: `src/backend/src/BigSchool.Domain/Entities/Disposal.cs`
 
-- [ ] **Step 1: Implementar `Disposal`**
+- [x] **Step 1: Implementar `Disposal`**
 
 ```csharp
 using BigSchool.Domain.Enums;
@@ -144,12 +144,12 @@ public class Disposal : BaseEntity
 }
 ```
 
-- [ ] **Step 2: Verificar que compila**
+- [x] **Step 2: Verificar que compila**
 
 Run: `dotnet build src/backend/src/BigSchool.Domain/BigSchool.Domain.csproj -c Release`
 Expected: Build succeeded.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Domain/Entities/Disposal.cs
@@ -165,7 +165,7 @@ git commit -m "feat: entidad Disposal (venta, nieta del agregado Portfolio)"
 **Files:**
 - Modify (replace stub): `src/backend/src/BigSchool.Domain/Entities/Holding.cs`
 
-- [ ] **Step 1: Implementar `Holding`** (reemplaza el stub vacío completo)
+- [x] **Step 1: Implementar `Holding`** (reemplaza el stub vacío completo)
 
 ```csharp
 using BigSchool.Domain.Enums;
@@ -271,12 +271,12 @@ public class Holding : BaseEntity
 }
 ```
 
-- [ ] **Step 2: Verificar que compila**
+- [x] **Step 2: Verificar que compila**
 
 Run: `dotnet build src/backend/src/BigSchool.Domain/BigSchool.Domain.csproj -c Release`
 Expected: Build succeeded.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Domain/Entities/Holding.cs
