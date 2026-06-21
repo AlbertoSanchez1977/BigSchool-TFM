@@ -299,7 +299,7 @@ Subcategorías predefinidas (ejemplos):
 | UpdatedAt | DATETIME | NULL |
 | | | UNIQUE(IdCompany, Date) |
 
-> **Plan 3 (multimoneda)**: cada `Valuation` snapshotea su propia conversión a la moneda base con el tipo de su `Date` (`MoneyConversion`): el `Price` está en la moneda de la empresa y se convierte en el momento de la valoración.
+> **Plan 3A (implementado)**: `Valuation.Price` es un VO `Money` (owned type EF → columnas `Price` DECIMAL(18,4) + `PriceCurrency` CHAR(3)) en la **moneda de la empresa**. El catálogo (`Companies`/`Valuations`) es **global** (sin `IdUser`); la conversión a la moneda base del usuario **no** se snapshotea aquí: se calcula por-usuario en las queries de cartera (Plan 3B). Índice único `(IdCompany, Date)`.
 
 #### ExchangeRates
 
