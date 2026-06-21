@@ -19,6 +19,7 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
 
     // Aggregate Roots — acceso principal
     public DbSet<User> Users => Set<User>();
+    public DbSet<Company> Companies => Set<Company>();
     // TODO: Task futura — Portfolio no está implementado aún
     // public DbSet<Portfolio> Portfolios => Set<Portfolio>();
 
@@ -26,6 +27,8 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     // El acceso de escritura se hace siempre a través del Aggregate Root
     public DbSet<SubCategory> SubCategories => Set<SubCategory>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Valuation> Valuations => Set<Valuation>();
+
     // TODO: Tasks futuras — Entidades no implementadas aún
     // public DbSet<Holding> Holdings => Set<Holding>();
     // public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
@@ -48,6 +51,7 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BigSchoolDbContext).Assembly);
         modelBuilder.SeedSubCategories();
         modelBuilder.SeedExchangeRates();
+        modelBuilder.SeedCompanies();
     }
 
     private async Task DispatchDomainEvents()
