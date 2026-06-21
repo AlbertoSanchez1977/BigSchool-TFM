@@ -1423,7 +1423,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 **Files:**
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/CreateCompanyTests.cs`
 
-- [ ] **Step 1: Escribir el fichero**
+- [x] **Step 1: Escribir el fichero**
 
 Crear `src/backend/tests/BigSchool.Integration.Tests/Investments/CreateCompanyTests.cs`:
 
@@ -1524,12 +1524,12 @@ public class CreateCompanyTests : CompanyEndpointTestBase
 }
 ```
 
-- [ ] **Step 2: Ejecutar**
+- [x] **Step 2: Ejecutar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj --filter "FullyQualifiedName~CreateCompanyTests" -c Release`
 Expected: PASS los 6 casos (1 exhaustivo + 1 conflicto + 3 Theory + 1 de 401).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/tests/BigSchool.Integration.Tests/Investments/CreateCompanyTests.cs
