@@ -22,7 +22,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260610163310_InitialCreate',             '8.0.11'),
     ('20260619182857_AlterUsersAddBaseCurrency', '8.0.11'),
     ('20260620054007_CreateExchangeRates',        '8.0.11'),
-    ('20260620085001_CreateTransactions',         '8.0.11');
+    ('20260620085001_CreateTransactions',         '8.0.11'),
+    ('20260621101518_CreateCompanies',            '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -162,22 +163,68 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
 ) CHARACTER SET utf8mb4;
 
 -- ============================================================
--- Tablas no gestionadas por EF Core (Plan 3: BC Inversiones; Plan RAG)
+-- Tablas: Companies + Valuations
+-- EF Core: CreateCompanies (Plan 3A) — espejo de migración 20260621101518
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `Companies` (
-    `IdCompany` INT          AUTO_INCREMENT,
+    `IdCompany` INT          NOT NULL AUTO_INCREMENT,
     `Name`      VARCHAR(200) NOT NULL,
     `Ticker`    VARCHAR(10)  NOT NULL,
     `Sector`    VARCHAR(100) NULL,
     `Market`    VARCHAR(50)  NULL,
     `Currency`  CHAR(3)      NOT NULL DEFAULT 'EUR',
     `IdStatus`  SMALLINT     NOT NULL DEFAULT 2,
-    `CreatedAt` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `UpdatedAt` DATETIME     NULL,
-    PRIMARY KEY (`IdCompany`),
-    UNIQUE KEY `UQ_Companies_Ticker` (`Ticker`)
+    `CreatedAt` DATETIME(6)  NOT NULL,
+    `UpdatedAt` DATETIME(6)  NULL,
+    CONSTRAINT `PK_Companies` PRIMARY KEY (`IdCompany`),
+    UNIQUE KEY `IX_Companies_Ticker` (`Ticker`)
 ) CHARACTER SET utf8mb4;
 
+-- Espejo exacto de EF Core HasData (CreateCompanies migration, timestamp 2026-01-01 UTC)
+-- IDs 1-4 fijos: ResetAsync del test fixture los preserva junto con sus Valuations.
+INSERT IGNORE INTO `Companies`
+    (`IdCompany`, `Name`, `Ticker`, `Sector`, `Market`, `Currency`, `IdStatus`, `CreatedAt`) VALUES
+    (1, 'Apple Inc.',      'AAPL', 'Technology', 'NASDAQ', 'USD', 2, '2026-01-01 00:00:00'),
+    (2, 'Microsoft Corp.', 'MSFT', 'Technology', 'NASDAQ', 'USD', 2, '2026-01-01 00:00:00'),
+    (3, 'Banco Santander', 'SAN',  'Financials',  'BME',   'EUR', 2, '2026-01-01 00:00:00'),
+    (4, 'Shell plc',       'SHEL', 'Energy',       'LSE',  'GBP', 2, '2026-01-01 00:00:00');
+
+ALTER TABLE `Companies` AUTO_INCREMENT = 5;
+
+CREATE TABLE IF NOT EXISTS `Valuations` (
+    `IdValuation`   INT           NOT NULL AUTO_INCREMENT,
+    `Price`         DECIMAL(18,4) NOT NULL,
+    `PriceCurrency` CHAR(3)       NOT NULL,
+    `Date`          DATE          NOT NULL,
+    `Source`        VARCHAR(100)  NULL,
+    `IdStatus`      SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`     DATETIME(6)   NOT NULL,
+    `UpdatedAt`     DATETIME(6)   NULL,
+    `IdCompany`     INT           NOT NULL,
+    CONSTRAINT `PK_Valuations` PRIMARY KEY (`IdValuation`),
+    CONSTRAINT `FK_Valuations_Companies_IdCompany`
+        FOREIGN KEY (`IdCompany`) REFERENCES `Companies` (`IdCompany`) ON DELETE CASCADE,
+    UNIQUE KEY `IX_Valuations_IdCompany_Date` (`IdCompany`, `Date`)
+) CHARACTER SET utf8mb4;
+
+-- Espejo exacto de EF Core HasData (CreateCompanies migration)
+-- IDs 1-8 fijos: ResetAsync usa "DELETE FROM Valuations WHERE IdCompany > 4" para limpiar tests.
+INSERT IGNORE INTO `Valuations`
+    (`IdValuation`, `Price`, `PriceCurrency`, `Date`, `Source`, `IdStatus`, `CreatedAt`, `IdCompany`) VALUES
+    (1, 195.0000, 'USD', '2026-01-02', 'seed', 2, '2026-01-01 00:00:00', 1),
+    (2, 210.0000, 'USD', '2026-03-02', 'seed', 2, '2026-01-01 00:00:00', 1),
+    (3, 420.0000, 'USD', '2026-01-02', 'seed', 2, '2026-01-01 00:00:00', 2),
+    (4, 440.0000, 'USD', '2026-03-02', 'seed', 2, '2026-01-01 00:00:00', 2),
+    (5,   4.5000, 'EUR', '2026-01-02', 'seed', 2, '2026-01-01 00:00:00', 3),
+    (6,   4.8000, 'EUR', '2026-03-02', 'seed', 2, '2026-01-01 00:00:00', 3),
+    (7,  28.0000, 'GBP', '2026-01-02', 'seed', 2, '2026-01-01 00:00:00', 4),
+    (8,  30.0000, 'GBP', '2026-03-02', 'seed', 2, '2026-01-01 00:00:00', 4);
+
+ALTER TABLE `Valuations` AUTO_INCREMENT = 9;
+
+-- ============================================================
+-- Tablas no gestionadas por EF Core (Plan 3B: Portfolio; Plan RAG)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `Portfolios` (
     `IdPortfolio` INT          AUTO_INCREMENT,
     `IdUser`      INT          NOT NULL,
@@ -207,21 +254,6 @@ CREATE TABLE IF NOT EXISTS `Holdings` (
     CONSTRAINT `FK_Holdings_Companies`
         FOREIGN KEY (`IdCompany`) REFERENCES `Companies` (`IdCompany`),
     CONSTRAINT `CHK_Holdings_Shares` CHECK (`Shares` > 0)
-) CHARACTER SET utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `Valuations` (
-    `IdValuation` INT           AUTO_INCREMENT,
-    `IdCompany`   INT           NOT NULL,
-    `Price`       DECIMAL(18,4) NOT NULL,
-    `Date`        DATE          NOT NULL,
-    `Source`      VARCHAR(100)  NULL,
-    `IdStatus`    SMALLINT      NOT NULL DEFAULT 2,
-    `CreatedAt`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `UpdatedAt`   DATETIME      NULL,
-    PRIMARY KEY (`IdValuation`),
-    CONSTRAINT `FK_Valuations_Companies`
-        FOREIGN KEY (`IdCompany`) REFERENCES `Companies` (`IdCompany`),
-    UNIQUE KEY `UQ_Valuations_Company_Date` (`IdCompany`, `Date`)
 ) CHARACTER SET utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `RagDocuments` (

@@ -14,17 +14,17 @@
 USE `bigschool`;
 
 -- ============================================================
--- Empresas (Plan 3: BC Inversiones)
+-- Empresas adicionales (Plan 3A: BC Inversiones)
+-- EF Core ya siembra IdCompany 1-4 vía migración CreateCompanies:
+--   1=AAPL (USD/NASDAQ)  2=MSFT (USD/NASDAQ)
+--   3=SAN  (EUR/BME)     4=SHEL (GBP/LSE)
 -- ============================================================
-INSERT INTO `Companies` (`IdCompany`, `Name`, `Ticker`, `Sector`, `Market`, `Currency`) VALUES
-    (1, 'Apple Inc.',            'AAPL', 'Tecnología', 'NASDAQ', 'USD'),
-    (2, 'Microsoft Corporation', 'MSFT', 'Tecnología', 'NASDAQ', 'USD'),
-    (3, 'Inditex',               'ITX',  'Textil',     'BME',    'EUR'),
-    (4, 'Iberdrola',             'IBE',  'Energía',    'BME',    'EUR'),
-    (5, 'NVIDIA Corporation',    'NVDA', 'Tecnología', 'NASDAQ', 'USD'),
-    (6, 'Banco Santander',       'SAN',  'Banca',      'BME',    'EUR'),
-    (7, 'Amazon.com Inc.',       'AMZN', 'Tecnología', 'NASDAQ', 'USD'),
-    (8, 'Tesla Inc.',            'TSLA', 'Automoción', 'NASDAQ', 'USD');
+INSERT IGNORE INTO `Companies` (`IdCompany`, `Name`, `Ticker`, `Sector`, `Market`, `Currency`) VALUES
+    (5, 'NVIDIA Corporation', 'NVDA', 'Technology', 'NASDAQ', 'USD'),
+    (6, 'Inditex',            'ITX',  'Retail',      'BME',   'EUR'),
+    (7, 'Iberdrola',          'IBE',  'Energy',       'BME',  'EUR'),
+    (8, 'Amazon.com Inc.',    'AMZN', 'Technology',  'NASDAQ', 'USD'),
+    (9, 'Tesla Inc.',         'TSLA', 'Automotive',  'NASDAQ', 'USD');
 
 -- ============================================================
 -- Portfolio del usuario demo (IdUser=1 = primer usuario registrado vía API)
@@ -35,37 +35,66 @@ INSERT INTO `Portfolios` (`IdPortfolio`, `IdUser`, `Name`) VALUES
 -- ============================================================
 -- Posiciones abiertas
 -- ============================================================
+-- IdCompany: AAPL=1, MSFT=2, NVDA=5, ITX=6, IBE=7 (3 y 4 son ahora SAN/SHEL del seed EF)
 INSERT INTO `Holdings` (`IdPortfolio`, `IdCompany`, `Shares`, `AvgBuyPrice`, `BuyDate`, `Notes`) VALUES
     (1, 1, 10.0000, 178.5000, '2026-02-15', 'Compra inicial Apple'),
     (1, 2,  5.0000, 415.2000, '2026-03-01', 'Microsoft a buen precio'),
-    (1, 3, 25.0000,  38.4500, '2026-01-20', 'Inditex pre-resultados'),
-    (1, 4, 50.0000,  12.8000, '2026-02-10', 'Iberdrola dividendo'),
+    (1, 6, 25.0000,  38.4500, '2026-01-20', 'Inditex pre-resultados'),
+    (1, 7, 50.0000,  12.8000, '2026-02-10', 'Iberdrola dividendo'),
     (1, 5,  3.0000, 890.0000, '2026-04-05', 'NVIDIA IA');
 
 -- ============================================================
--- Valoraciones históricas (marzo-junio 2026)
+-- Valoraciones históricas demo (marzo-junio 2026) — 9 empresas × 7 fechas = 63 filas
+-- EF Core ya siembra IdValuation 1-8 (fechas 2026-01-02 y 2026-03-02 para empresas 1-4).
+-- Las fechas de abajo no solapan con las del seed EF (único constraint: IdCompany+Date).
 -- ============================================================
-INSERT INTO `Valuations` (`IdCompany`, `Price`, `Date`, `Source`) VALUES
-    (1, 175.2000, '2026-03-01', 'Yahoo Finance'), (1, 180.5000, '2026-03-15', 'Yahoo Finance'),
-    (1, 182.3000, '2026-04-01', 'Yahoo Finance'), (1, 188.7500, '2026-04-15', 'Yahoo Finance'),
-    (1, 191.0000, '2026-05-01', 'Yahoo Finance'), (1, 195.4000, '2026-05-15', 'Yahoo Finance'),
-    (1, 193.2000, '2026-06-01', 'Yahoo Finance'),
-    (2, 410.0000, '2026-03-01', 'Yahoo Finance'), (2, 418.5000, '2026-03-15', 'Yahoo Finance'),
-    (2, 425.0000, '2026-04-01', 'Yahoo Finance'), (2, 430.2000, '2026-04-15', 'Yahoo Finance'),
-    (2, 435.8000, '2026-05-01', 'Yahoo Finance'), (2, 442.1000, '2026-05-15', 'Yahoo Finance'),
-    (2, 438.5000, '2026-06-01', 'Yahoo Finance'),
-    (3,  37.8000, '2026-03-01', 'BME'), (3,  39.1000, '2026-03-15', 'BME'),
-    (3,  40.2500, '2026-04-01', 'BME'), (3,  41.5000, '2026-04-15', 'BME'),
-    (3,  42.0000, '2026-05-01', 'BME'), (3,  43.2000, '2026-05-15', 'BME'),
-    (3,  42.8000, '2026-06-01', 'BME'),
-    (4,  12.5000, '2026-03-01', 'BME'), (4,  12.7500, '2026-03-15', 'BME'),
-    (4,  13.0000, '2026-04-01', 'BME'), (4,  13.2000, '2026-04-15', 'BME'),
-    (4,  13.5000, '2026-05-01', 'BME'), (4,  13.8000, '2026-05-15', 'BME'),
-    (4,  14.0000, '2026-06-01', 'BME'),
-    (5, 880.0000, '2026-03-01', 'Yahoo Finance'), (5, 895.0000, '2026-03-15', 'Yahoo Finance'),
-    (5, 910.5000, '2026-04-01', 'Yahoo Finance'), (5, 925.0000, '2026-04-15', 'Yahoo Finance'),
-    (5, 940.0000, '2026-05-01', 'Yahoo Finance'), (5, 960.5000, '2026-05-15', 'Yahoo Finance'),
-    (5, 955.0000, '2026-06-01', 'Yahoo Finance');
+INSERT INTO `Valuations` (`IdCompany`, `Price`, `PriceCurrency`, `Date`, `Source`) VALUES
+    -- AAPL (USD) — EF seed: 195 @ 2026-01-02, 210 @ 2026-03-02
+    (1, 175.2000, 'USD', '2026-03-01', 'Yahoo Finance'), (1, 180.5000, 'USD', '2026-03-15', 'Yahoo Finance'),
+    (1, 182.3000, 'USD', '2026-04-01', 'Yahoo Finance'), (1, 188.7500, 'USD', '2026-04-15', 'Yahoo Finance'),
+    (1, 191.0000, 'USD', '2026-05-01', 'Yahoo Finance'), (1, 195.4000, 'USD', '2026-05-15', 'Yahoo Finance'),
+    (1, 193.2000, 'USD', '2026-06-01', 'Yahoo Finance'),
+    -- MSFT (USD) — EF seed: 420 @ 2026-01-02, 440 @ 2026-03-02
+    (2, 410.0000, 'USD', '2026-03-01', 'Yahoo Finance'), (2, 418.5000, 'USD', '2026-03-15', 'Yahoo Finance'),
+    (2, 425.0000, 'USD', '2026-04-01', 'Yahoo Finance'), (2, 430.2000, 'USD', '2026-04-15', 'Yahoo Finance'),
+    (2, 435.8000, 'USD', '2026-05-01', 'Yahoo Finance'), (2, 442.1000, 'USD', '2026-05-15', 'Yahoo Finance'),
+    (2, 438.5000, 'USD', '2026-06-01', 'Yahoo Finance'),
+    -- SAN (EUR) — EF seed: 4.5 @ 2026-01-02, 4.8 @ 2026-03-02
+    (3,   4.6000, 'EUR', '2026-03-01', 'BME'), (3,   4.7500, 'EUR', '2026-03-15', 'BME'),
+    (3,   4.9000, 'EUR', '2026-04-01', 'BME'), (3,   5.0500, 'EUR', '2026-04-15', 'BME'),
+    (3,   5.1000, 'EUR', '2026-05-01', 'BME'), (3,   5.2000, 'EUR', '2026-05-15', 'BME'),
+    (3,   5.1500, 'EUR', '2026-06-01', 'BME'),
+    -- SHEL (GBP) — EF seed: 28 @ 2026-01-02, 30 @ 2026-03-02
+    (4,  28.5000, 'GBP', '2026-03-01', 'LSE'), (4,  29.0000, 'GBP', '2026-03-15', 'LSE'),
+    (4,  29.5000, 'GBP', '2026-04-01', 'LSE'), (4,  30.2000, 'GBP', '2026-04-15', 'LSE'),
+    (4,  30.8000, 'GBP', '2026-05-01', 'LSE'), (4,  31.5000, 'GBP', '2026-05-15', 'LSE'),
+    (4,  31.0000, 'GBP', '2026-06-01', 'LSE'),
+    -- NVDA (USD)
+    (5, 880.0000, 'USD', '2026-03-01', 'Yahoo Finance'), (5, 895.0000, 'USD', '2026-03-15', 'Yahoo Finance'),
+    (5, 910.5000, 'USD', '2026-04-01', 'Yahoo Finance'), (5, 925.0000, 'USD', '2026-04-15', 'Yahoo Finance'),
+    (5, 940.0000, 'USD', '2026-05-01', 'Yahoo Finance'), (5, 960.5000, 'USD', '2026-05-15', 'Yahoo Finance'),
+    (5, 955.0000, 'USD', '2026-06-01', 'Yahoo Finance'),
+    -- ITX/Inditex (EUR)
+    (6,  37.8000, 'EUR', '2026-03-01', 'BME'), (6,  39.1000, 'EUR', '2026-03-15', 'BME'),
+    (6,  40.2500, 'EUR', '2026-04-01', 'BME'), (6,  41.5000, 'EUR', '2026-04-15', 'BME'),
+    (6,  42.0000, 'EUR', '2026-05-01', 'BME'), (6,  43.2000, 'EUR', '2026-05-15', 'BME'),
+    (6,  42.8000, 'EUR', '2026-06-01', 'BME'),
+    -- IBE/Iberdrola (EUR)
+    (7,  12.5000, 'EUR', '2026-03-01', 'BME'), (7,  12.7500, 'EUR', '2026-03-15', 'BME'),
+    (7,  13.0000, 'EUR', '2026-04-01', 'BME'), (7,  13.2000, 'EUR', '2026-04-15', 'BME'),
+    (7,  13.5000, 'EUR', '2026-05-01', 'BME'), (7,  13.8000, 'EUR', '2026-05-15', 'BME'),
+    (7,  14.0000, 'EUR', '2026-06-01', 'BME'),
+    -- AMZN (USD)
+    (8, 185.0000, 'USD', '2026-03-01', 'Yahoo Finance'), (8, 192.5000, 'USD', '2026-03-15', 'Yahoo Finance'),
+    (8, 198.0000, 'USD', '2026-04-01', 'Yahoo Finance'), (8, 205.0000, 'USD', '2026-04-15', 'Yahoo Finance'),
+    (8, 210.5000, 'USD', '2026-05-01', 'Yahoo Finance'), (8, 215.0000, 'USD', '2026-05-15', 'Yahoo Finance'),
+    (8, 212.0000, 'USD', '2026-06-01', 'Yahoo Finance'),
+    -- TSLA (USD)
+    (9, 285.0000, 'USD', '2026-03-01', 'Yahoo Finance'), (9, 275.0000, 'USD', '2026-03-15', 'Yahoo Finance'),
+    (9, 290.0000, 'USD', '2026-04-01', 'Yahoo Finance'), (9, 305.0000, 'USD', '2026-04-15', 'Yahoo Finance'),
+    (9, 320.0000, 'USD', '2026-05-01', 'Yahoo Finance'), (9, 315.0000, 'USD', '2026-05-15', 'Yahoo Finance'),
+    (9, 330.0000, 'USD', '2026-06-01', 'Yahoo Finance');
+-- ── Total valoraciones demo: 63 filas (9 empresas × 7 fechas) ──────────────
 
 -- ============================================================
 -- Transacciones: 3 meses de datos (marzo-mayo 2026)
