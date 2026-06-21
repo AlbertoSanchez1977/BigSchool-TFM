@@ -1,4 +1,4 @@
-# BC Inversiones — Plan 3A: Catálogo (Company + Valuation) — Implementation Plan
+﻿# BC Inversiones — Plan 3A: Catálogo (Company + Valuation) — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -829,7 +829,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Create: `src/backend/src/BigSchool.Application/Commands/Investments/AddValuation/AddValuationCommandHandler.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/AddValuationCommandHandlerTests.cs`
 
-- [ ] **Step 1: Escribir el test del handler (falla al no existir)**
+- [x] **Step 1: Escribir el test del handler (falla al no existir)**
 
 Crear `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/AddValuationCommandHandlerTests.cs`:
 
@@ -887,12 +887,12 @@ public class AddValuationCommandHandlerTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar para verificar que falla a compilar**
+- [x] **Step 2: Ejecutar para verificar que falla a compilar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj --filter "FullyQualifiedName~AddValuationCommandHandlerTests"`
 Expected: FAIL de compilación.
 
-- [ ] **Step 3: Crear el `ValuationDto`**
+- [x] **Step 3: Crear el `ValuationDto`**
 
 Crear `src/backend/src/BigSchool.Application/DTOs/Investments/ValuationDto.cs`:
 
@@ -905,7 +905,7 @@ namespace BigSchool.Application.DTOs.Investments;
 public record ValuationDto(int IdValuation, int IdCompany, decimal Price, Currency Currency, DateOnly Date, string? Source);
 ```
 
-- [ ] **Step 4: Crear el command y el validator**
+- [x] **Step 4: Crear el command y el validator**
 
 Crear `src/backend/src/BigSchool.Application/Commands/Investments/AddValuation/AddValuationCommand.cs`:
 
@@ -937,7 +937,7 @@ public class AddValuationCommandValidator : AbstractValidator<AddValuationComman
 }
 ```
 
-- [ ] **Step 5: Crear el handler**
+- [x] **Step 5: Crear el handler**
 
 Crear `src/backend/src/BigSchool.Application/Commands/Investments/AddValuation/AddValuationCommandHandler.cs`:
 
@@ -970,12 +970,12 @@ public class AddValuationCommandHandler : IRequestHandler<AddValuationCommand, V
 }
 ```
 
-- [ ] **Step 6: Ejecutar el test**
+- [x] **Step 6: Ejecutar el test**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj --filter "FullyQualifiedName~AddValuationCommandHandlerTests"`
 Expected: PASS los 2 tests.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Application/DTOs/Investments/ValuationDto.cs src/backend/src/BigSchool.Application/Commands/Investments/AddValuation/ src/backend/tests/BigSchool.Application.Tests/Commands/Investments/AddValuationCommandHandlerTests.cs
@@ -1000,7 +1000,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 > Las queries Dapper se validan vía tests E2E (Tasks 10-13), no unitarios — coherente con el resto del proyecto.
 
-- [ ] **Step 1: Crear los DTOs de query (Dapper → `string` para monedas, `DateOnly` para fechas)**
+- [x] **Step 1: Crear los DTOs de query (Dapper → `string` para monedas, `DateOnly` para fechas)**
 
 Crear `src/backend/src/BigSchool.Application/DTOs/Investments/CompanyListItemDto.cs`:
 
@@ -1022,7 +1022,7 @@ public record ValuationListItemDto(
     int IdValuation, int IdCompany, decimal Price, string PriceCurrency, DateOnly Date, string? Source);
 ```
 
-- [ ] **Step 2: Crear `GetCompanies` (lista + filtro + última cotización)**
+- [x] **Step 2: Crear `GetCompanies` (lista + filtro + última cotización)**
 
 Crear `src/backend/src/BigSchool.Application/Queries/Investments/GetCompanies/GetCompaniesQuery.cs`:
 
@@ -1078,7 +1078,7 @@ public class GetCompaniesQueryHandler : IRequestHandler<GetCompaniesQuery, IRead
 }
 ```
 
-- [ ] **Step 3: Crear `GetCompanyById`**
+- [x] **Step 3: Crear `GetCompanyById`**
 
 Crear `src/backend/src/BigSchool.Application/Queries/Investments/GetCompanyById/GetCompanyByIdQuery.cs`:
 
@@ -1130,7 +1130,7 @@ public class GetCompanyByIdQueryHandler : IRequestHandler<GetCompanyByIdQuery, C
 }
 ```
 
-- [ ] **Step 4: Crear `GetCompanyValuations`**
+- [x] **Step 4: Crear `GetCompanyValuations`**
 
 Crear `src/backend/src/BigSchool.Application/Queries/Investments/GetCompanyValuations/GetCompanyValuationsQuery.cs`:
 
@@ -1178,12 +1178,12 @@ public class GetCompanyValuationsQueryHandler : IRequestHandler<GetCompanyValuat
 }
 ```
 
-- [ ] **Step 5: Compilar Application**
+- [x] **Step 5: Compilar Application**
 
 Run: `dotnet build src/backend/src/BigSchool.Application/BigSchool.Application.csproj -c Release`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Application/DTOs/Investments/CompanyListItemDto.cs src/backend/src/BigSchool.Application/DTOs/Investments/ValuationListItemDto.cs src/backend/src/BigSchool.Application/Queries/Investments/
@@ -1199,7 +1199,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 **Files:**
 - Create: `src/backend/src/BigSchool.WebApi/Controllers/CompaniesController.cs`
 
-- [ ] **Step 1: Crear el controller**
+- [x] **Step 1: Crear el controller**
 
 Crear `src/backend/src/BigSchool.WebApi/Controllers/CompaniesController.cs`:
 
@@ -1282,12 +1282,12 @@ public class CompaniesController : ControllerBase
 }
 ```
 
-- [ ] **Step 2: Compilar la solución de backend**
+- [x] **Step 2: Compilar la solución de backend**
 
 Run: `dotnet build src/backend/src/BigSchool.WebApi/BigSchool.WebApi.csproj -c Release`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.WebApi/Controllers/CompaniesController.cs
