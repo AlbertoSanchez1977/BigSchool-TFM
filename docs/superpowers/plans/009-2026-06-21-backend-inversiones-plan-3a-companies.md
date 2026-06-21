@@ -64,7 +64,7 @@ Ruta base del backend: `src/backend/`. Todos los comandos se ejecutan desde la r
 - Create: `src/backend/src/BigSchool.Domain/Exceptions/DuplicateValuationDomainException.cs`
 - Test: `src/backend/tests/BigSchool.Domain.Tests/Entities/CompanyTests.cs`
 
-- [ ] **Step 1: Escribir el test de dominio (falla al no existir el modelo)**
+- [x] **Step 1: Escribir el test de dominio (falla al no existir el modelo)**
 
 Crear `src/backend/tests/BigSchool.Domain.Tests/Entities/CompanyTests.cs`:
 
@@ -157,12 +157,12 @@ public class CompanyTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test para verificar que falla a compilar**
+- [x] **Step 2: Ejecutar el test para verificar que falla a compilar**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj --filter "FullyQualifiedName~CompanyTests"`
 Expected: FAIL de compilación (`Company.Create`, `AddValuation`, `Valuation`, `DuplicateValuationDomainException` no existen).
 
-- [ ] **Step 3: Crear la excepción de valoración duplicada**
+- [x] **Step 3: Crear la excepción de valoración duplicada**
 
 Crear `src/backend/src/BigSchool.Domain/Exceptions/DuplicateValuationDomainException.cs`:
 
@@ -177,7 +177,7 @@ public class DuplicateValuationDomainException : ConflictException
 }
 ```
 
-- [ ] **Step 4: Crear la entidad hija `Valuation`**
+- [x] **Step 4: Crear la entidad hija `Valuation`**
 
 Crear `src/backend/src/BigSchool.Domain/Entities/Valuation.cs`:
 
@@ -201,23 +201,25 @@ public class Valuation : BaseEntity
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Valuation() { } // EF Core
+    protected Valuation() { } // EF Core
+
+    private Valuation(Money price, DateOnly date, string? source, EntityStatus idStatus, DateTime createdAt)
+    {
+        Price = price;
+        Date = date;
+        Source = source;
+        IdStatus = idStatus;
+        CreatedAt = createdAt;
+    }
 
     internal static Valuation Create(Money price, DateOnly date, string? source)
     {
-        return new Valuation
-        {
-            Price = price,
-            Date = date,
-            Source = source,
-            IdStatus = EntityStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+        return new Valuation(price, date, source, EntityStatus.Active, DateTime.UtcNow);
     }
 }
 ```
 
-- [ ] **Step 5: Implementar el AR `Company`**
+- [x] **Step 5: Implementar el AR `Company`**
 
 Reemplazar el contenido de `src/backend/src/BigSchool.Domain/Entities/Company.cs`:
 
@@ -294,12 +296,12 @@ public class Company : BaseEntity, IAggregateRoot
 
 > **Nota**: `Money.Create` redondea a 2 decimales (escala del VO). Para precios de inversión la columna es `decimal(18,4)`; en la práctica los precios sembrados/probados usan ≤2 decimales, así que el redondeo no afecta. Si en el futuro se requieren 4 decimales reales en el dominio, se ampliará `Money.Scale` (fuera del alcance de 3A).
 
-- [ ] **Step 6: Ejecutar el test para verificar que pasa**
+- [x] **Step 6: Ejecutar el test para verificar que pasa**
 
 Run: `dotnet test src/backend/tests/BigSchool.Domain.Tests/BigSchool.Domain.Tests.csproj --filter "FullyQualifiedName~CompanyTests"`
 Expected: PASS los 7 casos (2 del Theory + 5 Facts).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Domain/Entities/Company.cs src/backend/src/BigSchool.Domain/Entities/Valuation.cs src/backend/src/BigSchool.Domain/Exceptions/DuplicateValuationDomainException.cs src/backend/tests/BigSchool.Domain.Tests/Entities/CompanyTests.cs
