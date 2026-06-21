@@ -570,7 +570,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Create: `src/backend/src/BigSchool.Application/Interfaces/Repositories/ICompanyRepository.cs`
 - Create: `src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/CompanyRepository.cs`
 
-- [ ] **Step 1: Crear la interfaz del repositorio**
+- [x] **Step 1: Crear la interfaz del repositorio**
 
 Crear `src/backend/src/BigSchool.Application/Interfaces/Repositories/ICompanyRepository.cs`:
 
@@ -586,7 +586,7 @@ public interface ICompanyRepository : IRepository<Company, int>
 }
 ```
 
-- [ ] **Step 2: Crear la implementación**
+- [x] **Step 2: Crear la implementación**
 
 Crear `src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/CompanyRepository.cs`:
 
@@ -599,12 +599,8 @@ namespace BigSchool.Infrastructure.Persistence.Repositories;
 
 public class CompanyRepository : EFRepository<Company, int>, ICompanyRepository
 {
-    public CompanyRepository(BigSchoolDbContext context) : base(context) { }
-
-    public async Task<Company?> GetByTickerAsync(string ticker, CancellationToken cancellationToken = default)
+    public CompanyRepository(BigSchoolDbContext context) : base(context)
     {
-        var normalized = ticker.Trim().ToUpperInvariant();
-        return await Context.Companies.FirstOrDefaultAsync(c => c.Ticker == normalized, cancellationToken);
     }
 
     public async Task<Company?> GetByIdWithValuationsAsync(int id, CancellationToken cancellationToken = default)
@@ -613,15 +609,21 @@ public class CompanyRepository : EFRepository<Company, int>, ICompanyRepository
             .Include(c => c.Valuations)
             .FirstOrDefaultAsync(c => c.IdCompany == id, cancellationToken);
     }
+
+    public async Task<Company?> GetByTickerAsync(string ticker, CancellationToken cancellationToken = default)
+    {
+        var normalized = ticker.Trim().ToUpperInvariant();
+        return await Context.Companies.FirstOrDefaultAsync(c => c.Ticker == normalized, cancellationToken);
+    }
 }
 ```
 
-- [ ] **Step 3: Compilar**
+- [x] **Step 3: Compilar**
 
 Run: `dotnet build src/backend/src/BigSchool.Infrastructure/BigSchool.Infrastructure.csproj -c Release`
 Expected: BUILD SUCCEEDED. (No hace falta DI: Autofac auto-registra `CompanyRepository` como `ICompanyRepository`.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Application/Interfaces/Repositories/ICompanyRepository.cs src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/CompanyRepository.cs
