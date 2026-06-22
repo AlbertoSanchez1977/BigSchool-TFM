@@ -1207,7 +1207,7 @@ Compra = nuevo lote. El handler resuelve el rate (Company.Currency → base de l
 - Create: `.../AddHolding/AddHoldingCommandValidator.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/AddHoldingCommandHandlerTests.cs`
 
-- [ ] **Step 1: `HoldingDto`**
+- [x] **Step 1: `HoldingDto`**
 
 ```csharp
 using BigSchool.Domain.Enums;
@@ -1229,7 +1229,7 @@ public record HoldingDto(
     string? Notes);
 ```
 
-- [ ] **Step 2: `AddHoldingCommand`** (`BuyPrice` en la moneda de la empresa; no se pasa moneda)
+- [x] **Step 2: `AddHoldingCommand`** (`BuyPrice` en la moneda de la empresa; no se pasa moneda)
 
 ```csharp
 using BigSchool.Application.DTOs.Investments;
@@ -1247,7 +1247,7 @@ public record AddHoldingCommand(
     string? Notes) : IRequest<HoldingDto>;
 ```
 
-- [ ] **Step 3: `AddHoldingCommandValidator`**
+- [x] **Step 3: `AddHoldingCommandValidator`**
 
 ```csharp
 using FluentValidation;
@@ -1267,7 +1267,7 @@ public class AddHoldingCommandValidator : AbstractValidator<AddHoldingCommand>
 }
 ```
 
-- [ ] **Step 4: Escribir el test del handler que falla**
+- [x] **Step 4: Escribir el test del handler que falla**
 
 ```csharp
 using BigSchool.Application.Commands.Investments.AddHolding;
@@ -1366,12 +1366,12 @@ public class AddHoldingCommandHandlerTests
 }
 ```
 
-- [ ] **Step 5: Ejecutar el test (debe fallar)**
+- [x] **Step 5: Ejecutar el test (debe fallar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~AddHoldingCommandHandlerTests`
 Expected: FAIL.
 
-- [ ] **Step 6: Implementar `AddHoldingCommandHandler`**
+- [x] **Step 6: Implementar `AddHoldingCommandHandler`**
 
 ```csharp
 using BigSchool.Application.DTOs.Investments;
@@ -1434,7 +1434,7 @@ public class AddHoldingCommandHandler : IRequestHandler<AddHoldingCommand, Holdi
 }
 ```
 
-- [ ] **Step 7: Ejecutar el test (debe pasar) + commit**
+- [x] **Step 7: Ejecutar el test (debe pasar) + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~AddHoldingCommandHandlerTests`
 Expected: PASS.
