@@ -1695,7 +1695,7 @@ Venta a nivel (Portfolio, Company) con FIFO. Genera N `Disposal` y actualiza `Po
 - Create: `src/backend/src/BigSchool.Application/Commands/Investments/SellShares/{SellSharesCommand,SellSharesCommandHandler,SellSharesCommandValidator}.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/SellSharesCommandHandlerTests.cs`
 
-- [ ] **Step 1: DTOs**
+- [x] **Step 1: DTOs**
 
 ```csharp
 // DisposalDto.cs
@@ -1732,7 +1732,7 @@ public record SellSharesResultDto(
     Currency RealizedPnLCurrency);
 ```
 
-- [ ] **Step 2: `SellSharesCommand` + validator**
+- [x] **Step 2: `SellSharesCommand` + validator**
 
 ```csharp
 // SellSharesCommand.cs
@@ -1770,7 +1770,7 @@ public class SellSharesCommandValidator : AbstractValidator<SellSharesCommand>
 }
 ```
 
-- [ ] **Step 3: Escribir el test que falla**
+- [x] **Step 3: Escribir el test que falla**
 
 ```csharp
 using BigSchool.Application.Commands.Investments.SellShares;
@@ -1878,12 +1878,12 @@ public class SellSharesCommandHandlerTests
 }
 ```
 
-- [ ] **Step 4: Ejecutar (debe fallar)**
+- [x] **Step 4: Ejecutar (debe fallar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~SellSharesCommandHandlerTests`
 Expected: FAIL.
 
-- [ ] **Step 5: Implementar `SellSharesCommandHandler`**
+- [x] **Step 5: Implementar `SellSharesCommandHandler`**
 
 ```csharp
 using BigSchool.Application.DTOs.Investments;
@@ -1956,7 +1956,7 @@ public class SellSharesCommandHandler : IRequestHandler<SellSharesCommand, SellS
 
 > Notas sobre `Notes`: la venta puede generar varios `Disposal`; el dominio no propaga `request.Notes` a cada uno (los crea con `null`) para no ensuciar el historial. Si en el futuro se quiere anotar la venta, se añadiría al dominio. El test no comprueba `Notes` por lote.
 
-- [ ] **Step 6: Ejecutar (debe pasar) + commit**
+- [x] **Step 6: Ejecutar (debe pasar) + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~SellSharesCommandHandlerTests`
 Expected: PASS.
