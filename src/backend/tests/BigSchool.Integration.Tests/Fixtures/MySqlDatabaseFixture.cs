@@ -59,14 +59,16 @@ public sealed class MySqlDatabaseFixture : IAsyncLifetime
         await using var conn = new MySqlConnection(ConnectionString);
         await conn.OpenAsync();
         await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 0;");
+        await conn.ExecuteAsync("DELETE FROM Disposals;");
+        await conn.ExecuteAsync("DELETE FROM Holdings;");
+        await conn.ExecuteAsync("DELETE FROM Portfolios;");
         await conn.ExecuteAsync("TRUNCATE TABLE Transactions;");
-        // Catálogo de inversiones: preservar las 4 empresas semilla (IdCompany 1-4) y sus valoraciones;
-        // limpiar solo las creadas por tests.
-        await conn.ExecuteAsync("DELETE FROM Valuations WHERE IdCompany > 4;");
-        await conn.ExecuteAsync("DELETE FROM Companies WHERE IdCompany > 4;");
         await conn.ExecuteAsync("DELETE FROM SubCategories WHERE IdUser IS NOT NULL;");
         await conn.ExecuteAsync("DELETE FROM Users;");
         await conn.ExecuteAsync("DELETE FROM ExchangeRates WHERE Source <> 'seed';");
+        // Conservar el catálogo seedeado (Companies 1-4, Valuations 1-8); limpiar lo creado por tests.
+        await conn.ExecuteAsync("DELETE FROM Valuations WHERE IdValuation > 8;");
+        await conn.ExecuteAsync("DELETE FROM Companies WHERE IdCompany > 4;");
         await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 1;");
     }
 }
