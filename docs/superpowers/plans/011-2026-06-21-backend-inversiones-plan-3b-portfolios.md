@@ -3018,7 +3018,7 @@ git commit -m "test(e2e): CreatePortfolio, AddHolding (multimoneda), GetPortfoli
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/PutHoldingTests.cs`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/DeleteHoldingTests.cs`
 
-- [ ] **Step 1: `PostSaleTests`** (FIFO multi-lote + ciclo value investing multimoneda + 400/401/404)
+- [x] **Step 1: `PostSaleTests`** (FIFO multi-lote + ciclo value investing multimoneda + 400/401/404)
 
 ```csharp
 using System.Net;
@@ -3150,7 +3150,7 @@ public class PostSaleTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 2: `GetPerformanceTests`** (desglose realizado/no realizado/total)
+- [x] **Step 2: `GetPerformanceTests`** (desglose realizado/no realizado/total)
 
 ```csharp
 using System.Net;
@@ -3241,7 +3241,7 @@ public class GetPerformanceTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 3: `PutHoldingTests`**
+- [x] **Step 3: `PutHoldingTests`**
 
 ```csharp
 using System.Net;
@@ -3303,7 +3303,7 @@ public class PutHoldingTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 4: `DeleteHoldingTests`** (soft-delete + reversa de realizado)
+- [x] **Step 4: `DeleteHoldingTests`** (soft-delete + reversa de realizado)
 
 ```csharp
 using System.Net;
@@ -3370,7 +3370,7 @@ public class DeleteHoldingTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 5: Ejecutar todos los E2E de Investments + commit**
+- [x] **Step 5: Ejecutar todos los E2E de Investments + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj -c Release --filter "FullyQualifiedName~Investments"`
 Expected: PASS (todos). Si no hay Docker/MySQL, documentar el SKIP.
