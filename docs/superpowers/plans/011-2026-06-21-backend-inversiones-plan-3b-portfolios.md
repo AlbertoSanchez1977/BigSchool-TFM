@@ -1454,7 +1454,7 @@ git commit -m "feat: AddHolding command (compra=lote, snapshot AvgBuyPrice multi
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/UpdateHoldingCommandHandlerTests.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/DeleteHoldingCommandHandlerTests.cs`
 
-- [ ] **Step 1: `UpdateHoldingCommand` + validator**
+- [x] **Step 1: `UpdateHoldingCommand` + validator**
 
 ```csharp
 // UpdateHoldingCommand.cs
@@ -1482,7 +1482,7 @@ public class UpdateHoldingCommandValidator : AbstractValidator<UpdateHoldingComm
 }
 ```
 
-- [ ] **Step 2: `DeleteHoldingCommand`**
+- [x] **Step 2: `DeleteHoldingCommand`**
 
 ```csharp
 // DeleteHoldingCommand.cs
@@ -1493,7 +1493,7 @@ namespace BigSchool.Application.Commands.Investments.DeleteHolding;
 public record DeleteHoldingCommand(int PortfolioId, int IdUser, int HoldingId) : IRequest;
 ```
 
-- [ ] **Step 3: Escribir los tests que fallan**
+- [x] **Step 3: Escribir los tests que fallan**
 
 ```csharp
 // UpdateHoldingCommandHandlerTests.cs
@@ -1603,12 +1603,12 @@ public class DeleteHoldingCommandHandlerTests
 }
 ```
 
-- [ ] **Step 4: Ejecutar (deben fallar)**
+- [x] **Step 4: Ejecutar (deben fallar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateHoldingCommandHandlerTests|FullyQualifiedName~DeleteHoldingCommandHandlerTests"`
 Expected: FAIL.
 
-- [ ] **Step 5: Implementar los handlers**
+- [x] **Step 5: Implementar los handlers**
 
 ```csharp
 // UpdateHoldingCommandHandler.cs
@@ -1673,7 +1673,7 @@ public class DeleteHoldingCommandHandler : IRequestHandler<DeleteHoldingCommand>
 }
 ```
 
-- [ ] **Step 6: Ejecutar (deben pasar) + commit**
+- [x] **Step 6: Ejecutar (deben pasar) + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateHoldingCommandHandlerTests|FullyQualifiedName~DeleteHoldingCommandHandlerTests"`
 Expected: PASS.
