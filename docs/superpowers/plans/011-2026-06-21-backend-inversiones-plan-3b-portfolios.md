@@ -1982,7 +1982,7 @@ Consolidan en la moneda base del usuario. La valoración de mercado usa la **úl
 
 > Estas queries se verifican en E2E (Tasks 14-15) contra MySQL real; aquí no hay unit test (Dapper requiere BD).
 
-- [ ] **Step 1: Fragmento SQL compartido `PortfolioSqlFragments`**
+- [x] **Step 1: Fragmento SQL compartido `PortfolioSqlFragments`**
 
 ```csharp
 namespace BigSchool.Application.Queries.Investments;
@@ -2032,7 +2032,7 @@ FROM (
 }
 ```
 
-- [ ] **Step 2: DTOs de query**
+- [x] **Step 2: DTOs de query**
 
 ```csharp
 // PortfolioListItemDto.cs
@@ -2066,7 +2066,7 @@ public record PortfolioDetailDto(
     IReadOnlyList<HoldingListItemDto> Holdings);
 ```
 
-- [ ] **Step 3: `GetPortfolios` (query + handler)**
+- [x] **Step 3: `GetPortfolios` (query + handler)**
 
 ```csharp
 // GetPortfoliosQuery.cs
@@ -2131,7 +2131,7 @@ ORDER BY p.IdPortfolio;";
 }
 ```
 
-- [ ] **Step 4: `GetPortfolioById` (query + handler)**
+- [x] **Step 4: `GetPortfolioById` (query + handler)**
 
 ```csharp
 // GetPortfolioByIdQuery.cs
@@ -2209,7 +2209,7 @@ ORDER BY hv.BuyDate, hv.IdHolding;";
 
 > `QuerySingleOrDefaultAsync` sin tipo devuelve `dynamic` (una fila); el casteo explícito de columnas es el patrón ya usado en `PostTransactionTests`. Alternativa: un DTO header dedicado — opcional.
 
-- [ ] **Step 5: Build + commit**
+- [x] **Step 5: Build + commit**
 
 Run: `dotnet build src/backend/Backend.sln -c Release`
 Expected: Build succeeded.
