@@ -2360,7 +2360,7 @@ git commit -m "feat: query Dapper GetPortfolioPerformance (realizado/no realizad
 **Files:**
 - Create: `src/backend/src/BigSchool.WebApi/Controllers/PortfoliosController.cs`
 
-- [ ] **Step 1: Implementar `PortfoliosController`**
+- [x] **Step 1: Implementar `PortfoliosController`**
 
 ```csharp
 using BigSchool.Application.Commands.Investments.AddHolding;
@@ -2484,7 +2484,7 @@ public class PortfoliosController : ControllerBase
 }
 ```
 
-- [ ] **Step 2: Build + commit**
+- [x] **Step 2: Build + commit**
 
 Run: `dotnet build src/backend/Backend.sln -c Release`
 Expected: Build succeeded.
