@@ -2693,7 +2693,7 @@ Un fichero por endpoint. **Requiere MySQL levantado.** Usa el catálogo seedeado
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/GetPortfoliosTests.cs`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/GetPortfolioByIdTests.cs`
 
-- [ ] **Step 1: `PostPortfolioTests`**
+- [x] **Step 1: `PostPortfolioTests`**
 
 ```csharp
 using System.Net;
@@ -2761,7 +2761,7 @@ public class PostPortfolioTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 2: `PostHoldingTests`** (compra multimoneda con verificación física y conversión determinista)
+- [x] **Step 2: `PostHoldingTests`** (compra multimoneda con verificación física y conversión determinista)
 
 ```csharp
 using System.Net;
@@ -2883,7 +2883,7 @@ public class PostHoldingTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 3: `GetPortfoliosTests`** (resumen con valor de mercado convertido)
+- [x] **Step 3: `GetPortfoliosTests`** (resumen con valor de mercado convertido)
 
 ```csharp
 using System.Net;
@@ -2935,7 +2935,7 @@ public class GetPortfoliosTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 4: `GetPortfolioByIdTests`**
+- [x] **Step 4: `GetPortfolioByIdTests`**
 
 ```csharp
 using System.Net;
@@ -2998,7 +2998,7 @@ public class GetPortfolioByIdTests : PortfolioEndpointTestBase
 }
 ```
 
-- [ ] **Step 5: Ejecutar los E2E de esta task + commit**
+- [x] **Step 5: Ejecutar los E2E de esta task + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj -c Release --filter "FullyQualifiedName~Investments.PostPortfolioTests|FullyQualifiedName~Investments.PostHoldingTests|FullyQualifiedName~Investments.GetPortfoliosTests|FullyQualifiedName~Investments.GetPortfolioByIdTests"`
 Expected: PASS (todos). Si no hay Docker/MySQL, documentar el SKIP y continuar.
