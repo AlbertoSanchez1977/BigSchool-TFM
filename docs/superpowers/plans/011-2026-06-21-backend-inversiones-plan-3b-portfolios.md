@@ -984,7 +984,7 @@ git commit -m "feat: EF config (Portfolio/Holding/Disposal), DbSets y migración
 
 > `IPortfolioRepository` ya existe como stub `: IRepository<Portfolio, int> {}`. Se le añaden métodos de carga del grafo completo (Holdings + Disposals) para los comandos que mutan el agregado.
 
-- [ ] **Step 1: Ampliar `IPortfolioRepository`**
+- [x] **Step 1: Ampliar `IPortfolioRepository`**
 
 ```csharp
 using BigSchool.Domain.Entities;
@@ -998,7 +998,7 @@ public interface IPortfolioRepository : IRepository<Portfolio, int>
 }
 ```
 
-- [ ] **Step 2: Implementar `PortfolioRepository`**
+- [x] **Step 2: Implementar `PortfolioRepository`**
 
 ```csharp
 using BigSchool.Application.Interfaces.Repositories;
@@ -1025,12 +1025,12 @@ public class PortfolioRepository : EFRepository<Portfolio, int>, IPortfolioRepos
 
 > Autofac lo auto-registra (no hay task de DI). El filtro global de query oculta automáticamente las filas `Deleted` en todos los niveles.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `dotnet build src/backend/Backend.sln -c Release`
 Expected: Build succeeded.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/src/BigSchool.Application/Interfaces/Repositories/IPortfolioRepository.cs src/backend/src/BigSchool.Infrastructure/Persistence/Repositories/PortfolioRepository.cs
