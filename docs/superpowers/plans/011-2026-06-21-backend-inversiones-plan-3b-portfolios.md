@@ -1048,7 +1048,7 @@ git commit -m "feat: IPortfolioRepository.GetByIdWithHoldingsAsync + PortfolioRe
 - Create: `.../CreatePortfolio/CreatePortfolioCommandValidator.cs`
 - Test: `src/backend/tests/BigSchool.Application.Tests/Commands/Investments/CreatePortfolioCommandHandlerTests.cs`
 
-- [ ] **Step 1: `PortfolioDto`** (DTO de command: Currency tipado)
+- [x] **Step 1: `PortfolioDto`** (DTO de command: Currency tipado)
 
 ```csharp
 using BigSchool.Domain.Enums;
@@ -1059,7 +1059,7 @@ namespace BigSchool.Application.DTOs.Investments;
 public record PortfolioDto(int IdPortfolio, string Name, decimal RealizedPnL, Currency RealizedPnLCurrency);
 ```
 
-- [ ] **Step 2: `CreatePortfolioCommand`**
+- [x] **Step 2: `CreatePortfolioCommand`**
 
 ```csharp
 using BigSchool.Application.DTOs.Investments;
@@ -1070,7 +1070,7 @@ namespace BigSchool.Application.Commands.Investments.CreatePortfolio;
 public record CreatePortfolioCommand(int IdUser, string Name) : IRequest<PortfolioDto>;
 ```
 
-- [ ] **Step 3: `CreatePortfolioCommandValidator`**
+- [x] **Step 3: `CreatePortfolioCommandValidator`**
 
 ```csharp
 using FluentValidation;
@@ -1086,7 +1086,7 @@ public class CreatePortfolioCommandValidator : AbstractValidator<CreatePortfolio
 }
 ```
 
-- [ ] **Step 4: Escribir el test del handler que falla**
+- [x] **Step 4: Escribir el test del handler que falla**
 
 ```csharp
 using BigSchool.Application.Commands.Investments.CreatePortfolio;
@@ -1142,12 +1142,12 @@ public class CreatePortfolioCommandHandlerTests
 }
 ```
 
-- [ ] **Step 5: Ejecutar el test (debe fallar)**
+- [x] **Step 5: Ejecutar el test (debe fallar)**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~CreatePortfolioCommandHandlerTests`
 Expected: FAIL (handler no existe).
 
-- [ ] **Step 6: Implementar `CreatePortfolioCommandHandler`**
+- [x] **Step 6: Implementar `CreatePortfolioCommandHandler`**
 
 ```csharp
 using BigSchool.Application.DTOs.Investments;
@@ -1184,7 +1184,7 @@ public class CreatePortfolioCommandHandler : IRequestHandler<CreatePortfolioComm
 }
 ```
 
-- [ ] **Step 7: Ejecutar el test (debe pasar) + commit**
+- [x] **Step 7: Ejecutar el test (debe pasar) + commit**
 
 Run: `dotnet test src/backend/tests/BigSchool.Application.Tests/BigSchool.Application.Tests.csproj -c Release --filter FullyQualifiedName~CreatePortfolioCommandHandlerTests`
 Expected: PASS.
