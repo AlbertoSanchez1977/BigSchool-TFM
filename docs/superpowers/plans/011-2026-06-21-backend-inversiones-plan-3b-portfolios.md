@@ -2230,7 +2230,7 @@ Desglose realizado / no realizado / total en la moneda base, por lote abierto y 
 - Create: `src/backend/src/BigSchool.Application/DTOs/Investments/PortfolioPerformanceDto.cs`
 - Create: `src/backend/src/BigSchool.Application/Queries/Investments/GetPortfolioPerformance/{GetPortfolioPerformanceQuery,GetPortfolioPerformanceQueryHandler}.cs`
 
-- [ ] **Step 1: DTOs**
+- [x] **Step 1: DTOs**
 
 ```csharp
 // HoldingPerformanceDto.cs
@@ -2253,7 +2253,7 @@ public record PortfolioPerformanceDto(
     IReadOnlyList<HoldingPerformanceDto> Holdings);
 ```
 
-- [ ] **Step 2: Query + handler**
+- [x] **Step 2: Query + handler**
 
 ```csharp
 // GetPortfolioPerformanceQuery.cs
@@ -2341,7 +2341,7 @@ ORDER BY hv.BuyDate, hv.IdHolding;";
 }
 ```
 
-- [ ] **Step 3: Build + commit**
+- [x] **Step 3: Build + commit**
 
 Run: `dotnet build src/backend/Backend.sln -c Release`
 Expected: Build succeeded.
