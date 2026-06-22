@@ -3389,7 +3389,7 @@ git commit -m "test(e2e): venta FIFO multimoneda, performance, PUT/DELETE holdin
 - Modify: `docs/01-arquitectura.md`
 - Modify: `docs/diario.md`
 
-- [ ] **Step 1: `docs/02-backend-design.md`** — actualizar el modelo de datos de Inversiones
+- [x] **Step 1: `docs/02-backend-design.md`** — actualizar el modelo de datos de Inversiones
 
 Añadir/actualizar (leer el fichero y editar la sección de Inversiones):
 - Tabla **Portfolios**: `IdPortfolio, IdUser (FK Users), Name VARCHAR(100), RealizedPnL DECIMAL(18,2) + RealizedPnLCurrency CHAR(3), IdStatus, CreatedAt, UpdatedAt`. Nota: `RealizedPnL` es **columna persistida** mantenida por el agregado.
@@ -3398,12 +3398,12 @@ Añadir/actualizar (leer el fichero y editar la sección de Inversiones):
 - Regla **FIFO** para ventas (sección 5 de la spec): la venta es a nivel (Portfolio, Company); consume lotes por antigüedad; genera N Disposals.
 - Endpoints nuevos (sección 8 de la spec): `GET/POST /portfolios`, `GET /portfolios/{id}`, `POST/PUT/DELETE /portfolios/{id}/holdings[/{hId}]`, `POST /portfolios/{id}/sales`, `GET /portfolios/{id}/performance`.
 
-- [ ] **Step 2: `docs/01-arquitectura.md`** — ADR del BC Inversiones
+- [x] **Step 2: `docs/01-arquitectura.md`** — ADR del BC Inversiones
 
 Añadir un ADR (formato existente del fichero) con la decisión:
 > **ADR — BC Inversiones (value investing multimoneda).** Catálogo `Company`/`Valuation` global vs cartera `Portfolio` por-usuario. `Holding` = lote (recompra = nuevo lote). Lado venta `Disposal` con **disposición FIFO obligatoria** (IRPF). Coste base y precio de venta como `MoneyConversion` snapshot congelado a su fecha; `RealizedPnL` consolidado y persistido en `Portfolio`; performance consolidada en la moneda base con conversión de la última valoración al tipo de su fecha (fallback al último tipo ≤ fecha). Hijas/nietas (`Holding`/`Disposal`) accedidas solo a través del AR; sin `InternalsVisibleTo` (tests del agregado).
 
-- [ ] **Step 3: `docs/diario.md`** — entrada de Plan 3B
+- [x] **Step 3: `docs/diario.md`** — entrada de Plan 3B
 
 Añadir al principio de la lista de entradas (formato de las existentes):
 ```markdown
@@ -3426,7 +3426,7 @@ Implementado el agregado `Portfolio` (AR por-usuario) con `Holding` (lote) y `Di
 Siguiente paso: integración frontend del BC Inversiones.
 ```
 
-- [ ] **Step 4: Suite completa (Release)**
+- [x] **Step 4: Suite completa (Release)**
 
 Run:
 ```bash
@@ -3437,7 +3437,7 @@ dotnet test src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.
 ```
 Expected: todo PASS, sin regresiones. Documentar el resultado (nº de tests). Si no hay Docker, los E2E se omiten — anotarlo.
 
-- [ ] **Step 5: Commit docs + push + PR**
+- [x] **Step 5: Commit docs + push + PR**
 
 ```bash
 git add docs/02-backend-design.md docs/01-arquitectura.md docs/diario.md
@@ -3463,7 +3463,7 @@ EOF
 )"
 ```
 
-- [ ] **Step 6: Anunciar la URL del PR y parar para revisión humana.**
+- [x] **Step 6: Anunciar la URL del PR y parar para revisión humana.**
 
 ---
 
