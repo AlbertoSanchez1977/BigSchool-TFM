@@ -96,8 +96,6 @@ public class Portfolio : BaseEntity, IAggregateRoot
         if (shares > available)
             throw new InsufficientSharesDomainException(companyId, shares, available);
 
-        var sellConversion = MoneyConversion.Create(sellPrice, baseCurrency, rate, rateDate);
-
         var disposals = new List<Disposal>();
         var remaining = shares;
         var realizedTotal = 0m;
@@ -106,6 +104,11 @@ public class Portfolio : BaseEntity, IAggregateRoot
         {
             if (remaining <= 0m) break;
             var take = Math.Min(remaining, lot.OpenShares);
+            // Money y MoneyConversion frescos por disposal: EF Core rastrea owned entities por referencia;
+            // reutilizar la misma instancia de Money en múltiples disposals provoca que el batch INSERT
+            // omita las columnas del segundo registro (bug de Pomelo con nested owned entities).
+            var freshOriginal = Money.Create(sellPrice.Amount, sellPrice.Currency);
+            var sellConversion = MoneyConversion.Create(freshOriginal, baseCurrency, rate, rateDate);
             var disposal = lot.RecordDisposal(take, sellConversion, sellDate, null);
             disposals.Add(disposal);
             realizedTotal += disposal.RealizedPnL.Amount;
