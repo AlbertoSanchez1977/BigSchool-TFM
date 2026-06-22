@@ -2502,7 +2502,7 @@ git commit -m "feat: PortfoliosController (8 endpoints carteras/holdings/ventas 
 - Modify: `src/backend/tests/BigSchool.Integration.Tests/Fixtures/MySqlDatabaseFixture.cs`
 - Create: `src/backend/tests/BigSchool.Integration.Tests/Investments/PortfolioEndpointTestBase.cs`
 
-- [ ] **Step 1: Ampliar `ResetAsync`** — limpiar las tablas de cartera y los datos de catálogo creados por tests
+- [x] **Step 1: Ampliar `ResetAsync`** — limpiar las tablas de cartera y los datos de catálogo creados por tests
 
 Reemplazar el cuerpo del método `ResetAsync` por:
 
@@ -2526,7 +2526,7 @@ Reemplazar el cuerpo del método `ResetAsync` por:
     }
 ```
 
-- [ ] **Step 2: `PortfolioEndpointTestBase`** — helpers y tipos de deserialización
+- [x] **Step 2: `PortfolioEndpointTestBase`** — helpers y tipos de deserialización
 
 ```csharp
 using System.Net.Http.Headers;
@@ -2671,7 +2671,7 @@ public abstract class PortfolioEndpointTestBase : IntegrationTestBase
 }
 ```
 
-- [ ] **Step 3: Build de tests + commit**
+- [x] **Step 3: Build de tests + commit**
 
 Run: `dotnet build src/backend/tests/BigSchool.Integration.Tests/BigSchool.Integration.Tests.csproj -c Release`
 Expected: Build succeeded.
