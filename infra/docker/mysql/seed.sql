@@ -12,7 +12,15 @@
 -- ============================================================
 
 USE `bigschool`;
-
+-- ============================================================
+-- Usuario de pruebas (demo@bigschool.com, IdUser=1) ya creado vía API (RegisterAsync)
+-- Password=Demo2026! (hashado en EF Core, no se siembra aquí)
+--   1=AAPL (USD/NASDAQ)  2=MSFT (USD/NASDAQ)
+--   3=SAN  (EUR/BME)     4=SHEL (GBP/LSE)
+-- ============================================================
+INSERT IGNORE INTO `Users` (`IdUser`, `Email`, `PasswordHash`, `PasswordSalt`, `FullName`, `BaseCurrency`, `IdStatus`, `CreatedAt`) VALUES
+    (1, 'demo@bigschool.com', 'IgvUQiiIH1/MUfsvc6nUYA==', 'DfXPG5w8vbmmheoGkMhwYO2zTAWMkFbg/zIZ94728do=', 'Usuario Demo', 'EUR', 2, '2026-06-23 06:34:39.654309');
+    
 -- ============================================================
 -- Empresas adicionales (Plan 3A: BC Inversiones)
 -- EF Core ya siembra IdCompany 1-4 vía migración CreateCompanies:
