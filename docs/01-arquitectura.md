@@ -156,4 +156,36 @@ Este documento registra las decisiones de arquitectura (ADR ligero) tomadas dura
 
 ---
 
+## ADR-008: Reenfoque a MVP — IA mínima externa, RAG/MCP/Mobile a futuro
+
+**Fecha**: 2026-06-23
+**Estado**: Aceptado
+
+**Contexto**: Tres factores obligan a revisar el alcance:
+1. **Blocker de Azure**: la suscripción disponible no permite crear recursos de IA (Azure OpenAI), por lo que el RAG tal como estaba diseñado (embeddings + LLM en Azure) no es ejecutable ahora.
+2. **Revisión de arquitectura del MCP**: el MCP se concibió como widget para ChatGPT (de ahí el TypeScript separado). En la práctica aporta más valor como **MCP integrado** consumible por un LLM de pago (Claude u otro), con una capa de IA por detrás (Azure para indexar/buscar en el RAG; un modelo económico tipo GPT-4o para tareas auxiliares).
+3. **Necesidad de un MVP**: con el Backend ya implementado (Finanzas + Inversiones) es posible entregar valor construyendo ya el Frontend-Web, sin bloquearse por la IA.
+
+**Decisión**: Reorientar la entrega del TFM a un **MVP** y reclasificar el resto como **trabajo futuro**.
+
+- **MVP (entrega)**: Backend API (completo) + **Frontend-Web**. El frontend incluye una **zona de chat y subida de documentos**; el chat pasa por el **Backend API** hacia un **LLM de pago externo** (Claude / GPT-4o), **no Azure**. La subida de documentos queda como alimentador del futuro indexer.
+- **Trabajo futuro**:
+  - **RAG completo**: Indexer en Python + Qdrant + LLM de Azure para embeddings/indexación, cuando se habilite el acceso.
+  - **MCP en Python** (se abandona el TypeScript): herramienta de **flujos de análisis** — *screener* (filtrar empresas), *criterios* (revisión a fondo de una empresa) y *revisión de cartera*.
+  - **Mobile** (React Native, solo lectura).
+
+**Consecuencias**:
+- (+) Entrega desbloqueada: el MVP no depende de Azure ni del servicio Python.
+- (+) La IA sigue presente en la entrega (chat vía LLM de pago) → cubre "aplicaciones potenciadas por IA" sin Azure.
+- (+) El RAG/MCP/Mobile quedan documentados como roadmap coherente, no eliminados.
+- (+) La subida de documentos por el Backend deja el "enganche" listo para el indexer futuro.
+- (-) El RAG vectorial (Qdrant + embeddings) no se demuestra en la entrega; queda como diseño.
+- (-) Reescritura pendiente del módulo MCP (TypeScript → Python) cuando se aborde.
+
+**Notas**:
+- El detalle de la pieza **Frontend-Web** se tratará en una conversación de diseño aparte (no incluida en este reenfoque preliminar).
+- Afecta a `README.md`, `docs/00-vision.md` y `docs/02-backend-design.md` (sección IA/RAG reclasificada).
+
+---
+
 *Añadir nuevas decisiones al final del documento siguiendo el mismo formato.*

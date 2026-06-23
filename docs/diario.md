@@ -422,6 +422,28 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-23 — Cambio de enfoque: reorientación a MVP
+
+### Fase: Diseño
+
+**Módulo**: docs / arquitectura general
+
+**Actividades realizadas:**
+- Revisión de alcance del TFM y actualización de documentación de visión y arquitectura (`README.md`, `docs/00-vision.md`, `docs/01-arquitectura.md` con ADR-008, `docs/02-backend-design.md`).
+
+**Decisiones / Problemas encontrados:**
+- **Blocker de Azure**: la suscripción no permite crear recursos de IA → el RAG con embeddings/LLM en Azure no es ejecutable ahora.
+- **Replanteamiento del MCP**: de widget para ChatGPT (TypeScript) a MCP integrado en Python, como herramienta de flujos de análisis (screener / criterios / revisión de cartera) a futuro.
+- **Prioridad MVP**: con el Backend completo (Finanzas + Inversiones) se entrega ya el Frontend-Web con una demo de IA mínima (chat + subida de documentos) vía Backend hacia un LLM de pago externo.
+
+**Resultado / Estado:**
+- Entrega del TFM reorientada a MVP (Backend + Frontend-Web + IA mínima externa). RAG completo, MCP (Python) y Mobile reclasificados como trabajo futuro, documentados como roadmap.
+
+**Siguiente paso:**
+- [ ] Conversación de diseño en detalle de la pieza **Frontend-Web** (solo diseño, abierta a preguntas e ideas).
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:

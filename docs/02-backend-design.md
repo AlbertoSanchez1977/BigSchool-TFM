@@ -3,6 +3,8 @@
 **Fecha**: 2026-06-06
 **Estado**: Diseño aprobado
 
+> **Nota de alcance (2026-06-23, ADR-008).** El módulo de IA del Backend se reclasifica. En el **MVP**, el Backend expone el chat hacia un **LLM de pago externo** (Claude / GPT-4o, no Azure) y recibe la subida de documentos. El **RAG completo** (proxy a un servicio Python con Qdrant + LLM de Azure) pasa a **trabajo futuro**: las secciones de RAG de este documento describen el diseño objetivo, no la implementación del MVP. El resto del documento (Finanzas, Inversiones, Auth) corresponde al MVP ya implementado.
+
 ---
 
 ## Convenciones de Datos
@@ -668,13 +670,17 @@ public class PortfolioProfile : Profile
 | POST | /api/v1/portfolios/{id}/sales | Venta FIFO a nivel (Portfolio, Company) → N Disposals — EF Core |
 | GET | /api/v1/portfolios/{id}/performance | Rentabilidad consolidada (realizado + no realizado) — Dapper |
 
-### RAG (proxy al RAG Service Python)
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | /api/v1/rag/chat | Mensaje al LLM |
-| GET | /api/v1/rag/documents | Listar documentos — Dapper |
-| POST | /api/v1/rag/documents | Subir documento — EF Core |
-| DELETE | /api/v1/rag/documents/{id} | Eliminar — EF Core |
+### IA / RAG
+
+> **MVP**: `POST /api/v1/rag/chat` (o endpoint equivalente) reenvía el mensaje a un **LLM de pago externo** (Claude / GPT-4o) y la gestión de documentos (`/rag/documents`) recibe la subida que alimentará el futuro indexer. **Trabajo futuro**: el proxy al servicio RAG Python con Qdrant + LLM de Azure para recuperación semántica. La tabla siguiente describe el diseño objetivo completo.
+
+| Método | Ruta | Descripción | Estado |
+|--------|------|-------------|--------|
+| POST | /api/v1/rag/chat | Mensaje al LLM (MVP: LLM de pago externo; futuro: con contexto RAG) | MVP (mínimo) |
+| GET | /api/v1/rag/documents | Listar documentos — Dapper | MVP |
+| POST | /api/v1/rag/documents | Subir documento (alimentador del indexer) — EF Core | MVP |
+| DELETE | /api/v1/rag/documents/{id} | Eliminar — EF Core | MVP |
+| _(futuro)_ | indexación + búsqueda semántica | Servicio Python + Qdrant + embeddings Azure | 🔜 Futuro |
 
 ---
 
