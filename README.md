@@ -2,68 +2,72 @@
 
 Trabajo de Fin de Máster — Aplicación de gestión financiera personal con módulo de inversiones potenciado por IA.
 
+> **Nota de alcance (cambio de enfoque, 2026-06-23).** La entrega evaluable del TFM se centra en un **MVP**: **Backend API** (completo) + **Frontend-Web** con una **demo de IA mínima** (chat + subida de documentos) que pasa por el Backend hacia un **LLM de pago externo** (no Azure). El **RAG completo** (Indexer + Qdrant + LLM de Azure para indexar/buscar), el **MCP** (reorientado a Python como herramienta de flujos) y la **app Mobile** quedan como **trabajo futuro**. Ver `docs/01-arquitectura.md` (ADR-008) y `docs/00-vision.md`.
+
 ## 📋 Descripción
 
 Aplicación completa que combina:
 - **Control de gastos e ingresos** con gráficas y filtros
-- **Gestión de inversiones** en acciones con valoraciones históricas
-- **Módulo de IA** con RAG para escaneo y análisis de empresas usando LLM
-- **App Mobile** para consulta en modo lectura
-- **MCP Server** para acceso a datos financieros desde agentes IA
+- **Gestión de inversiones** en acciones con valoraciones históricas y carteras (FIFO, multimoneda)
+- **Módulo de IA (MVP)** — chat y subida de documentos vía Backend API hacia un LLM de pago externo
+- **Trabajo futuro** — RAG completo con Qdrant + LLM de Azure, MCP en Python (flujos de análisis), app Mobile
 
 ## 🏗️ Arquitectura
 
+**MVP (entrega del TFM)** — línea sólida; **trabajo futuro** — entre corchetes:
+
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ Frontend Web│     │  Mobile App  │     │ MCP Server  │
-│  (Next.js)  │     │(React Native)│     │ (TypeScript)│
-└──────┬──────┘     └──────┬───────┘     └──────┬──────┘
-       │                   │                     │
-       └───────────────────┼─────────────────────┘
-                           │ HTTP (REST)
-                    ┌──────┴──────┐
-                    │ Backend API │
-                    │  (.NET 8)   │
-                    └──┬───────┬──┘
-                       │       │ HTTP
-                 ┌─────┴──┐ ┌──┴──────────┐
-                 │ MySQL  │ │ RAG Service │
-                 │   8    │ │  (Python)   │
-                 └────────┘ └──────┬──────┘
-                                   │
-                              ┌────┴────┐
-                              │ Qdrant  │
-                              │(Vectors)│
-                              └─────────┘
-                                   │
-                          ┌────────┴────────┐
-                          │  Azure OpenAI   │
-                          └─────────────────┘
+                 ┌──────────────────────────┐
+                 │       Frontend Web       │
+                 │  (Next.js) — incluye     │
+                 │  zona de chat + subida   │
+                 │  de documentos           │
+                 └────────────┬─────────────┘
+                              │ HTTP (REST)
+                       ┌──────┴──────┐
+                       │ Backend API │
+                       │  (.NET 8)   │
+                       └──┬───────┬──┘
+                          │       │ HTTP
+                    ┌─────┴──┐ ┌──┴───────────────────┐
+                    │ MySQL  │ │  LLM de pago externo │
+                    │   8    │ │  (Claude / GPT-4o)   │
+                    └────────┘ └──────────────────────┘
+
+── Trabajo futuro ─────────────────────────────────────────────
+   [ Indexer (Python) ] → [ Qdrant (vectores) ] → [ LLM Azure ]
+   [ MCP Server (Python): screener / criterios / revisión cartera ]
+   [ Mobile App (React Native, solo lectura) ]
 ```
 
 ## 🛠️ Stack Tecnológico
 
+### MVP (entrega del TFM)
 | Componente | Tecnología |
 |-----------|-----------|
 | Backend API | .NET 8 C#, Clean Architecture, CQRS, DDD |
 | BD Principal | MySQL 8 |
-| Vector Store | Qdrant |
-| LLM Provider | Azure OpenAI |
 | Frontend Web | Next.js 14+, TypeScript, Tailwind CSS |
-| Mobile | React Native + Expo |
-| MCP Server | TypeScript, Node.js |
+| LLM (chat MVP) | LLM de pago externo (Claude / GPT-4o), vía Backend API |
 | Infra | Docker Compose + Kubernetes (local) |
+
+### Trabajo futuro
+| Componente | Tecnología (prevista) |
+|-----------|-----------|
+| Indexer / RAG | Python, Qdrant (vector store), LLM de Azure para embeddings e indexación |
+| MCP Server | Python — herramienta de flujos (screener, criterios, revisión de cartera) |
+| Mobile | React Native + Expo (solo lectura) |
 
 ## 📁 Estructura del Proyecto
 
 ```
 BigSchool-TFM/
 ├── src/
-│   ├── backend/            → API RESTful (.NET 8)
-│   ├── frontend-web/       → Aplicación web (Next.js)
-│   ├── mobile/             → App móvil (React Native)
-│   ├── mcp-server/         → Servidor MCP (TypeScript)
-│   └── rag-service/        → Servicio RAG (Python/FastAPI)
+│   ├── backend/            → API RESTful (.NET 8) — MVP
+│   ├── frontend-web/       → Aplicación web (Next.js) — MVP
+│   ├── mobile/             → App móvil (React Native) — trabajo futuro
+│   ├── mcp-server/         → Servidor MCP — se reorienta a Python (trabajo futuro)
+│   └── rag-service/        → Indexer/RAG (Python) — trabajo futuro
 ├── infra/
 │   ├── docker/             → Dockerfiles
 │   ├── docker-compose.yml  → Entorno de desarrollo
@@ -79,8 +83,8 @@ BigSchool-TFM/
 - Docker Desktop
 - .NET 8 SDK
 - Node.js 20+
-- Python 3.11+
-- Cuenta Azure con acceso a Azure OpenAI
+- Clave de API de un LLM de pago (Claude / OpenAI) para la demo de IA del MVP
+- _(Trabajo futuro)_ Python 3.11+ y cuenta Azure con acceso a Azure OpenAI para el RAG completo
 
 ### Levantar el entorno completo
 
@@ -104,23 +108,23 @@ docker-compose -f infra/docker-compose.yml up -d
 | Frontend Web | http://localhost:3000 |
 | Backend API | http://localhost:5000 |
 | Swagger API | http://localhost:5000/swagger |
-| RAG Service | http://localhost:8000/docs |
-| Qdrant Dashboard | http://localhost:6333/dashboard |
+| _(futuro)_ Indexer/RAG | http://localhost:8000/docs |
+| _(futuro)_ Qdrant Dashboard | http://localhost:6333/dashboard |
 
 ## 🎓 Contenidos Académicos Demostrados
 
-| Área del Máster | Implementación |
-|----------------|----------------|
-| Principios SOLID | Arquitectura del backend |
-| DDD | Bounded Contexts, Entities, Value Objects |
-| CQRS | Separación Commands/Queries con MediatR |
-| Arquitectura del Software | Clean Architecture, microservicios |
-| Fundamentos de IA | Integración con LLM (Azure OpenAI) |
-| Aplicaciones potenciadas por IA | Chat conversacional, escaneo de empresas |
-| Bases de Datos | MySQL relacional + Qdrant vectorial |
-| Docker y Kubernetes | Contenedorización completa + K8s local |
-| RAGs | Retrieval Augmented Generation con contexto personalizable |
-| Desarrollo potenciado por IA | MCP Server, uso de agentes en desarrollo |
+| Área del Máster | Implementación | Estado |
+|----------------|----------------|--------|
+| Principios SOLID | Arquitectura del backend | ✅ MVP |
+| DDD | Bounded Contexts, Entities, Value Objects | ✅ MVP |
+| CQRS | Separación Commands/Queries con MediatR | ✅ MVP |
+| Arquitectura del Software | Clean Architecture, microservicios | ✅ MVP |
+| Aplicaciones potenciadas por IA | Chat conversacional vía LLM de pago externo (Backend API) | ✅ MVP (mínimo) |
+| Bases de Datos | MySQL relacional | ✅ MVP |
+| Docker y Kubernetes | Contenedorización + K8s local | ✅ MVP |
+| Desarrollo potenciado por IA | Uso de agentes IA en el propio desarrollo | ✅ MVP |
+| Fundamentos de IA / RAGs | Indexer + Qdrant + LLM Azure (diseño y roadmap) | 🔜 Futuro |
+| Vector Store | Qdrant para Retrieval Augmented Generation | 🔜 Futuro |
 
 ## 📊 Datos de Demo
 
