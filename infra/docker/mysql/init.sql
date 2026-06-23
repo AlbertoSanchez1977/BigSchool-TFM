@@ -24,7 +24,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260620054007_CreateExchangeRates',        '8.0.11'),
     ('20260620085001_CreateTransactions',         '8.0.11'),
     ('20260621101518_CreateCompanies',            '8.0.11'),
-    ('20260621173448_AddSectorMarketEnums',       '8.0.11');
+    ('20260621173448_AddSectorMarketEnums',       '8.0.11'),
+    ('20260621184811_CreatePortfolios',           '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -224,39 +225,82 @@ INSERT IGNORE INTO `Valuations`
 ALTER TABLE `Valuations` AUTO_INCREMENT = 9;
 
 -- ============================================================
--- Tablas no gestionadas por EF Core (Plan 3B: Portfolio; Plan RAG)
+-- Tablas EF Core: Plan 3B — Portfolio/Holding/Disposal
+-- Espejo exacto de migración 20260621184811_CreatePortfolios
 -- ============================================================
+
+-- Portfolio: AR por-usuario. RealizedPnL = plusvalía acumulada persistida por el agregado.
 CREATE TABLE IF NOT EXISTS `Portfolios` (
-    `IdPortfolio` INT          AUTO_INCREMENT,
-    `IdUser`      INT          NOT NULL,
-    `Name`        VARCHAR(100) NOT NULL,
-    `IdStatus`    SMALLINT     NOT NULL DEFAULT 2,
-    `CreatedAt`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `UpdatedAt`   DATETIME     NULL,
-    PRIMARY KEY (`IdPortfolio`),
-    CONSTRAINT `FK_Portfolios_Users`
+    `IdPortfolio`         INT           NOT NULL AUTO_INCREMENT,
+    `IdUser`              INT           NOT NULL,
+    `Name`                VARCHAR(100)  CHARACTER SET utf8mb4 NOT NULL,
+    `RealizedPnL`         DECIMAL(18,2) NOT NULL,
+    `RealizedPnLCurrency` CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `IdStatus`            SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`           DATETIME(6)   NOT NULL,
+    `UpdatedAt`           DATETIME(6)   NULL,
+    CONSTRAINT `PK_Portfolios` PRIMARY KEY (`IdPortfolio`),
+    KEY `IX_Portfolios_IdUser` (`IdUser`),
+    CONSTRAINT `FK_Portfolios_Users_IdUser`
         FOREIGN KEY (`IdUser`) REFERENCES `Users` (`IdUser`) ON DELETE CASCADE
 ) CHARACTER SET utf8mb4;
 
+-- Holdings: lote de compra. AvgBuyPrice = MoneyConversion snapshot (Buy* columns).
+-- OpenShares = Shares − Σ Disposals.Shares activos (derivado, no persistido).
+-- FK IdCompany RESTRICT: no se puede borrar una empresa con lotes abiertos.
 CREATE TABLE IF NOT EXISTS `Holdings` (
-    `IdHolding`   INT           AUTO_INCREMENT,
-    `IdPortfolio` INT           NOT NULL,
-    `IdCompany`   INT           NOT NULL,
-    `Shares`      DECIMAL(18,4) NOT NULL,
-    `AvgBuyPrice` DECIMAL(18,4) NOT NULL,
-    `BuyDate`     DATE          NOT NULL,
-    `Notes`       VARCHAR(500)  NULL,
-    `IdStatus`    SMALLINT      NOT NULL DEFAULT 2,
-    `CreatedAt`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `UpdatedAt`   DATETIME      NULL,
-    PRIMARY KEY (`IdHolding`),
-    CONSTRAINT `FK_Holdings_Portfolios`
-        FOREIGN KEY (`IdPortfolio`) REFERENCES `Portfolios` (`IdPortfolio`) ON DELETE CASCADE,
-    CONSTRAINT `FK_Holdings_Companies`
-        FOREIGN KEY (`IdCompany`) REFERENCES `Companies` (`IdCompany`),
-    CONSTRAINT `CHK_Holdings_Shares` CHECK (`Shares` > 0)
+    `IdHolding`           INT           NOT NULL AUTO_INCREMENT,
+    `IdCompany`           INT           NOT NULL,
+    `Shares`              DECIMAL(18,4) NOT NULL,
+    `BuyOriginalAmount`   DECIMAL(18,4) NOT NULL,
+    `BuyOriginalCurrency` CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `BuyExchangeRate`     DECIMAL(18,6) NOT NULL,
+    `BuyBaseAmount`       DECIMAL(18,2) NOT NULL,
+    `BuyBaseCurrency`     CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `BuyRateDate`         DATE          NOT NULL,
+    `BuyDate`             DATE          NOT NULL,
+    `Notes`               VARCHAR(500)  CHARACTER SET utf8mb4 NULL,
+    `IdStatus`            SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`           DATETIME(6)   NOT NULL,
+    `UpdatedAt`           DATETIME(6)   NULL,
+    `IdPortfolio`         INT           NOT NULL,
+    CONSTRAINT `PK_Holdings` PRIMARY KEY (`IdHolding`),
+    KEY `IX_Holdings_IdCompany` (`IdCompany`),
+    KEY `IX_Holdings_IdPortfolio_IdCompany` (`IdPortfolio`, `IdCompany`),
+    CONSTRAINT `FK_Holdings_Companies_IdCompany`
+        FOREIGN KEY (`IdCompany`) REFERENCES `Companies` (`IdCompany`) ON DELETE RESTRICT,
+    CONSTRAINT `FK_Holdings_Portfolios_IdPortfolio`
+        FOREIGN KEY (`IdPortfolio`) REFERENCES `Portfolios` (`IdPortfolio`) ON DELETE CASCADE
 ) CHARACTER SET utf8mb4;
 
+-- Disposals: venta generada por SellShares FIFO. SellPrice = MoneyConversion snapshot (Sell* columns).
+-- RealizedPnL = (SellBase − BuyBase) × Shares (calculado y persistido por el agregado).
+CREATE TABLE IF NOT EXISTS `Disposals` (
+    `IdDisposal`           INT           NOT NULL AUTO_INCREMENT,
+    `Shares`               DECIMAL(18,4) NOT NULL,
+    `SellOriginalAmount`   DECIMAL(18,4) NOT NULL,
+    `SellOriginalCurrency` CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `SellExchangeRate`     DECIMAL(18,6) NOT NULL,
+    `SellBaseAmount`       DECIMAL(18,2) NOT NULL,
+    `SellBaseCurrency`     CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `SellRateDate`         DATE          NOT NULL,
+    `SellDate`             DATE          NOT NULL,
+    `RealizedPnL`          DECIMAL(18,2) NOT NULL,
+    `RealizedPnLCurrency`  CHAR(3)       CHARACTER SET utf8mb4 NOT NULL,
+    `Notes`                VARCHAR(500)  CHARACTER SET utf8mb4 NULL,
+    `IdStatus`             SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`            DATETIME(6)   NOT NULL,
+    `UpdatedAt`            DATETIME(6)   NULL,
+    `IdHolding`            INT           NOT NULL,
+    CONSTRAINT `PK_Disposals` PRIMARY KEY (`IdDisposal`),
+    KEY `IX_Disposals_IdHolding` (`IdHolding`),
+    CONSTRAINT `FK_Disposals_Holdings_IdHolding`
+        FOREIGN KEY (`IdHolding`) REFERENCES `Holdings` (`IdHolding`) ON DELETE CASCADE
+) CHARACTER SET utf8mb4;
+
+-- ============================================================
+-- Tablas no gestionadas por EF Core (Plan RAG)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `RagDocuments` (
     `IdRagDocument`      INT          AUTO_INCREMENT,
     `IdUser`             INT          NOT NULL,
