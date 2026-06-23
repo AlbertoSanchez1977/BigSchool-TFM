@@ -85,35 +85,49 @@ public enum EntityStatus : short
 │ IdTransaction      │  │ IdPortfolio   │    │ IdRagDocument    │
 │ IdUser (FK)        │  │ IdUser (FK)   │    │ IdUser (FK)      │
 │ Type (I/E)         │  │ Name          │    │ FileName         │
-│ IdMainCategory     │  │ IdStatus      │    │ IdStatus         │
-│ IdSubCategory      │  │ CreatedAt     │    │ UploadedAt       │
-│ OriginalAmount   ┐ │  │ UpdatedAt     │    └──────────────────┘
-│ OriginalCurrency │ │  └───────┬───────┘
+│ IdMainCategory     │  │ RealizedPnL ⁺ │    │ IdStatus         │
+│ IdSubCategory      │  │ IdStatus      │    │ UploadedAt       │
+│ OriginalAmount   ┐ │  │ CreatedAt     │    └──────────────────┘
+│ OriginalCurrency │ │  │ UpdatedAt     │
 │ ExchangeRate     ├─┼── MoneyConversion (snapshot)
-│ BaseAmount       │ │          │ 1:N (entidad hija)
-│ BaseCurrency     │ │          ▼
-│ RateDate         ┘ │  ┌──────────────────┐
-│ Date               │  │    Holdings      │
-│ IdStatus           │  ├──────────────────┤
-│ CreatedAt          │  │ IdHolding        │
-│ UpdatedAt          │  │ IdPortfolio      │
-└────────────────────┘  │ IdCompany        │
+│ BaseAmount       │ │  └───────┬───────┘
+│ BaseCurrency     │ │          │ 1:N (entidad hija)
+│ RateDate         ┘ │          ▼
+│ Date               │  ┌──────────────────┐
+│ IdStatus           │  │    Holdings      │ (lote compra)
+│ CreatedAt          │  ├──────────────────┤
+│ UpdatedAt          │  │ IdHolding        │
+└────────────────────┘  │ IdPortfolio      │
+                        │ IdCompany        │
                         │ Shares           │
-                        │ AvgBuyPrice  ⁺   │
+                        │ AvgBuyPrice  ⁺⁺  │
                         │ BuyDate          │
                         │ IdStatus         │
-                        │ CreatedAt        │
-                        │ UpdatedAt        │
                         └────────┬─────────┘
-                                 │ N:1
+                                 │ 1:N (entidad nieta)
+                                 ▼
+                        ┌──────────────────┐
+                        │    Disposals     │ (venta)
+                        ├──────────────────┤
+                        │ IdDisposal       │
+                        │ IdHolding        │
+                        │ Shares           │
+                        │ SellPrice    ⁺⁺  │
+                        │ SellDate         │
+                        │ RealizedPnL      │
+                        │ IdStatus         │
+                        └──────────┬───────┘
+
+                        N:1 (Holdings → Companies):
+                                 │
                                  ▼
                      ┌──────────────────┐    ┌──────────────────┐
                      │    Companies     │─1:N│   Valuations     │
-                     │    (AR)          │    │   (entidad hija) │
+                     │    (AR global)   │    │   (entidad hija) │
                      ├──────────────────┤    ├──────────────────┤
                      │ IdCompany        │    │ IdValuation      │
                      │ Name             │    │ IdCompany        │
-                     │ Ticker           │    │ Price        ⁺   │
+                     │ Ticker           │    │ Price        ⁺⁺  │
                      │ Sector           │    │ Date             │
                      │ Market           │    │ Source           │
                      │ Currency         │    │ IdStatus         │
@@ -135,8 +149,9 @@ public enum EntityStatus : short
 │ UNIQUE(From, To, RateDate)   │
 └──────────────────────────────┘
 
-⁺ Plan 3 (multimoneda): AvgBuyPrice (Holdings) y Price (Valuations) se modelarán como
-  MoneyConversion — precio en moneda de la empresa + tipo + importe en base + RateDate.
+⁺  Money (importe + moneda): RealizedPnL de Portfolio persiste en la moneda base del usuario.
+⁺⁺ MoneyConversion: snapshot (Original + Rate + Base + RateDate). AvgBuyPrice/SellPrice son
+   MoneyConversion (EF owned type, columnas prefijadas Buy*/Sell*). Valuation.Price es Money.
 ```
 
 ---
@@ -264,27 +279,58 @@ Subcategorías predefinidas (ejemplos):
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdPortfolio | INT | PK, AUTO_INCREMENT |
-| IdUser | INT | FK → Users, NOT NULL |
+| IdUser | INT | FK → Users ON DELETE CASCADE, NOT NULL |
 | Name | VARCHAR(100) | NOT NULL |
+| RealizedPnL | DECIMAL(18,2) | NOT NULL, DEFAULT 0 (plusvalía/minusvalía realizada consolidada en moneda base) |
+| RealizedPnLCurrency | CHAR(3) | NOT NULL (snapshot de la moneda base del usuario en el momento de creación) |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
-#### Holdings
+`RealizedPnL` es una **columna persistida** que el agregado `Portfolio` mantiene actualizada en cada `SellShares` y en cada `DeleteHolding` (reversa). No se recalcula desde `Disposals`; es el valor canónico acumulado.
+
+#### Holdings (lote de compra)
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdHolding | INT | PK, AUTO_INCREMENT |
-| IdPortfolio | INT | FK → Portfolios, NOT NULL |
-| IdCompany | INT | FK → Companies, NOT NULL |
-| Shares | DECIMAL(18,4) | NOT NULL, > 0 |
-| AvgBuyPrice | DECIMAL(18,4) | NOT NULL |
-| BuyDate | DATE | NOT NULL |
+| IdPortfolio | INT | FK → Portfolios ON DELETE CASCADE, NOT NULL |
+| IdCompany | INT | FK → Companies ON DELETE RESTRICT, NOT NULL |
+| Shares | DECIMAL(18,4) | NOT NULL, > 0 (total de acciones compradas en el lote) |
+| BuyOriginalAmount | DECIMAL(18,4) | NOT NULL (precio/acción en moneda de la empresa — snapshot) |
+| BuyOriginalCurrency | CHAR(3) | NOT NULL (moneda de la empresa — snapshot) |
+| BuyExchangeRate | DECIMAL(18,6) | NOT NULL (tipo empresa→base en BuyRateDate; 1 si misma moneda) |
+| BuyBaseAmount | DECIMAL(18,4) | NOT NULL (= BuyOriginalAmount × BuyExchangeRate — snapshot) |
+| BuyBaseCurrency | CHAR(3) | NOT NULL (moneda base del usuario — snapshot) |
+| BuyRateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
+| BuyDate | DATE | NOT NULL (fecha de compra; clave de ordenación FIFO) |
 | Notes | VARCHAR(500) | NULL |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
-> **Plan 3 (multimoneda)**: `AvgBuyPrice` se modelará como `MoneyConversion` (precio en moneda de la empresa + tipo + importe en base del usuario + `RateDate`), reutilizando el VO definido en Plan 2.
+Las 6 columnas `Buy*` son el VO `MoneyConversion` (`AvgBuyPrice`) mapeado como EF owned type con prefijo `Buy`. `OpenShares = Shares − Σ Disposals.Shares activos` se computa en memoria tras carga del agregado y en SQL en las queries Dapper; **no es columna persistida**. Recompra → **nuevo lote** (sin promediar precio). `IdCompany` usa `RESTRICT` (no se puede borrar una empresa con posiciones abiertas).
+
+#### Disposals (venta — entidad nieta)
+| Campo | Tipo | Restricciones |
+|-------|------|--------------|
+| IdDisposal | INT | PK, AUTO_INCREMENT |
+| IdHolding | INT | FK → Holdings ON DELETE CASCADE, NOT NULL |
+| Shares | DECIMAL(18,4) | NOT NULL, > 0 (acciones vendidas de este lote) |
+| SellOriginalAmount | DECIMAL(18,4) | NOT NULL (precio/acción de venta en moneda de la empresa — snapshot) |
+| SellOriginalCurrency | CHAR(3) | NOT NULL (moneda de la empresa — snapshot) |
+| SellExchangeRate | DECIMAL(18,6) | NOT NULL (tipo empresa→base en SellRateDate; 1 si misma moneda) |
+| SellBaseAmount | DECIMAL(18,4) | NOT NULL (= SellOriginalAmount × SellExchangeRate — snapshot) |
+| SellBaseCurrency | CHAR(3) | NOT NULL (moneda base del usuario — snapshot) |
+| SellRateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
+| SellDate | DATE | NOT NULL |
+| RealizedPnL | DECIMAL(18,2) | NOT NULL (= (SellBase − BuyBase) × Shares; positivo = ganancia) |
+| RealizedPnLCurrency | CHAR(3) | NOT NULL (moneda base — snapshot) |
+| Notes | VARCHAR(500) | NULL |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
+| CreatedAt | DATETIME | NOT NULL |
+| UpdatedAt | DATETIME | NULL |
+
+Las 6 columnas `Sell*` son el VO `MoneyConversion` (`SellPrice`) con prefijo `Sell`. `RealizedPnL` de `Disposal` es calculado y persistido; el `RealizedPnL` de `Portfolio` es el acumulado de todos los `Disposal` activos (ambos son canónicos). La venta consume lotes en orden **FIFO** a nivel `(Portfolio, Company)` — obligatorio para el cálculo de plusvalías IRPF.
 
 #### Valuations
 | Campo | Tipo | Restricciones |
@@ -613,13 +659,14 @@ public class PortfolioProfile : Profile
 ### Portfolio
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | /api/v1/portfolios | Listar carteras — Dapper |
-| POST | /api/v1/portfolios | Crear — EF Core |
-| GET | /api/v1/portfolios/{id} | Detalle + holdings — Dapper |
-| POST | /api/v1/portfolios/{id}/holdings | Añadir posición — EF Core |
-| PUT | /api/v1/portfolios/{id}/holdings/{hId} | Actualizar — EF Core |
-| DELETE | /api/v1/portfolios/{id}/holdings/{hId} | Borrado lógico — EF Core |
-| GET | /api/v1/portfolios/{id}/performance | Rentabilidad — Dapper |
+| GET | /api/v1/portfolios | Listar carteras con MarketValue consolidado — Dapper |
+| POST | /api/v1/portfolios | Crear cartera — EF Core |
+| GET | /api/v1/portfolios/{id} | Detalle + holdings con OpenShares — Dapper |
+| POST | /api/v1/portfolios/{id}/holdings | Añadir lote de compra — EF Core |
+| PUT | /api/v1/portfolios/{id}/holdings/{hId} | Actualizar notas del lote — EF Core |
+| DELETE | /api/v1/portfolios/{id}/holdings/{hId} | Borrado lógico + reversa de realizado — EF Core |
+| POST | /api/v1/portfolios/{id}/sales | Venta FIFO a nivel (Portfolio, Company) → N Disposals — EF Core |
+| GET | /api/v1/portfolios/{id}/performance | Rentabilidad consolidada (realizado + no realizado) — Dapper |
 
 ### RAG (proxy al RAG Service Python)
 | Método | Ruta | Descripción |

@@ -123,4 +123,37 @@ Este documento registra las decisiones de arquitectura (ADR ligero) tomadas dura
 
 ---
 
+## ADR-007: BC Inversiones — value investing multimoneda (Plan 3B)
+
+**Fecha**: 2026-06-21
+**Estado**: Aceptado
+
+**Contexto**: El BC Inversiones necesita modelar una cartera por usuario con posiciones en empresas que cotizan en distintas monedas, soporte para ventas FIFO (obligatorio IRPF) y cálculo de performance realizada/no realizada en la moneda base del usuario.
+
+**Decisión**: Tres entidades en un único agregado jerárquico de tres niveles:
+
+- **`Portfolio` (AR por-usuario)** → **`Holding` (lote de compra)** → **`Disposal` (venta)**.
+- **Catálogo global** (`Company`/`Valuation`) separado del agregado por-usuario: `Valuation.Price` es `Money` en moneda de la empresa; la conversión a base de usuario se realiza en las queries (no se snapshotea en el catálogo).
+- **Modelo de compra**: `AddHolding` registra un nuevo lote siempre (recompra ≠ promedio); `AvgBuyPrice` es un `MoneyConversion` snapshot congelado a `BuyDate`.
+- **Venta FIFO obligatoria** a nivel `(Portfolio, Company)`: `SellShares` ordena lotes por `BuyDate asc, IdHolding asc` y genera un `Disposal` por lote tocado. Motivo: obligación legal IRPF en España (criterio FIFO para cálculo de plusvalías).
+- **`SellPrice` como `MoneyConversion` snapshot** congelado a `SellDate`: igual que `AvgBuyPrice`, garantiza que el cálculo de `RealizedPnL` por disposal sea inmutable e independiente de variaciones posteriores de tipos.
+- **`RealizedPnL` persistido en `Portfolio`**: columna acumulada actualizada por el agregado en cada `SellShares` y revertida en `DeleteHolding`. Evita recalcular desde `Disposals` en tiempo de query; es el valor canónico.
+- **Hijas/nietas accedidas solo a través del AR**: sin `InternalsVisibleTo`; `Holding.Create` y `Disposal.Create` son `internal`; los tests del agregado usan únicamente la API pública de `Portfolio`. Consecuencia: el AR debe cargar `Holdings` + `Disposals` en el mismo query (`GetByIdWithHoldingsAsync`).
+- **Performance consolidada en base** mediante query Dapper con fallback de tipo (`HOLDING_VALUATION` fragment): última valoración de la empresa convertida al tipo cuya fecha ≤ fecha de valoración.
+
+**Consecuencias**:
+- (+) Invariantes FIFO y de realizado garantizados por el AR; imposible crear `Disposal` fuera del flujo `SellShares`.
+- (+) `RealizedPnL` siempre consistente; sin posibilidad de inconsistencia entre columna y suma de disposals.
+- (+) Sin `InternalsVisibleTo` — tests del agregado son verdaderamente de caja negra.
+- (+) Snapshot multimoneda: ni el `AvgBuyPrice` ni el `SellPrice` cambian si cambian los tipos de cambio históricos.
+- (-) El AR debe cargar todos los `Holdings` + `Disposals` activos para ejecutar FIFO — aceptable para colecciones pequeñas por usuario.
+- (-) Bug de Pomelo MySQL con shared owned-entity instances en batch INSERT (workaround: `Money.Create` fresco por disposal en el loop FIFO).
+
+**Alternativas descartadas**:
+- FIFO calculado en query (sin persistir `RealizedPnL`): recalcular en tiempo real complica las queries y rompe el modelo de snapshot.
+- `Holding` como AR independiente (sin `Portfolio` como padre): pierde el control de invariantes FIFO y la consolidación del realizado.
+- Promediar precio en recompra (PEPS promediado): no es el criterio IRPF obligatorio en España.
+
+---
+
 *Añadir nuevas decisiones al final del documento siguiendo el mismo formato.*

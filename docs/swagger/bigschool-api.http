@@ -247,3 +247,154 @@ Authorization: Bearer {{token}}
 }
 
 ###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PORTFOLIOS — BC Inversiones: Carteras (Plan 3B)
+#
+# ESTADO INICIAL (seed.sql):
+#   IdPortfolio=1 · "Mi cartera principal" · BaseCurrency=EUR · RealizedPnL=0
+#   Holdings:
+#     IdHolding=1  AAPL (1, USD) 10 acc @ 178.50 USD · coste base 163.80 EUR/acc
+#     IdHolding=2  MSFT (2, USD)  5 acc @ 415.20 USD · coste base 382.81 EUR/acc
+#     IdHolding=3  ITX  (6, EUR) 25 acc @  38.45 EUR
+#     IdHolding=4  IBE  (7, EUR) 50 acc @  12.80 EUR
+#     IdHolding=5  NVDA (5, USD)  3 acc @ 890.00 USD · coste base 814.35 EUR/acc
+#
+# WORKFLOW SUGERIDO:
+#   23 → listar carteras · 24 → crear segunda cartera · 25 → ver detalle cartera 1
+#   26 → añadir lote SAN · 27 → añadir segundo lote AAPL
+#   28 → vender SAN FIFO · 29 → vender AAPL FIFO cruzando 2 lotes
+#   30 → ver performance con realizado+no realizado · 31 → editar notas · 32 → borrar holding
+#
+# CATÁLOGO SEED: AAPL=1(USD) MSFT=2(USD) SAN=3(EUR) SHEL=4(GBP)
+#                NVDA=5(USD) ITX=6(EUR)  IBE=7(EUR) AMZN=8(USD) TSLA=9(USD)
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 23 Listar carteras — MarketValue consolidado en EUR (Dapper + última cotización)
+# Respuesta: [{ idPortfolio, name, baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL }]
+GET {{baseUrl}}/api/v1/portfolios
+Authorization: Bearer {{token}}
+
+###
+
+### 24 Crear segunda cartera
+POST {{baseUrl}}/api/v1/portfolios
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Cartera Tech USA"
+}
+
+###
+
+### 25 Detalle cartera 1 — holdings con OpenShares y AvgBuyPrice (Dapper)
+# Respuesta: { idPortfolio, name, baseCurrency, realizedPnL, holdings: [{idHolding, ticker, openShares, ...}] }
+GET {{baseUrl}}/api/v1/portfolios/1
+Authorization: Bearer {{token}}
+
+###
+
+### 26 Añadir lote SAN (EUR) — sin conversión FX (rate=1, misma moneda que BaseCurrency)
+# Tras este INSERT: IdHolding=6, SAN 200 acc @ 4.80 EUR, coste base = 4.80 EUR/acc
+POST {{baseUrl}}/api/v1/portfolios/1/holdings
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "idCompany": 3,
+  "shares": 200,
+  "buyPrice": 4.80,
+  "buyDate": "2026-06-10",
+  "notes": "SAN tras resultados Q1"
+}
+
+###
+
+### 27 Añadir segundo lote AAPL (USD) — requiere tipo USD→EUR en ExchangeRates a 2026-06-10
+# Si Frankfurter no responde, inserta la tasa manualmente antes de ejecutar:
+#   INSERT IGNORE INTO ExchangeRates (FromCurrency,ToCurrency,Rate,RateDate,Source,FetchedAt)
+#   VALUES ('USD','EUR',0.920,'2026-06-10','manual',NOW());
+# Tras este INSERT: IdHolding=7, AAPL 5 acc @ 193.20 USD
+POST {{baseUrl}}/api/v1/portfolios/1/holdings
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "idCompany": 1,
+  "shares": 5,
+  "buyPrice": 193.20,
+  "buyDate": "2026-06-10",
+  "notes": "AAPL segunda entrada"
+}
+
+###
+
+### 28 Venta FIFO — SAN (IdCompany=3) · vende 100 del lote 26 (200 acc)
+# FIFO: consume IdHolding=6 parcialmente (100 de 200 acc).
+# RealizedPnL por disposal = (5.15 − 4.80) × 100 = 35.00 EUR
+# Respuesta: { disposals: [{idDisposal, idHolding, shares, realizedPnL, ...}], portfolioRealizedPnL, ... }
+POST {{baseUrl}}/api/v1/portfolios/1/sales
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "companyId": 3,
+  "shares": 100,
+  "sellPrice": 5.15,
+  "sellDate": "2026-06-20",
+  "notes": "Recogida parcial de beneficios SAN"
+}
+
+###
+
+### 29 Venta FIFO cruzando 2 lotes — AAPL (IdCompany=1) · vende 12 acciones
+# FIFO: IdHolding=1 (10 acc @ 163.80 EUR base) se agota completo,
+#       IdHolding=7 (2 acc @ ~177.74 EUR base) consume parcialmente.
+# Genera 2 Disposals. Requiere tipo USD→EUR a 2026-06-20 en ExchangeRates.
+#   INSERT IGNORE INTO ExchangeRates (FromCurrency,ToCurrency,Rate,RateDate,Source,FetchedAt)
+#   VALUES ('USD','EUR',0.920,'2026-06-20','manual',NOW());
+POST {{baseUrl}}/api/v1/portfolios/1/sales
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "companyId": 1,
+  "shares": 12,
+  "sellPrice": 195.00,
+  "sellDate": "2026-06-20",
+  "notes": "Venta AAPL ejemplo FIFO multi-lote"
+}
+
+###
+
+### 30 Performance de la cartera — realizado + no realizado consolidados en EUR
+# Respuesta: { marketValue, costBasis, unrealizedPnL, realizedPnL, totalPnL, returnPct,
+#              holdings: [{ticker, openShares, costBasis, marketValue, unrealizedPnL, unrealizedPnLPct}] }
+# Nota: solo holdings con OpenShares > 0 aparecen en la lista de hijos.
+GET {{baseUrl}}/api/v1/portfolios/1/performance
+Authorization: Bearer {{token}}
+
+###
+
+### 31 Actualizar notas de un holding (PUT)
+# Respuesta: { idHolding, idCompany, ticker, shares, openShares, notes, ... }
+PUT {{baseUrl}}/api/v1/portfolios/1/holdings/4
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "notes": "Iberdrola — mantener por dividendo trimestral"
+}
+
+###
+
+### 32 Borrar holding — soft-delete (IdStatus=Deleted) + reversa de RealizedPnL
+# ⚠ Si el holding tiene Disposals activos, su RealizedPnL acumulado se resta del Portfolio.
+# El holding deja de aparecer en GET /portfolios/{id} y en /performance.
+# Cambiar 5 por el IdHolding a eliminar (aquí elimina el lote NVDA).
+DELETE {{baseUrl}}/api/v1/portfolios/1/holdings/5
+Authorization: Bearer {{token}}
+
+###

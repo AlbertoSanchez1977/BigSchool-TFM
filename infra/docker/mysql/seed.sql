@@ -12,7 +12,15 @@
 -- ============================================================
 
 USE `bigschool`;
-
+-- ============================================================
+-- Usuario de pruebas (demo@bigschool.com, IdUser=1) ya creado vía API (RegisterAsync)
+-- Password=Demo2026! (hashado en EF Core, no se siembra aquí)
+--   1=AAPL (USD/NASDAQ)  2=MSFT (USD/NASDAQ)
+--   3=SAN  (EUR/BME)     4=SHEL (GBP/LSE)
+-- ============================================================
+INSERT IGNORE INTO `Users` (`IdUser`, `Email`, `PasswordHash`, `PasswordSalt`, `FullName`, `BaseCurrency`, `IdStatus`, `CreatedAt`) VALUES
+    (1, 'demo@bigschool.com', 'IgvUQiiIH1/MUfsvc6nUYA==', 'DfXPG5w8vbmmheoGkMhwYO2zTAWMkFbg/zIZ94728do=', 'Usuario Demo', 'EUR', 2, '2026-06-23 06:34:39.654309');
+    
 -- ============================================================
 -- Empresas adicionales (Plan 3A: BC Inversiones)
 -- EF Core ya siembra IdCompany 1-4 vía migración CreateCompanies:
@@ -27,21 +35,50 @@ INSERT IGNORE INTO `Companies` (`IdCompany`, `Name`, `Ticker`, `Sector`, `Market
     (9, 'Tesla Inc.',         'TSLA', 'Automotive',  'NASDAQ', 'USD');
 
 -- ============================================================
--- Portfolio del usuario demo (IdUser=1 = primer usuario registrado vía API)
+-- Tipos de cambio para las fechas de compra multimoneda (USD→EUR)
+-- Se usan al calcular BuyBaseAmount de los Holdings en USD.
+-- Source='seed-demo' (≠ 'seed') → ResetAsync los elimina entre tests; aquí son datos de demo.
 -- ============================================================
-INSERT INTO `Portfolios` (`IdPortfolio`, `IdUser`, `Name`) VALUES
-    (1, 1, 'Mi cartera principal');
+INSERT IGNORE INTO `ExchangeRates`
+    (`FromCurrency`, `ToCurrency`, `Rate`, `RateDate`, `Source`, `FetchedAt`) VALUES
+    ('USD', 'EUR', 0.918000, '2026-01-20', 'seed-demo', '2026-01-20 00:00:00'),
+    ('USD', 'EUR', 0.921000, '2026-02-10', 'seed-demo', '2026-02-10 00:00:00'),
+    ('USD', 'EUR', 0.918000, '2026-02-15', 'seed-demo', '2026-02-15 00:00:00'),
+    ('USD', 'EUR', 0.922000, '2026-03-01', 'seed-demo', '2026-03-01 00:00:00'),
+    ('USD', 'EUR', 0.915000, '2026-04-05', 'seed-demo', '2026-04-05 00:00:00'),
+    ('USD', 'EUR', 0.920000, '2026-06-01', 'seed-demo', '2026-06-01 00:00:00'),
+    ('GBP', 'EUR', 1.168000, '2026-01-01', 'seed-demo', '2026-01-01 00:00:00');
 
 -- ============================================================
--- Posiciones abiertas
+-- Portfolio del usuario demo (IdUser=1 = primer usuario registrado vía API)
+-- RealizedPnL y RealizedPnLCurrency son obligatorios (NOT NULL, sin DEFAULT en EF).
+-- Se inicializan a 0/EUR; se irán actualizando vía API cuando el profesor ejecute ventas.
 -- ============================================================
--- IdCompany: AAPL=1, MSFT=2, NVDA=5, ITX=6, IBE=7 (3 y 4 son ahora SAN/SHEL del seed EF)
-INSERT INTO `Holdings` (`IdPortfolio`, `IdCompany`, `Shares`, `AvgBuyPrice`, `BuyDate`, `Notes`) VALUES
-    (1, 1, 10.0000, 178.5000, '2026-02-15', 'Compra inicial Apple'),
-    (1, 2,  5.0000, 415.2000, '2026-03-01', 'Microsoft a buen precio'),
-    (1, 6, 25.0000,  38.4500, '2026-01-20', 'Inditex pre-resultados'),
-    (1, 7, 50.0000,  12.8000, '2026-02-10', 'Iberdrola dividendo'),
-    (1, 5,  3.0000, 890.0000, '2026-04-05', 'NVIDIA IA');
+INSERT INTO `Portfolios`
+    (`IdPortfolio`, `IdUser`, `Name`, `RealizedPnL`, `RealizedPnLCurrency`, `IdStatus`, `CreatedAt`) VALUES
+    (1, 1, 'Mi cartera principal', 0.00, 'EUR', 2, '2026-01-15 10:00:00');
+
+-- ============================================================
+-- Posiciones abiertas — Holdings con MoneyConversion snapshot (Buy* columns)
+-- BuyBaseAmount = Math.Round(BuyOriginalAmount × BuyExchangeRate, 2, ToEven) [Money.Create]
+--
+-- Empresas:  AAPL=1 (USD)  MSFT=2 (USD)  SAN=3 (EUR)  SHEL=4 (GBP)
+--            NVDA=5 (USD)  ITX=6 (EUR)   IBE=7 (EUR)
+-- ============================================================
+INSERT INTO `Holdings`
+    (`IdPortfolio`, `IdCompany`, `Shares`,
+     `BuyOriginalAmount`, `BuyOriginalCurrency`, `BuyExchangeRate`, `BuyBaseAmount`, `BuyBaseCurrency`, `BuyRateDate`,
+     `BuyDate`, `Notes`, `IdStatus`, `CreatedAt`) VALUES
+    --  AAPL: 10 acc @ 178.50 USD  →  178.50 × 0.918 = 163.80 EUR  (BuyDate=BuyRateDate)
+    (1, 1, 10.0000, 178.5000, 'USD', 0.918000, 163.80, 'EUR', '2026-02-15', '2026-02-15', 'Compra inicial Apple',      2, '2026-02-15 10:00:00'),
+    --  MSFT:  5 acc @ 415.20 USD  →  415.20 × 0.922 = 382.81 EUR
+    (1, 2,  5.0000, 415.2000, 'USD', 0.922000, 382.81, 'EUR', '2026-03-01', '2026-03-01', 'Microsoft a buen precio',   2, '2026-03-01 10:00:00'),
+    --  ITX:  25 acc @  38.45 EUR  →  rate=1 (misma moneda)
+    (1, 6, 25.0000,  38.4500, 'EUR', 1.000000,  38.45, 'EUR', '2026-01-20', '2026-01-20', 'Inditex pre-resultados',    2, '2026-01-20 10:00:00'),
+    --  IBE:  50 acc @  12.80 EUR  →  rate=1
+    (1, 7, 50.0000,  12.8000, 'EUR', 1.000000,  12.80, 'EUR', '2026-02-10', '2026-02-10', 'Iberdrola dividendo',       2, '2026-02-10 10:00:00'),
+    --  NVDA:  3 acc @ 890.00 USD  →  890.00 × 0.915 = 814.35 EUR
+    (1, 5,  3.0000, 890.0000, 'USD', 0.915000, 814.35, 'EUR', '2026-04-05', '2026-04-05', 'NVIDIA IA',                 2, '2026-04-05 10:00:00');
 
 -- ============================================================
 -- Valoraciones históricas demo (marzo-junio 2026) — 9 empresas × 7 fechas = 63 filas

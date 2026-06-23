@@ -391,6 +391,37 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-21 — BC Inversiones Plan 3B: Carteras (Portfolio/Holding/Disposal, FIFO)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Plan `docs/superpowers/plans/011-2026-06-21-backend-inversiones-plan-3b-portfolios.md` (16 tareas), segundo plan del BC Inversiones, consumes el catálogo de 3A.
+- **Dominio** (Tasks 1-5): agregado `Portfolio` (AR) → `Holding` (lote de compra) → `Disposal` (venta). `AddHolding` (snapshot `AvgBuyPrice` = MoneyConversion congelado a `BuyDate`), `SellShares` **FIFO** a nivel (Portfolio, Company) generando N `Disposal`, `RealizedPnL` consolidado y persistido en `Portfolio`, `DeleteHolding` con soft-delete en cascada sobre disposals y reversa del realizado acumulado. `InsufficientSharesDomainException` (→ 400). `Holding`/`Disposal` con constructores `internal`; sin `InternalsVisibleTo` — toda la lógica se testea desde `PortfolioTests` (caja negra de AR).
+- **Persistencia** (Tasks 6-7): `PortfolioConfiguration` / `HoldingConfiguration` / `DisposalConfiguration` (owned `MoneyConversion`/`Money`, shadow FKs, Global Query Filter `IdStatus != Deleted`, `UsePropertyAccessMode.Field` para colecciones backing), migración `CreatePortfolios`, `PortfolioRepository.GetByIdWithHoldingsAsync` (carga Holdings + Disposals).
+- **CQRS** (Tasks 8-12): commands `CreatePortfolio` / `AddHolding` / `UpdateHolding` / `DeleteHolding` / `SellShares` (con `IExchangeRateProvider` resuelto en Application); queries Dapper `GetPortfolios` / `GetPortfolioById` / `GetPortfolioPerformance` (consolidación en moneda base con fallback de tipo — fragment `PortfolioSqlFragments.HOLDING_VALUATION`). `PortfoliosController` (8 endpoints `[Authorize]`).
+- **Tests** (Tasks 13-15): `ResetAsync` ampliado (Disposals → Holdings → Portfolios preservando catálogo seed); `PortfolioEndpointTestBase` con helpers CRUD y deserializadores; 48 tests E2E — `PostPortfolioTests` (3), `PostHoldingTests` (5), `GetPortfoliosTests` (2), `GetPortfolioByIdTests` (3), `PostSaleTests` (5 — FIFO multimoneda, efecto FX, 400/401/404), `GetPerformanceTests` (4 — no realizado + ciclo completo), `PutHoldingTests` (3), `DeleteHoldingTests` (3 — soft-delete + reversa realizado).
+- **Documentación** (Task 16): `02-backend-design.md` (tablas Portfolios/Holdings/Disposals, endpoints), `01-arquitectura.md` (ADR-007), `diario.md`.
+
+**Decisiones / Problemas encontrados:**
+- **Bug de Pomelo MySQL con nested owned entities compartidas en batch INSERT**: `Portfolio.SellShares` creaba un único objeto `Money sellPrice` reutilizado como `Original` de todos los `MoneyConversion` del loop FIFO. EF Core rastrea owned entities por referencia; al compartir la instancia entre disposals distintos, el batch INSERT omitía `SellOriginalAmount` en la segunda fila (error: `Field 'SellOriginalAmount' doesn't have a default value`). Fix: `Money.Create(sellPrice.Amount, sellPrice.Currency)` fresco por iteración. El test que lo detectó fue `Sell_FifoAcrossLots_GeneratesNDisposals_AndConsolidatesRealized` (escenario: 2 lotes distintos, venta cruzando ambos).
+- **`MoneyConversion` constructor binding en EF**: owned record con `Money Original` y `Money Base` en el constructor primario — EF no puede inyectar owned navigations anidadas por ctor → añadido `private MoneyConversion() : this(null!, 0m, null!, default) { }` (patrón idéntico al aplicado en Plan 2B para `Transaction`).
+- **Catálogo preservado en `ResetAsync`**: `Companies` 1-4 y `Valuations` 1-8 son seed determinista consumido por los E2E de inversiones → se borran solo las filas con `IdCompany > 4` / `IdValuation > 8`. Orden de borrado: `Disposals → Holdings → Portfolios` (respeta FK constraints).
+- **`IExchangeRateProvider` resuelto en Application, no en el dominio**: el handler `SellSharesCommandHandler` y `AddHoldingCommandHandler` resuelven el tipo a la fecha exacta y lo pasan al AR; el dominio recibe `rate` ya calculado. Los tests E2E siembran la tasa a la fecha exacta de la operación.
+
+**Resultado / Estado:**
+- Plan 3B completado (16/16 tareas, PRs #71-#81). Build 0 errores.
+- **48/48 tests E2E de Investments PASS** contra MySQL real (docker-compose).
+- BC Inversiones operativo end-to-end: registro/login → crear cartera → añadir lotes multimoneda → venta FIFO cruzando lotes → RealizedPnL consolidado → performance realizada/no realizada en moneda base.
+- ADR-007 documentado; modelo de datos actualizado en `02-backend-design.md`.
+
+**Siguiente paso:**
+- [ ] Integración frontend del BC Inversiones (Plan 4).
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
