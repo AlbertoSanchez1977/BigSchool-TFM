@@ -1,60 +1,56 @@
-export type TransactionType = 'income' | 'expense'
+import type { Currency, MainCategory, TransactionType } from './enums'
 
+// GET /api/v1/transactions → TransactionDto (multimoneda: original + convertido a base)
 export interface Transaction {
   idTransaction: number
-  idCategory: number
-  categoryName: string
   type: TransactionType
-  amount: number
-  currency: string
-  description: string
-  transactionDate: string // ISO 8601
-  createdAt: string
+  idMainCategory: MainCategory
+  idSubCategory: number | null
+  description: string | null
+  transactionDate: string // DateOnly → "YYYY-MM-DD"
+  originalAmount: number
+  originalCurrency: Currency
+  exchangeRate: number
+  baseAmount: number
+  baseCurrency: Currency
+  rateDate: string // DateOnly → "YYYY-MM-DD"
 }
 
+// POST/PUT /api/v1/transactions (body del controller)
 export interface CreateTransactionDto {
-  idCategory: number
   type: TransactionType
+  idMainCategory: MainCategory
+  idSubCategory?: number | null
+  description?: string | null
+  transactionDate: string // "YYYY-MM-DD"
   amount: number
-  currency: string
-  description: string
-  transactionDate: string
+  currency: Currency
 }
 
-export interface UpdateTransactionDto extends Partial<CreateTransactionDto> {}
+export type UpdateTransactionDto = CreateTransactionDto
 
-export interface TransactionListItem {
-  idTransaction: number
-  idCategory: number
-  categoryName: string
-  type: TransactionType
-  amount: number
-  currency: string
-  description: string
-  transactionDate: string
-}
-
+// Filtros de GET /api/v1/transactions (query string)
 export interface TransactionFilters {
   type?: TransactionType
-  idCategory?: number
+  idMainCategory?: MainCategory
   from?: string
   to?: string
   page?: number
   pageSize?: number
 }
 
+// GET /api/v1/transactions/summary → TransactionSummaryDto
 export interface Summary {
   totalIncome: number
   totalExpense: number
   balance: number
-  currency: string
-  month: number
-  year: number
+  baseCurrency: Currency
 }
 
+// GET /api/v1/transactions/monthly-chart → MonthlyChartPointDto[]
 export interface MonthlyChartPoint {
   year: number
   month: number
-  totalIncome: number
-  totalExpense: number
+  income: number
+  expense: number
 }

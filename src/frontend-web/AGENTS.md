@@ -49,8 +49,8 @@ frontend-web/
 │   ├── services/           → Llamadas al Backend agrupadas por recurso
 │   └── types/              → Interfaces TypeScript (DTOs del Backend)
 ├── public/
-├── tests/{unit,e2e}/
-├── next.config.ts · tailwind.config.ts · tsconfig.json
+├── tests/{unit,e2e}/      → Vitest (unit) · Playwright (e2e)
+├── next.config.mjs · tsconfig.json  (Tailwind v4: config por CSS en globals.css)
 ├── vitest.config.ts · playwright.config.ts · package.json
 ```
 
@@ -96,6 +96,31 @@ frontend-web/
 2. Sin renombrar/borrar cartera → en el MVP la cartera solo se crea.
 3. La venta es FIFO a nivel empresa → el botón "vender" de un holding vende acciones de *esa
    empresa* y consume lotes en orden FIFO.
+
+---
+
+## Integración con el Backend (NORMA — leer antes de tocar `types/` o `services/`)
+
+- **Los tipos de `src/types/` son espejo de los DTOs del Backend.** Se **verifican contra el código
+  fuente del Backend** (mismo monorepo, `src/backend/...`) **al inicio de la tarea que los consume**,
+  nunca de memoria. Si vas a crear/editar un servicio o formulario de un recurso, primero localiza
+  su DTO/Controller real y ajusta el tipo. Ejemplo de mismatch real ya corregido: las categorías son
+  **anidadas** (`Category{idMainCategory, name, subCategories[]}`).
+- **Base URL**: `NEXT_PUBLIC_API_URL=http://localhost:5285/api/v1`. Todos los controllers cuelgan de
+  `/api/v1` (`/auth`, `/transactions`, `/categories`, `/portfolios`, `/companies`).
+- **Envelope**: toda respuesta es `{ data, errors[], meta }`; `errors[] = { code, message, field? }`.
+  No parsees `fetch` a mano: usa `lib/apiClient` (ya desenvuelve `data` y lanza `ApiError`).
+- **Enums viajan como nombre string** (`JsonStringEnumConverter`): `TransactionType`
+  (`"Income"`/`"Expense"`), `MainCategory` (`"EssentialExpenses"`…), `Currency` (`"EUR"`…). Ver
+  `src/types/enums.ts`.
+- **Sesión/refresco**: no hay refresh token en el Backend. Refresco **proactivo** en cliente con
+  `lib/auth/refreshPolicy` (máx. 5 refrescos o 24 h → re-login; token de acceso ~60 min). El
+  `AuthProvider` (Task 2) cablea el timer y la llamada `POST /auth/refresh`.
+- **Tipos provisionales**: `portfolios.ts` y `companies.ts` están marcados como tales hasta
+  verificarlos en sus tareas (8-10).
+
+> Spec de detalle: `docs/superpowers/specs/003-2026-06-24-frontend-web-mvp-design.md`.
+> Plan de ejecución: `docs/superpowers/plans/012-2026-06-24-frontend-web-mvp.md`.
 
 ---
 

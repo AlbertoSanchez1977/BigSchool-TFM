@@ -1,24 +1,27 @@
+import type { Currency } from './enums'
+
+// POST /api/v1/auth/login  → LoginCommand
 export interface LoginDto {
   email: string
   password: string
 }
 
+// POST /api/v1/auth/register → RegisterCommand
 export interface RegisterDto {
-  fullName: string
   email: string
   password: string
-}
-
-export interface AuthResponse {
-  token: string
-  refreshToken: string
-  expiresIn: number
-  user: UserProfile
-}
-
-export interface UserProfile {
-  idUser: number
   fullName: string
-  email: string
-  baseCurrency: string
 }
+
+// Respuesta de login/register/refresh → AuthResponseDto.
+// OJO: el backend NO emite refresh token ni objeto user. El control de sesión
+// (refresco proactivo y política de caducidad) es 100% en cliente — ver lib/auth/refreshPolicy.
+export interface AuthResponse {
+  accessToken: string
+  expiresAt: string // ISO 8601 (DateTime) — momento de caducidad del token
+  email: string
+  fullName: string
+}
+
+// La moneda base del usuario no viene en el login; se obtiene del primer summary/perfil.
+export type UserBaseCurrency = Currency

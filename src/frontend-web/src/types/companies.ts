@@ -1,3 +1,5 @@
+// ⚠️ PROVISIONAL — se verificará contra el backend (CompaniesController / DTOs) en la Task 8.
+
 export interface Company {
   idCompany: number
   name: string

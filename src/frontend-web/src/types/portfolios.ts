@@ -1,3 +1,6 @@
+// ⚠️ PROVISIONAL — estos tipos se verificarán contra el backend (PortfoliosController /
+// DTOs) al inicio de las Tasks 8-10. Pueden cambiar.
+
 export interface PortfolioListItem {
   idPortfolio: number
   name: string

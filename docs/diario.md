@@ -455,7 +455,7 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - Generación con **v0 Max** del sistema de diseño (tokens HSL light+dark, paleta fintech) y la Landing pública completa con gráficas fake en Recharts. Integración en `src/frontend-web`; compilación y validación manual.
 - Spec `003-2026-06-24-frontend-web-mvp-design.md`: cadencia pasos pequeños + gate, JWT en localStorage+Bearer, TDD unit tests por tarea + E2E en hitos, backend diferido para Emails y Profile.
 - Plan `012-2026-06-24-frontend-web-mvp.md`: 16 tareas task-by-task, autosuficiente para el modelo ejecutor (Sonnet).
-- **Task 1 (PR #87)**: fundamentos del proyecto — deps runtime + test, Vitest + Playwright configurados, componentes shadcn (14), providers QueryClient+Toaster, `.env.local`, `apiClient` con TDD (6 tests verdes), tipos TS de todos los DTOs backend. Build limpio.
+- **Task 1 (PR #88)**: fundamentos del proyecto — deps runtime + test, Vitest + Playwright configurados, componentes shadcn (14), providers QueryClient+Toaster, `.env.local`, `apiClient` con TDD, tipos TS de DTOs backend **verificados contra el código fuente** (rutas `/api/v1`, enums como nombre string, categorías anidadas, auth sin refresh token), y política de refresco en cliente `refreshPolicy` con TDD (máx. 5 refrescos o 24 h). 15 tests verdes, build limpio.
 
 **Decisiones clave:**
 - v0 solo para diseño+Landing (una tirada, modelo Max); shadcn + código para el resto.
