@@ -31,6 +31,7 @@ compactaciones de contexto. El detalle visual (tokens, layouts, paleta) vive en
 |---|---|---|
 | Cadencia de trabajo | **Pasos pequeños + gate humano** (1 tarea = 1 rama = 1 PR) | Igual que backend; tareas pequeñas y muy explicadas para aprender |
 | Almacenamiento de sesión | **JWT en `localStorage` + cabecera `Authorization: Bearer`** | Simple; encaja con el backend actual (CORS + Bearer). Sin capa server extra |
+| Refresco de token | **Proactivo en cliente** (antes de caducar) con política propia: máx. **5 refrescos** o **24 h** de sesión → re-login | El backend no tiene refresh token ni rastreo en BD; `POST /api/v1/auth/refresh` es `[Authorize]` y exige token aún válido (ver §6.1) |
 | Metodología de tests | **TDD con unit tests en cada tarea** (Vitest + RTL) **+ E2E Playwright en hitos** | Se testea lógica y comportamiento, no estilos/layout (ver §6) |
 | Generación de UI | **v0 solo para diseño + Landing**; resto con shadcn (gratis) + código | Maximiza el plan Free de v0; ver §5 |
 | Tema | **Light-first**, tokens preparados para oscuro (ya cableado por v0) | El toggle de oscuro se decide al final |
@@ -53,6 +54,16 @@ compactaciones de contexto. El detalle visual (tokens, layouts, paleta) vive en
 - Backend de desarrollo en `https://localhost:7030` (HTTPS) o `http://localhost:5285` (HTTP).
   Para el MVP usaremos **`http://localhost:5285`** por defecto (evita el certificado de dev), salvo
   que CORS exija el HTTPS; configurable vía `NEXT_PUBLIC_API_URL`.
+- **Todos los controllers cuelgan de `/api/v1`** → `NEXT_PUBLIC_API_URL=http://localhost:5285/api/v1`.
+- **Los enums viajan como nombre string** (`JsonStringEnumConverter`): `TransactionType`
+  (`"Income"`/`"Expense"`), `MainCategory` (`"EssentialExpenses"`…), `Currency` (`"EUR"`…).
+- **Categorías anidadas**: `CategoryDto{ idMainCategory, name, subCategories[] }` +
+  `SubCategoryDto{ idSubCategory, name, isDefault }` → combos anidados en los formularios de transacción.
+
+> **Norma de contratos.** Los tipos TS son espejo de los DTOs del backend (mismo monorepo). Se
+> **verifican contra el código fuente del backend al inicio de la tarea que los consume**, no de
+> memoria. En la Task 1 se fijaron auth/categories/transactions; portfolios/companies se verifican
+> en las Tasks 8-10.
 
 ---
 
@@ -123,6 +134,21 @@ exista el backend.
   - **Playwright E2E** en flujos críticos en los hitos: **login**, **crear gasto**, **vender holding**.
 - **No** se testean estilos/layout ni la implementación interna (coherente con `AGENTS.md`).
   El TDD aplica a la lógica testeable, no al pixel.
+
+### 6.1 Política de sesión y refresco (cliente)
+
+El backend (`AuthController`) expone `POST /api/v1/auth/refresh` con `[Authorize]`: recibe el
+access token **aún válido** en la cabecera y devuelve un `AuthResponseDto` nuevo
+(`accessToken`, `expiresAt`, `email`, `fullName`). **No hay refresh token ni rastreo de tokens en
+BD**, y el access token dura ~**60 min** (`JwtSettings.ExpirationMinutes`).
+
+Estrategia en cliente (sin estado en servidor):
+- **Refresco proactivo**: renovar cuando falten ≤ 5 min para `expiresAt` (`shouldRefreshSoon`).
+  Reactivo-sobre-401 no sirve: si el token ya caducó, refresh también daría 401.
+- **Límite de sesión**: como mucho **5 refrescos** (`MAX_REFRESHES`) **o** **24 h** desde el login
+  (`MAX_SESSION_HOURS`); superado cualquiera → forzar re-login (`canRefresh`).
+- **Reparto**: la política pura (`lib/auth/refreshPolicy`) se implementa con TDD en la **Task 1**;
+  su cableado al timer + llamada real a `/auth/refresh` vive en el `AuthProvider` de la **Task 2**.
 
 ---
 

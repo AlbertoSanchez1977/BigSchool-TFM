@@ -42,47 +42,58 @@ para datos, react-hook-form + zod para formularios, JWT en `localStorage` + `Bea
 `src/app/providers.tsx`, `src/app/layout.tsx`, `.env.local`, `.env.example`,
 `src/lib/apiClient.ts`, `src/types/*.ts`, `components.json`.
 
-- [ ] **Step 1**: deps de runtime (`@tanstack/react-query`, `react-hook-form`, `zod`,
+- [x] **Step 1**: deps de runtime (`@tanstack/react-query`, `react-hook-form`, `zod`,
   `@hookform/resolvers`) y de test (`vitest`, `@testing-library/react`, `@testing-library/jest-dom`,
   `@testing-library/user-event`, `jsdom`, `@playwright/test`). Configurar `vitest.config.ts`
   (entorno jsdom, setup) y `playwright.config.ts` (baseURL del dev server).
-- [ ] **Step 2**: añadir componentes shadcn que se usarán: input, label, form, table, dialog,
+- [x] **Step 2**: añadir componentes shadcn que se usarán: input, label, form, table, dialog,
   sheet, tabs, select, dropdown-menu, sonner, badge, skeleton, separator, avatar. Alinear
   `components.json` al alias `@/` (tsconfig manda).
-- [ ] **Step 3**: `providers.tsx` (client) con `QueryClientProvider` + `<Toaster/>` (sonner);
+- [x] **Step 3**: `providers.tsx` (client) con `QueryClientProvider` + `<Toaster/>` (sonner);
   montarlo en `layout.tsx` envolviendo `children`.
-- [ ] **Step 4**: `.env.local` + `.env.example` con `NEXT_PUBLIC_API_URL=http://localhost:5285`.
-- [ ] **Step 5 (TDD)**: `lib/apiClient.ts`. Tests Vitest primero, casos:
+- [x] **Step 4**: `.env.local` + `.env.example` con
+  `NEXT_PUBLIC_API_URL=http://localhost:5285/api/v1` (todos los controllers cuelgan de `/api/v1`).
+- [x] **Step 5 (TDD)**: `lib/apiClient.ts`. Tests Vitest primero, casos:
   - éxito → devuelve `data` desestructurado del envelope;
   - respuesta con `errors[]` → lanza error tipado con `code`/`message`/`field`;
   - HTTP no-2xx sin envelope → error genérico;
   - inyecta `Authorization: Bearer <token>` si hay token;
   - 401 → invoca el gancho de sesión (logout) [se conecta en Task 2].
-- [ ] **Step 6**: `types/` — interfaces TS espejo de DTOs backend: auth (`AuthResponse`), transactions
-  (`Transaction`, `CreateTransactionDto`, `TransactionListItem`, `Summary`, `MonthlyChartPoint`),
-  categories, portfolios (`PortfolioListItem`, `PortfolioDetail`, `Holding`, `Disposal`,
-  `SellResult`, `Performance`), companies. Monedas como `string` en DTOs de lectura.
-- [ ] **Step 7**: verificar `pnpm build` y `pnpm dev` OK; `pnpm test` (Vitest) en verde.
+- [x] **Step 6**: `types/` — interfaces TS espejo de DTOs backend, **verificadas contra el código
+  fuente** (no de memoria): `enums` (TransactionType/MainCategory/Currency como nombre string),
+  `auth` (`AuthResponse{accessToken,expiresAt,email,fullName}` — sin refresh token), `categories`
+  (anidadas: `Category{idMainCategory,name,subCategories[]}` + `SubCategory{...,isDefault}`),
+  `transactions` (`Transaction`, `CreateTransactionDto`, `Summary`, `MonthlyChartPoint`).
+  Portfolios/companies quedan **provisionales** (se verifican en Tasks 8-10).
+- [x] **Step 7 (TDD)**: `lib/auth/refreshPolicy.ts` — política de sesión en cliente (pura, testeable).
+  Tests primero: `canRefresh` (límite 5 refrescos / 24 h) y `shouldRefreshSoon` (margen 5 min /
+  ya caducado). Constantes `MAX_REFRESHES=5`, `MAX_SESSION_HOURS=24`, `ACCESS_TOKEN_MINUTES=60`.
+  (El cableado al timer + llamada `/auth/refresh` es Task 2.)
+- [x] **Step 8**: verificar `pnpm build` y `pnpm dev` OK; `pnpm test` (Vitest) en verde.
 
-**Aceptación**: build limpio; tests de `apiClient` verdes; providers activos.
-**Aprenderás**: estructura Next App Router, providers, `NEXT_PUBLIC_*`, HTTP centralizado (≈ `HttpClient` tipado).
+**Aceptación**: build limpio; tests de `apiClient` + `refreshPolicy` verdes (15); providers activos.
+**Aprenderás**: estructura Next App Router, providers, `NEXT_PUBLIC_*`, HTTP centralizado (≈ `HttpClient`
+tipado), lógica pura testeable (política de refresco).
 
 ---
 
 ## Task 2 — Núcleo de autenticación
 
 **Files**: `src/lib/auth/tokenStore.ts`, `src/lib/auth/AuthProvider.tsx`, `src/hooks/useAuth.ts`,
-integración en `apiClient`.
+integración en `apiClient`. Reutiliza `lib/auth/refreshPolicy` (ya creado en Task 1).
 
-- [ ] **Step 1 (TDD)**: `tokenStore` (get/set/clear en `localStorage`, lectura de expiración del
-  JWT). Tests: set→get, clear, token expirado detectado.
+- [ ] **Step 1 (TDD)**: `tokenStore` (get/set/clear de `accessToken`, `expiresAt`, `sessionStartedAt`
+  y `refreshCount` en `localStorage`). Tests: set→get, clear, persistencia de contadores.
 - [ ] **Step 2 (TDD)**: `AuthProvider` + `useAuth` (estado `user`/`token`; `login`, `register`,
-  `logout`, `refresh`). Tests de transición (login setea token; logout lo limpia).
-- [ ] **Step 3**: conectar `apiClient` ↔ token (Bearer) y el gancho 401 → `logout` + redirección a
-  `/login`.
+  `logout`, `refresh`). Tests de transición (login setea token + `sessionStartedAt`; logout limpia).
+- [ ] **Step 3 (TDD)**: refresco proactivo — timer que ante `shouldRefreshSoon` llama a
+  `POST /auth/refresh` si `canRefresh`; si no, `logout`. Incrementa `refreshCount`. Tests con timers
+  simulados y `refreshPolicy`.
+- [ ] **Step 4**: conectar `apiClient` ↔ token (Bearer, vía `getToken`) y el gancho `onUnauthorized`
+  (401) → `logout` + redirección a `/login`.
 
-**Aceptación**: tests de store y provider verdes; `apiClient` adjunta el token real.
-**Aprenderás**: Context API (≈ scope DI), hooks personalizados, ciclo de sesión.
+**Aceptación**: tests de store, provider y refresco verdes; `apiClient` adjunta el token real.
+**Aprenderás**: Context API (≈ scope DI), hooks personalizados, ciclo de sesión y refresco proactivo.
 
 ---
 
