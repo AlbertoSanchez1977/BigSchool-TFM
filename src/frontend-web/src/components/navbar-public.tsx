@@ -2,10 +2,11 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LineChart, Menu, X } from 'lucide-react'
+import { LineChart, Menu, X, LayoutDashboard, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LoginForm } from '@/components/auth/login-form'
 import { RegisterForm } from '@/components/auth/register-form'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 type AuthMode = 'login' | 'register'
@@ -19,6 +20,7 @@ const navLinks = [
 
 export function NavbarPublic() {
   const router = useRouter()
+  const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>('login')
@@ -80,28 +82,47 @@ export function NavbarPublic() {
           relativos a él. El panel aparece justo debajo de los botones con
           8 px de aire (top-[calc(100%+8px)]).
         */}
+        {/*
+          Corrección mínima (Task 3): si hay sesión, ocultamos login/registro y
+          mostramos acceso al Dashboard + Salir. El dropdown de perfil completo
+          (nombre/email, editar perfil, logout) llega en Task 4.
+        */}
         <div ref={authAreaRef} className="relative hidden items-center gap-2 md:flex">
-          <Button variant="ghost" size="sm" onClick={() => openAuth('login')}>
-            Iniciar sesión
-          </Button>
-          <Button size="sm" onClick={() => openAuth('register')}>
-            Registrarse
-          </Button>
+          {user ? (
+            <>
+              <Button size="sm" onClick={() => router.push('/dashboard')}>
+                <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                Ir al Dashboard
+              </Button>
+              <Button variant="ghost" size="sm" onClick={logout} aria-label="Cerrar sesión">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => openAuth('login')}>
+                Iniciar sesión
+              </Button>
+              <Button size="sm" onClick={() => openAuth('register')}>
+                Registrarse
+              </Button>
 
-          {panelOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 rounded-lg border border-border bg-popover p-6 text-popover-foreground shadow-lg ring-1 ring-foreground/10">
-              {authMode === 'login' ? (
-                <LoginForm
-                  onSwitchMode={() => setAuthMode('register')}
-                  onSuccess={closeAuth}
-                />
-              ) : (
-                <RegisterForm
-                  onSwitchMode={() => setAuthMode('login')}
-                  onSuccess={closeAuth}
-                />
+              {panelOpen && (
+                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 rounded-lg border border-border bg-popover p-6 text-popover-foreground shadow-lg ring-1 ring-foreground/10">
+                  {authMode === 'login' ? (
+                    <LoginForm
+                      onSwitchMode={() => setAuthMode('register')}
+                      onSuccess={closeAuth}
+                    />
+                  ) : (
+                    <RegisterForm
+                      onSwitchMode={() => setAuthMode('login')}
+                      onSuccess={closeAuth}
+                    />
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
@@ -134,22 +155,46 @@ export function NavbarPublic() {
             </li>
           ))}
           <li className="mt-2 flex flex-col gap-2 px-1">
-            {/* Móvil: navega a páginas físicas de auth (el Popover no encaja en pantallas pequeñas) */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => { setMobileOpen(false); router.push('/login') }}
-            >
-              Iniciar sesión
-            </Button>
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => { setMobileOpen(false); router.push('/register') }}
-            >
-              Registrarse
-            </Button>
+            {user ? (
+              <>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { setMobileOpen(false); router.push('/dashboard') }}
+                >
+                  <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                  Ir al Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { setMobileOpen(false); logout() }}
+                >
+                  <LogOut className="mr-1.5 h-4 w-4" />
+                  Cerrar sesión
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Móvil: navega a páginas físicas de auth (el Popover no encaja en pantallas pequeñas) */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { setMobileOpen(false); router.push('/login') }}
+                >
+                  Iniciar sesión
+                </Button>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { setMobileOpen(false); router.push('/register') }}
+                >
+                  Registrarse
+                </Button>
+              </>
+            )}
           </li>
         </ul>
       </div>
