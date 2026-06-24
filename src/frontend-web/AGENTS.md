@@ -1,18 +1,31 @@
 # AGENTS.md — Frontend Web
 
-## Tecnología
-- Next.js 14+ (App Router)
-- TypeScript (strict mode)
-- Tailwind CSS para estilos
-- Componentes UI generados con v0.app cuando sea necesario
-- Chart.js o Recharts para gráficas
-- React Query (TanStack Query) para estado servidor
-- Zustand o Context API para estado local
-- Axios o fetch nativo para HTTP
+> **Contexto de aprendizaje.** El desarrollador domina C#/.NET y backend, pero es **principiante en
+> frontend** (CSS, HTML, React/Next) — TypeScript le resulta familiar por su parecido con C#. Por
+> tanto, al trabajar en este módulo el agente debe **explicar el porqué** de cada paso, no solo el
+> qué, y apoyarse en analogías con C#/.NET cuando ayuden. Ver el glosario al final.
 
-## Testing
+Diseño visual y decisiones de UX: `docs/03-frontend-design.md`. Prompt de v0: `docs/03-frontend-v0-prompt.md`.
+
+---
+
+## Tecnología (decisiones cerradas)
+
+- **Next.js 14+ (App Router)**
+- **TypeScript** (strict mode — sin `any` salvo caso extremo justificado)
+- **Tailwind CSS** para estilos
+- **shadcn/ui** para componentes (se *copian* al proyecto y se editan; no es un paquete cerrado)
+- **Recharts** para gráficas
+- **TanStack Query** (React Query) para estado servidor (cache, loading/error)
+- **fetch** envuelto en un cliente con `Authorization: Bearer <jwt>`
+- Estado local: Context API; **Zustand** solo si algo lo justifica
+
+### Testing
 - **Unitarios y componentes**: Vitest + React Testing Library
-- **E2E**: Playwright
+- **E2E**: Playwright (flujos críticos: login, crear gasto, ver gráficas, vender holding)
+- No testear estilos ni implementación interna
+
+---
 
 ## Estructura del Proyecto
 
@@ -20,105 +33,118 @@
 frontend-web/
 ├── src/
 │   ├── app/                  → App Router (páginas y layouts)
-│   │   ├── (auth)/          → Páginas protegidas
-│   │   ├── dashboard/       → Dashboard principal
-│   │   ├── expenses/        → Gestión de gastos/ingresos
-│   │   ├── investments/     → Gestión de inversiones
-│   │   ├── ai-scanner/      → Chat con LLM + gestión RAG
+│   │   ├── (public)/         → Landing, Contacto, Alcance, Login, Registro
+│   │   ├── (private)/            → Rutas protegidas (requieren JWT)
+│   │   │   ├── dashboard/
+│   │   │   ├── expenses/     → Gastos/Ingresos
+│   │   │   ├── investments/  → Carteras → holdings
+│   │   │   └── ai-scanner/   → Chat (toggle local / "Próximamente")
 │   │   └── layout.tsx
-│   ├── components/          → Componentes reutilizables
-│   │   ├── ui/             → Componentes base (botones, inputs, cards)
-│   │   ├── charts/         → Componentes de gráficas
-│   │   └── forms/          → Formularios
-│   ├── hooks/              → Custom hooks
-│   ├── lib/                → Utilidades, API client, tipos
-│   ├── services/           → Llamadas a la API backend
-│   └── types/              → Interfaces y tipos TypeScript
+│   ├── components/
+│   │   ├── ui/              → Componentes base de shadcn (button, card, input, table…)
+│   │   ├── charts/         → Envoltorios de Recharts (línea, barras por año)
+│   │   └── forms/
+│   ├── hooks/              → Custom hooks (useTransactions, usePortfolios…)
+│   ├── lib/                → apiClient (fetch + JWT), utils, tipos compartidos
+│   ├── services/           → Llamadas al Backend agrupadas por recurso
+│   └── types/              → Interfaces TypeScript (DTOs del Backend)
 ├── public/
-├── tests/
-│   ├── unit/              → Tests con Vitest
-│   └── e2e/               → Tests con Playwright
-├── next.config.ts
-├── tailwind.config.ts
-├── tsconfig.json
-├── vitest.config.ts
-├── playwright.config.ts
-└── package.json
+├── tests/{unit,e2e}/
+├── next.config.ts · tailwind.config.ts · tsconfig.json
+├── vitest.config.ts · playwright.config.ts · package.json
 ```
 
-## Funcionalidades
+---
 
-### Landing Page (pública, sin login)
-- Página principal profesional simulando empresa de fintech
-- Descripción del producto y sus funcionalidades
-- Sección "Sobre nosotros" / "Quiénes somos"
-- Sección explicativa del alcance del proyecto (contexto TFM educativo)
-- Formulario de "Contáctanos" (simulado, no envía realmente)
-- Botón de Login / Registro prominente
-- Responsive y atractiva (usar v0.app para diseño)
+## Sistema de diseño (resumen — detalle en docs/03-frontend-design.md)
 
-### Registro y Login
-- Registro con email y contraseña
-- Login con JWT
-- Redirección al Dashboard tras login exitoso
+- **Light-first**, tokens preparados para oscuro. **Nunca** escribir un color literal: usar los
+  tokens semánticos (`bg-background`, `text-foreground`, `text-positive`, `text-negative`…).
+- Verde/rojo **solo** para signo de dinero; azul para acción; grises para el resto.
+- Gráficas de línea en azul celeste apagado; barras agrupadas por año con la paleta `--chart-1..4`.
 
-### Dashboard (requiere autenticación)
-- Balance general (ingresos - gastos del mes)
-- Gráfica de evolución mensual
-- Resumen de cartera de inversiones
-- Alertas o notificaciones
+---
 
-### Gastos/Ingresos
-- Tabla con filtros (fecha, categoría, importe)
-- Formulario de alta/edición
-- Gráficas por categoría (pie chart)
-- Gráficas por mes (bar/line chart)
-- Exportación (CSV opcional)
+## Funcionalidades (alcance MVP — alineado con ADR-008)
 
-### Inversiones
-- Listado de acciones en cartera
-- Histórico de valoraciones por empresa
-- Gráfica de evolución de cartera
-- Rentabilidad por acción
+### Públicas
+- **Landing**: generada con v0 (ver prompt). Secciones coherentes con capacidades reales.
+- **Contacto**: formulario **simulado** (sin envío real; el email es pieza futura separada) NOTA HUMANA: Tendrá su endPoint en backend simulando el envío guardando registro en tabla.
+- **Alcance y trabajos futuros**: página estática (se hace al final).
+- **Registro / Login**: JWT real contra `/auth/register` y `/auth/login`; redirección a Dashboard. NOTA HUMANA: `/auth/register` Disparará en backend Evento de Dominio que simulará envío de email de bienvenida, simulación de envío guardando registro en tabla.
 
-### AI Scanner (Chat + RAG)
-- Chat conversacional con el LLM
-- Visualización de empresas sugeridas
-- Panel de gestión del contexto RAG (subir/eliminar documentos)
-- Historial de conversaciones
+### Privadas (requieren JWT)
+- **Dashboard**: KPIs + barras ingresos/gastos + línea de balance + resumen de inversiones +
+  últimas transacciones (ver composición en el design doc).
+- **Gastos/Ingresos**: master-detail en una pantalla (lista + panel de alta/edición), selector
+  mes/año (por defecto mes actual), CRUD. Pestaña de gráficas: barras por categoría de los últimos
+  4 años — **agregación en cliente** (el Backend no agrega por categoría).
+- **Inversiones**: carteras como cards (solo crear; no hay renombrar/borrar en Backend) →
+  holdings como cards con panel lateral para **vender** (Disposal **FIFO a nivel empresa**, puede
+  tocar varios lotes), editar Notes, añadir y borrar holding.
+- **AI Scanner**: configuración con **toggle** activar/desactivar (solo local por coste). Si está
+  off → pantalla **"Próximamente"**.
+- NOTA HUMANA: **Emails Logging**: pantalla de listado sencilla (Esa tabla simulada) con: Emails de contacto enviados + email de bienvenida del usuario
+
+### Fuera de alcance MVP
+- **Editar usuario** (el Backend no tiene update de usuario aún).
+
+---
+
+## Huecos del Backend a tener presentes
+1. Sin agregación por categoría → agregar en cliente desde la lista de transacciones.
+2. Sin renombrar/borrar cartera → en el MVP la cartera solo se crea.
+3. La venta es FIFO a nivel empresa → el botón "vender" de un holding vende acciones de *esa
+   empresa* y consume lotes en orden FIFO.
+
+---
 
 ## Convenciones de Código
 
 ### Nombrado
 - Componentes: PascalCase (`ExpenseTable.tsx`, `MonthlyChart.tsx`)
-- Hooks: camelCase con prefijo use (`useExpenses.ts`, `usePortfolio.ts`)
-- Servicios: camelCase (`expenseService.ts`)
-- Tipos: PascalCase con sufijo si es necesario (`Expense`, `CreateExpenseDto`)
+- Hooks: camelCase con prefijo `use` (`useExpenses.ts`, `usePortfolio.ts`)
+- Servicios: camelCase (`transactionService.ts`)
+- Tipos: PascalCase (`Transaction`, `CreateTransactionDto`)
 
 ### Componentes
-- Componentes funcionales siempre (no clases)
-- Props tipadas con interface
-- Separar lógica (hooks) de presentación (componentes)
-- Componentes pequeños y específicos
+- Funcionales siempre (no clases). Props tipadas con `interface`.
+- Separar **lógica** (hooks/servicios) de **presentación** (componentes).
+- Componentes pequeños y específicos; declarativos.
 
 ### Estilos
-- Tailwind CSS como primera opción
-- No CSS modules salvo caso justificado
-- Usar v0.app para generar componentes complejos de UI
-- Responsive: mobile-first
+- Tailwind primero; tokens semánticos del design system (no hex sueltos).
+- Sin CSS modules salvo caso justificado. Responsive **mobile-first**.
 
-### Testing
-- Vitest + React Testing Library para componentes y hooks
-- Playwright para flujos E2E completos
-- No testear estilos ni implementación interna
-- Tests E2E: flujos críticos (login, crear gasto, ver gráficas)
+### Datos
+- **Toda** comunicación con el Backend pasa por TanStack Query.
+- Manejar siempre estados de **carga, error y vacío** en cada vista.
+
+---
 
 ## Instrucciones para el Agente
 
-1. Usar TypeScript strict — no `any` salvo caso extremo justificado
-2. Los componentes de UI deben ser lo más declarativos posible
-3. No poner lógica de negocio en componentes — extraer a hooks o servicios
-4. Usar React Query para toda comunicación con el backend
-5. Manejar estados de carga, error y vacío en todas las vistas
-6. El desarrollador tiene experiencia baja en CSS — usar Tailwind y v0.app
-7. Priorizar funcionalidad sobre estética, pero mantener coherencia visual
+1. **Explicar mientras se construye** — el objetivo no es solo entregar, es que el desarrollador
+   aprenda. Comentar decisiones, conceptos React/Next y trampas comunes de CSS.
+2. TypeScript strict; sin `any` injustificado.
+3. Componentes declarativos; nada de lógica de negocio dentro de la presentación.
+4. Estado servidor con TanStack Query; estados de carga/error/vacío siempre.
+5. Respetar el sistema de diseño (tokens), no improvisar colores.
+6. Coherencia visual ante todo: ya hay sistema de diseño, no se "prioriza función sobre estética".
+
+---
+
+## Glosario React/Next ↔ C#/.NET (para aprendizaje)
+
+| Frontend | Equivalente mental en C#/.NET |
+|----------|-------------------------------|
+| Componente funcional | Método que devuelve UI (como un partial view / Razor component) |
+| Props | Parámetros del método/componente (inmutables desde dentro) |
+| `useState` | Campo de estado local que, al cambiar, re-renderiza la "vista" |
+| `useEffect` | Efecto secundario al montar/cambiar dependencias (≈ `OnInitialized`/eventos de ciclo de vida) |
+| Custom hook (`useX`) | Servicio/lógica reutilizable extraída (como una clase de servicio inyectada) |
+| TanStack Query | `HttpClient` + cache con invalidación y estados de carga/error |
+| Context Provider | Contenedor de dependencias por árbol de componentes (≈ scope de DI) |
+| Tailwind classes | Estilos utilitarios en el marcado (en vez de CSS/clases externas) |
+| Variables CSS (tokens) | Tema centralizado (≈ `ResourceDictionary`/constantes), no valores mágicos |
+| `tsconfig` strict | `<Nullable>` + analizadores estrictos del compilador C# |

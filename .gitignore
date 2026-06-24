@@ -22,7 +22,9 @@ node_modules/
 out/
 dist/
 *.tsbuildinfo
+next-env.d.ts
 .turbo/
+/build
 
 # ---- Python ----
 __pycache__/
@@ -69,10 +71,14 @@ Desktop.ini
 !.env.example
 !infra/.env.example
 
+# vercel
+.vercel
+
 # ---- Logs ----
 logs/
 *.log
 npm-debug.log*
+.pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 

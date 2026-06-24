@@ -3,6 +3,8 @@
 **Fecha**: 2026-06-06
 **Estado**: Diseño aprobado
 
+> **Nota de alcance (2026-06-23, ADR-008).** El módulo de IA del Backend se reclasifica. En el **MVP**, el Backend expone el chat hacia un **LLM de pago externo** (Claude / GPT-4o, no Azure) y recibe la subida de documentos. El **RAG completo** (proxy a un servicio Python con Qdrant + LLM de Azure) pasa a **trabajo futuro**: las secciones de RAG de este documento describen el diseño objetivo, no la implementación del MVP. El resto del documento (Finanzas, Inversiones, Auth) corresponde al MVP ya implementado.
+
 ---
 
 ## Convenciones de Datos
@@ -47,61 +49,111 @@ public enum EntityStatus : short
 
 ```
 ┌──────────────────┐
-│      Users       │
+│      Users       │ (AR)
 ├──────────────────┤
 │ IdUser (INT) PK  │
 │ Email            │
 │ PasswordHash     │
 │ PasswordSalt     │
 │ FullName         │
+│ BaseCurrency     │ ◄── moneda base del usuario (CHAR(3), DEFAULT 'EUR')
 │ LastLoginDate    │
 │ IdStatus         │
 │ CreatedAt        │
 │ UpdatedAt        │
 └────────┬─────────┘
-         │ 1:N
-    ┌────┴──────────────────────────────────────────┐
-    │                    │                          │
-    ▼                    ▼                          ▼
-┌──────────────┐  ┌───────────────┐       ┌──────────────────┐
-│SubCategories │  │  Portfolios   │       │  RagDocuments    │
-├──────────────┤  ├───────────────┤       ├──────────────────┤
-│IdSubCategory │  │ IdPortfolio   │       │ IdRagDocument    │
-│IdMainCategory│  │ IdUser        │       │ IdUser           │
-│IdUser (null) │  │ Name          │       │ FileName         │
-│Name          │  │ IdStatus      │       │ IdStatus         │
-│IdStatus      │  │ CreatedAt     │       │ UploadedAt       │
-│CreatedAt     │  │ UpdatedAt     │       └──────────────────┘
-└──────┬───────┘  └───────┬───────┘
-       │                  │ 1:N
-       │                  ▼
-┌──────────────────┐  ┌──────────────────┐
-│  Transactions    │  │    Holdings      │
-├──────────────────┤  ├──────────────────┤
-│ IdTransaction    │  │ IdHolding        │
-│ IdUser           │  │ IdPortfolio      │
-│ Type (I/E)       │  │ IdCompany        │
-│ IdMainCategory   │  │ Shares           │
-│ IdSubCategory    │  │ AvgBuyPrice      │
-│ Amount           │  │ BuyDate          │
-│ Date             │  │ IdStatus         │
-│ IdStatus         │  │ CreatedAt        │
-│ CreatedAt        │  │ UpdatedAt        │
-│ UpdatedAt        │  └────────┬─────────┘
-└──────────────────┘           │ N:1
-                               ▼
-                   ┌──────────────────┐    ┌──────────────────┐
-                   │    Companies     │─1:N│   Valuations     │
-                   ├──────────────────┤    ├──────────────────┤
-                   │ IdCompany        │    │ IdValuation      │
-                   │ Name             │    │ IdCompany        │
-                   │ Ticker           │    │ Price            │
-                   │ Sector           │    │ Date             │
-                   │ Market           │    │ Source           │
-                   │ IdStatus         │    │ IdStatus         │
-                   │ CreatedAt        │    │ CreatedAt        │
-                   │ UpdatedAt        │    │ UpdatedAt        │
-                   └──────────────────┘    └──────────────────┘
+         │ 1:N (entidad hija, colección navegable)
+         ▼
+┌──────────────┐
+│SubCategories │
+├──────────────┤
+│IdSubCategory │
+│IdMainCategory│
+│IdUser (null) │
+│Name          │
+│IsDefault     │
+│IdStatus      │
+│CreatedAt     │
+└──────────────┘
+
+    Referencia por ID (FK, sin navigation desde User):
+    ┌────────────────────────────────────────────────┐
+    │                       │                        │
+    ▼                       ▼                        ▼
+┌────────────────────┐  ┌───────────────┐    ┌──────────────────┐
+│  Transactions      │  │  Portfolios   │    │  RagDocuments    │
+│  (AR)              │  │  (AR)         │    │  (AR)            │
+├────────────────────┤  ├───────────────┤    ├──────────────────┤
+│ IdTransaction      │  │ IdPortfolio   │    │ IdRagDocument    │
+│ IdUser (FK)        │  │ IdUser (FK)   │    │ IdUser (FK)      │
+│ Type (I/E)         │  │ Name          │    │ FileName         │
+│ IdMainCategory     │  │ RealizedPnL ⁺ │    │ IdStatus         │
+│ IdSubCategory      │  │ IdStatus      │    │ UploadedAt       │
+│ OriginalAmount   ┐ │  │ CreatedAt     │    └──────────────────┘
+│ OriginalCurrency │ │  │ UpdatedAt     │
+│ ExchangeRate     ├─┼── MoneyConversion (snapshot)
+│ BaseAmount       │ │  └───────┬───────┘
+│ BaseCurrency     │ │          │ 1:N (entidad hija)
+│ RateDate         ┘ │          ▼
+│ Date               │  ┌──────────────────┐
+│ IdStatus           │  │    Holdings      │ (lote compra)
+│ CreatedAt          │  ├──────────────────┤
+│ UpdatedAt          │  │ IdHolding        │
+└────────────────────┘  │ IdPortfolio      │
+                        │ IdCompany        │
+                        │ Shares           │
+                        │ AvgBuyPrice  ⁺⁺  │
+                        │ BuyDate          │
+                        │ IdStatus         │
+                        └────────┬─────────┘
+                                 │ 1:N (entidad nieta)
+                                 ▼
+                        ┌──────────────────┐
+                        │    Disposals     │ (venta)
+                        ├──────────────────┤
+                        │ IdDisposal       │
+                        │ IdHolding        │
+                        │ Shares           │
+                        │ SellPrice    ⁺⁺  │
+                        │ SellDate         │
+                        │ RealizedPnL      │
+                        │ IdStatus         │
+                        └──────────┬───────┘
+
+                        N:1 (Holdings → Companies):
+                                 │
+                                 ▼
+                     ┌──────────────────┐    ┌──────────────────┐
+                     │    Companies     │─1:N│   Valuations     │
+                     │    (AR global)   │    │   (entidad hija) │
+                     ├──────────────────┤    ├──────────────────┤
+                     │ IdCompany        │    │ IdValuation      │
+                     │ Name             │    │ IdCompany        │
+                     │ Ticker           │    │ Price        ⁺⁺  │
+                     │ Sector           │    │ Date             │
+                     │ Market           │    │ Source           │
+                     │ Currency         │    │ IdStatus         │
+                     │ IdStatus         │    │ CreatedAt        │
+                     │ CreatedAt        │    │ UpdatedAt        │
+                     │ UpdatedAt        │    └──────────────────┘
+                     └──────────────────┘
+
+┌──────────────────────────────┐
+│        ExchangeRates         │  Referencia/cache — NO es AR ni BaseEntity.
+├──────────────────────────────┤  Sin navigation. La gestiona ExchangeRateApiClient
+│ IdExchangeRate PK            │  (HttpClient API tipos + UPSERT Dapper, fuera del UoW).
+│ FromCurrency                 │
+│ ToCurrency                   │
+│ Rate                         │
+│ RateDate                     │
+│ Source                       │
+│ FetchedAt                    │
+│ UNIQUE(From, To, RateDate)   │
+└──────────────────────────────┘
+
+⁺  Money (importe + moneda): RealizedPnL de Portfolio persiste en la moneda base del usuario.
+⁺⁺ MoneyConversion: snapshot (Original + Rate + Base + RateDate). AvgBuyPrice/SellPrice son
+   MoneyConversion (EF owned type, columnas prefijadas Buy*/Sell*). Valuation.Price es Money.
 ```
 
 ---
@@ -115,17 +167,45 @@ public enum EntityStatus : short
 public enum EntityStatus : short { Pending = 1, Active = 2, Processing = 3, Deleted = 4 }
 ```
 
+**TransactionType** (SMALLINT en BD — persiste como entero):
+```csharp
+public enum TransactionType { Income = 0, Expense = 1 }
+```
+
 **MainCategory** (INT en BD):
 ```csharp
 public enum MainCategory
 {
-    // EXPENSE
-    GastosNecesarios = 1, Inversion = 2, Ahorro = 3, Donaciones = 4,
-    Lujos = 5, Educacion = 6, Amortizaciones = 7,
-    // INCOME
-    Nomina = 10, Alquileres = 11, Dividendos = 12, Otros = 13
+    // Expense
+    EssentialExpenses = 1, Investment = 2, Savings = 3, Donations = 4,
+    Luxuries = 5, Education = 6, Amortizations = 7,
+    // Income
+    Salary = 10, Rentals = 11, Dividends = 12, Other = 13
 }
 ```
+
+**Currency** (CHAR(3) en BD — se persiste el nombre ISO 4217 alpha-3 vía `ValueConverter<Currency,string>`):
+```csharp
+public enum Currency : short { EUR = 978, USD = 840, GBP = 826, CHF = 756, JPY = 392 }
+// El nombre del enum es el código ISO alpha-3; el valor es el ISO numérico (informativo).
+```
+
+#### Value Objects (Domain)
+
+**Money** — importe + moneda, con invariantes en la factory:
+```csharp
+public sealed record Money(decimal Amount, Currency Currency);
+```
+
+**MoneyConversion** — snapshot de conversión (EF owned type). Reutilizable en `Transaction`, `Holding` y `Valuation`:
+```csharp
+public sealed record MoneyConversion(
+    Money    Original,   // OriginalAmount + OriginalCurrency
+    decimal  Rate,       // tipo Original -> Base aplicado
+    Money    Base,       // BaseAmount + BaseCurrency (snapshot)
+    DateOnly RateDate);  // fecha del tipo usado
+```
+La entidad calcula `Base.Amount = Original.Amount * Rate` en su factory. El **dominio no hace llamadas externas**: recibe el `Rate` ya resuelto desde Application. Si `Original.Currency == BaseCurrency` → `Rate = 1`.
 
 #### Users
 | Campo | Tipo | Restricciones |
@@ -135,6 +215,7 @@ public enum MainCategory
 | PasswordHash | VARCHAR(512) | NOT NULL (Argon2) |
 | PasswordSalt | VARCHAR(256) | NOT NULL (Argon2) |
 | FullName | VARCHAR(200) | NOT NULL |
+| BaseCurrency | CHAR(3) | NOT NULL, DEFAULT 'EUR' (enum Currency — moneda base del usuario) |
 | LastLoginDate | DATETIME | NULL |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 |
 | CreatedAt | DATETIME | NOT NULL |
@@ -165,18 +246,23 @@ Subcategorías predefinidas (ejemplos):
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdTransaction | INT | PK, AUTO_INCREMENT |
-| IdUser | INT | FK → Users, NOT NULL |
-| Type | ENUM('INCOME','EXPENSE') | NOT NULL |
+| IdUser | INT | FK → Users ON DELETE CASCADE, NOT NULL |
+| Type | SMALLINT | NOT NULL (enum TransactionType: Income=0, Expense=1) |
 | IdMainCategory | INT | NOT NULL (enum MainCategory) |
-| IdSubCategory | INT | FK → SubCategories, NULL |
-| Amount | DECIMAL(18,2) | NOT NULL, > 0 |
+| IdSubCategory | INT | FK → SubCategories ON DELETE SET NULL, NULL |
 | Description | VARCHAR(500) | NULL |
-| Date | DATE | NOT NULL |
-| IsRecurrent | BOOLEAN | DEFAULT FALSE |
-| RecurrencePeriod | ENUM('MONTHLY','QUARTERLY','YEARLY') | NULL |
+| TransactionDate | DATE | NOT NULL |
+| OriginalAmount | DECIMAL(18,2) | NOT NULL, > 0 (importe en moneda original) |
+| OriginalCurrency | CHAR(3) | NOT NULL (enum Currency — snapshot) |
+| ExchangeRate | DECIMAL(18,6) | NOT NULL (tipo Original→Base; 1 si misma moneda) |
+| BaseAmount | DECIMAL(18,2) | NOT NULL (= OriginalAmount × ExchangeRate, moneda base del usuario) |
+| BaseCurrency | CHAR(3) | NOT NULL (snapshot moneda base del usuario en el momento de la transacción) |
+| RateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
+| | | INDEX `(IdUser, TransactionDate)` para consultas paginadas y gráficas |
+| | | _Las 6 columnas de importe/moneda son el VO `MoneyConversion` (EF owned type): `Original` (OriginalAmount+OriginalCurrency) + `Rate` + `Base` (BaseAmount+BaseCurrency) + `RateDate`. Se calculan en `Transaction.Create()` — el dominio recibe el `Rate` ya resuelto desde Application._ |
 
 #### Companies
 | Campo | Tipo | Restricciones |
@@ -195,25 +281,58 @@ Subcategorías predefinidas (ejemplos):
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdPortfolio | INT | PK, AUTO_INCREMENT |
-| IdUser | INT | FK → Users, NOT NULL |
+| IdUser | INT | FK → Users ON DELETE CASCADE, NOT NULL |
 | Name | VARCHAR(100) | NOT NULL |
+| RealizedPnL | DECIMAL(18,2) | NOT NULL, DEFAULT 0 (plusvalía/minusvalía realizada consolidada en moneda base) |
+| RealizedPnLCurrency | CHAR(3) | NOT NULL (snapshot de la moneda base del usuario en el momento de creación) |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 
-#### Holdings
+`RealizedPnL` es una **columna persistida** que el agregado `Portfolio` mantiene actualizada en cada `SellShares` y en cada `DeleteHolding` (reversa). No se recalcula desde `Disposals`; es el valor canónico acumulado.
+
+#### Holdings (lote de compra)
 | Campo | Tipo | Restricciones |
 |-------|------|--------------|
 | IdHolding | INT | PK, AUTO_INCREMENT |
-| IdPortfolio | INT | FK → Portfolios, NOT NULL |
-| IdCompany | INT | FK → Companies, NOT NULL |
-| Shares | DECIMAL(18,4) | NOT NULL, > 0 |
-| AvgBuyPrice | DECIMAL(18,4) | NOT NULL |
-| BuyDate | DATE | NOT NULL |
+| IdPortfolio | INT | FK → Portfolios ON DELETE CASCADE, NOT NULL |
+| IdCompany | INT | FK → Companies ON DELETE RESTRICT, NOT NULL |
+| Shares | DECIMAL(18,4) | NOT NULL, > 0 (total de acciones compradas en el lote) |
+| BuyOriginalAmount | DECIMAL(18,4) | NOT NULL (precio/acción en moneda de la empresa — snapshot) |
+| BuyOriginalCurrency | CHAR(3) | NOT NULL (moneda de la empresa — snapshot) |
+| BuyExchangeRate | DECIMAL(18,6) | NOT NULL (tipo empresa→base en BuyRateDate; 1 si misma moneda) |
+| BuyBaseAmount | DECIMAL(18,4) | NOT NULL (= BuyOriginalAmount × BuyExchangeRate — snapshot) |
+| BuyBaseCurrency | CHAR(3) | NOT NULL (moneda base del usuario — snapshot) |
+| BuyRateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
+| BuyDate | DATE | NOT NULL (fecha de compra; clave de ordenación FIFO) |
 | Notes | VARCHAR(500) | NULL |
 | IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
+
+Las 6 columnas `Buy*` son el VO `MoneyConversion` (`AvgBuyPrice`) mapeado como EF owned type con prefijo `Buy`. `OpenShares = Shares − Σ Disposals.Shares activos` se computa en memoria tras carga del agregado y en SQL en las queries Dapper; **no es columna persistida**. Recompra → **nuevo lote** (sin promediar precio). `IdCompany` usa `RESTRICT` (no se puede borrar una empresa con posiciones abiertas).
+
+#### Disposals (venta — entidad nieta)
+| Campo | Tipo | Restricciones |
+|-------|------|--------------|
+| IdDisposal | INT | PK, AUTO_INCREMENT |
+| IdHolding | INT | FK → Holdings ON DELETE CASCADE, NOT NULL |
+| Shares | DECIMAL(18,4) | NOT NULL, > 0 (acciones vendidas de este lote) |
+| SellOriginalAmount | DECIMAL(18,4) | NOT NULL (precio/acción de venta en moneda de la empresa — snapshot) |
+| SellOriginalCurrency | CHAR(3) | NOT NULL (moneda de la empresa — snapshot) |
+| SellExchangeRate | DECIMAL(18,6) | NOT NULL (tipo empresa→base en SellRateDate; 1 si misma moneda) |
+| SellBaseAmount | DECIMAL(18,4) | NOT NULL (= SellOriginalAmount × SellExchangeRate — snapshot) |
+| SellBaseCurrency | CHAR(3) | NOT NULL (moneda base del usuario — snapshot) |
+| SellRateDate | DATE | NOT NULL (fecha del tipo de cambio aplicado) |
+| SellDate | DATE | NOT NULL |
+| RealizedPnL | DECIMAL(18,2) | NOT NULL (= (SellBase − BuyBase) × Shares; positivo = ganancia) |
+| RealizedPnLCurrency | CHAR(3) | NOT NULL (moneda base — snapshot) |
+| Notes | VARCHAR(500) | NULL |
+| IdStatus | SMALLINT | NOT NULL, DEFAULT 2 (enum EntityStatus) |
+| CreatedAt | DATETIME | NOT NULL |
+| UpdatedAt | DATETIME | NULL |
+
+Las 6 columnas `Sell*` son el VO `MoneyConversion` (`SellPrice`) con prefijo `Sell`. `RealizedPnL` de `Disposal` es calculado y persistido; el `RealizedPnL` de `Portfolio` es el acumulado de todos los `Disposal` activos (ambos son canónicos). La venta consume lotes en orden **FIFO** a nivel `(Portfolio, Company)` — obligatorio para el cálculo de plusvalías IRPF.
 
 #### Valuations
 | Campo | Tipo | Restricciones |
@@ -227,6 +346,23 @@ Subcategorías predefinidas (ejemplos):
 | CreatedAt | DATETIME | NOT NULL |
 | UpdatedAt | DATETIME | NULL |
 | | | UNIQUE(IdCompany, Date) |
+
+> **Plan 3A (implementado)**: `Valuation.Price` es un VO `Money` (owned type EF → columnas `Price` DECIMAL(18,4) + `PriceCurrency` CHAR(3)) en la **moneda de la empresa**. El catálogo (`Companies`/`Valuations`) es **global** (sin `IdUser`); la conversión a la moneda base del usuario **no** se snapshotea aquí: se calcula por-usuario en las queries de cartera (Plan 3B). Índice único `(IdCompany, Date)`.
+
+#### ExchangeRates
+
+Dato de referencia / cache de tipos de cambio. **No es Aggregate Root ni `BaseEntity`** (sin `IdStatus` ni `DomainEvents`) y **no tiene repositorio**: solo lo gestiona `ExchangeRateApiClient`. Queda fuera del Global Query Filter. EF posee el esquema (migración); el cliente lee/escribe con Dapper (UPSERT `ON DUPLICATE KEY`) desacoplado del `UnitOfWork`.
+
+| Campo | Tipo | Restricciones |
+|-------|------|--------------|
+| IdExchangeRate | INT | PK, AUTO_INCREMENT |
+| FromCurrency | CHAR(3) | NOT NULL (enum Currency) |
+| ToCurrency | CHAR(3) | NOT NULL (enum Currency) |
+| Rate | DECIMAL(18,6) | NOT NULL |
+| RateDate | DATE | NOT NULL |
+| Source | VARCHAR(100) | NULL (p.ej. "Frankfurter/ECB") |
+| FetchedAt | DATETIME | NOT NULL |
+| | | UNIQUE(FromCurrency, ToCurrency, RateDate) |
 
 #### RagDocuments
 | Campo | Tipo | Restricciones |
@@ -244,6 +380,73 @@ Subcategorías predefinidas (ejemplos):
 
 ---
 
+## Agregados DDD
+
+### Reglas de Diseño
+
+1. **Solo los Aggregate Roots implementan `IAggregateRoot`** y tienen repositorio propio
+2. **Solo los AR disparan Domain Events** — las entidades hijas notifican al AR que algo cambió
+3. **Las entidades hijas no exponen métodos públicos de mutación** — se acceden a través de su AR
+4. **Las Queries (lectura) usan Dapper** y acceden directamente a tablas sin pasar por el AR
+5. **Los Commands (escritura) cargan el AR** con sus hijos y mutan a través de métodos del AR
+
+### Criterio de Diseño de Agregados
+
+Para decidir si una entidad es hija de un AR o un AR independiente se aplica:
+
+| Criterio | → Entidad hija del AR | → AR independiente |
+|---|---|---|
+| **Invariantes cruzadas** | Requiere validación contra estado del padre (ej: unicidad de nombre por usuario) | No requiere estado del padre para validarse |
+| **Volumen** | Colección pequeña y acotada (< 50 elementos) | Colección potencialmente grande (miles) |
+| **Ciclo de vida** | No tiene sentido sin el padre | Tiene sentido por sí sola (solo referencia al usuario por ID) |
+| **Concurrencia** | Modificaciones infrecuentes | Modificaciones frecuentes e independientes |
+
+### Mapa de Agregados
+
+| Aggregate Root | Entidades hijas | Repositorio |
+|---|---|---|
+| **User** | SubCategory | `IUserRepository` |
+| **Transaction** | _(ninguna)_ | `ITransactionRepository` |
+| **Portfolio** | Holding | `IPortfolioRepository` |
+| **Company** | Valuation | `ICompanyRepository` |
+| **RagDocument** | _(ninguna)_ | `IRagDocumentRepository` |
+
+**Justificación del cambio (ADR):**
+- **SubCategory** permanece como hija de User: colección pequeña (~20-50), invariante de unicidad de nombre por usuario+MainCategory, sin sentido fuera del usuario.
+- **Transaction** pasa a AR independiente: volumen alto (miles por usuario), no requiere invariantes cruzadas con User, alta frecuencia de escritura. Referencia a User solo por `IdUser` (int).
+- **RagDocument** pasa a AR independiente: volumen medio, ciclo de vida propio (upload → indexing → ready), no comparte invariantes con User.
+
+### Ejemplo: Entidad hija accedida a través del AR (SubCategory)
+
+```csharp
+// Command: AddSubCategory — se accede via User (AR padre)
+var user = await _userRepository.GetByIdWithSubCategoriesAsync(userId);
+user.AddSubCategory(MainCategory.Luxuries, "Conciertos");
+await _userRepository.UnitOfWork.SaveChangesAsync();
+// Internamente: _subCategories.Add(SubCategory.Create(mainCategory, name))
+// El AR puede disparar SubCategoryCreatedEvent si es necesario
+```
+
+### Ejemplo: AR independiente (Transaction)
+
+```csharp
+// Command: CreateTransaction — AR con su propio repositorio
+var transaction = Transaction.Create(userId, type, amount, date, mainCategory, subCategoryId, description);
+await _transactionRepository.AddAsync(transaction, cancellationToken);
+await _transactionRepository.UnitOfWork.SaveChangesAsync();
+// Transaction dispara TransactionCreatedEvent
+```
+
+### Ejemplo de lectura directa (Dapper)
+
+```csharp
+// Query: GetMonthlyExpenses — NO pasa por el AR
+var sql = "SELECT * FROM Transactions WHERE IdUser = @UserId AND MONTH(Date) = @Month";
+var transactions = await connection.QueryAsync<TransactionDto>(sql, new { UserId = userId, Month = month });
+```
+
+---
+
 ## Arquitectura CQRS
 
 ### Separación de escritura y lectura
@@ -256,6 +459,8 @@ Subcategorías predefinidas (ejemplos):
 | Eventos | Domain Events post-SaveChanges | N/A |
 | Transacciones | UnitOfWork (DbContext) | Conexión directa MySQL |
 | Rendimiento | Correcto para escritura | Óptimo (SQL puro) |
+
+**Consolidación multimoneda**: las queries de agregación (summary, gráficas, balance) operan **exclusivamente sobre `BaseAmount`** (snapshot de la moneda base del usuario en el momento de la transacción). Esto garantiza totales coherentes independientemente de cuántas monedas originales haya en el periodo. `TransactionSummaryDto` expone `TotalIncome`, `TotalExpense`, `Balance` y `BaseCurrency` (el código ISO alpha-3 del snapshot). `GetMonthlyChartQuery` agrupa por `YEAR(TransactionDate), MONTH(TransactionDate)` y devuelve `IReadOnlyList<MonthlyChartPointDto>`. La moneda original queda en `OriginalAmount`/`OriginalCurrency` para desglose si se necesita en el futuro.
 
 ### Domain Events (patrón DDD puro)
 
@@ -427,20 +632,22 @@ public class PortfolioProfile : Profile
 ### Transactions (Gastos/Ingresos)
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | /api/v1/transactions | Listar (filtros, paginación) — Dapper |
-| GET | /api/v1/transactions/{id} | Detalle — Dapper |
 | POST | /api/v1/transactions | Crear — EF Core |
-| PUT | /api/v1/transactions/{id} | Actualizar — EF Core |
+| PUT | /api/v1/transactions/{id} | Actualizar (re-convierte importe) — EF Core |
 | DELETE | /api/v1/transactions/{id} | Borrado lógico — EF Core |
-| GET | /api/v1/transactions/summary | Resumen por periodo — Dapper |
-| GET | /api/v1/transactions/chart/monthly | Datos gráfica — Dapper |
+| GET | /api/v1/transactions/{id} | Detalle — Dapper |
+| GET | /api/v1/transactions | Listar con filtros opcionales (type, category, from, to) y paginación — Dapper |
+| GET | /api/v1/transactions/summary | Resumen Income/Expense/Balance por periodo — Dapper |
+| GET | /api/v1/transactions/monthly-chart | Datos de gráfica mensual (agrupados por año) — Dapper |
 
-### SubCategories
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | /api/v1/categories | Principales + sub — Dapper |
-| POST | /api/v1/categories/sub | Crear subcategoría — EF Core |
-| DELETE | /api/v1/categories/sub/{id} | Borrado lógico — EF Core |
+> El campo `currency` en el body de `POST`/`PUT` es opcional; si se omite, se asume la `BaseCurrency` del usuario (rate=1, sin red). Todas las queries de agregación consolidan sobre `BaseAmount` (moneda base del usuario). La respuesta de lista/detalle usa `TransactionListItemDto` con `string` para las monedas (Dapper no convierte CHAR(3) a enum automáticamente); las respuestas de command (`TransactionDto`) usan el enum `Currency` tipado.
+
+### Categories
+| Método | Ruta | Descripción | Estado |
+|--------|------|-------------|--------|
+| GET | /api/v1/categories | `MainCategory`s con sus subcategorías (globales + del usuario) — Dapper | ✅ Plan 2B |
+| POST | /api/v1/categories/sub | Crear subcategoría personalizada — EF Core | ⬜ Plan futuro |
+| DELETE | /api/v1/categories/sub/{id} | Borrado lógico de subcategoría — EF Core | ⬜ Plan futuro |
 
 ### Companies
 | Método | Ruta | Descripción |
@@ -454,21 +661,26 @@ public class PortfolioProfile : Profile
 ### Portfolio
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | /api/v1/portfolios | Listar carteras — Dapper |
-| POST | /api/v1/portfolios | Crear — EF Core |
-| GET | /api/v1/portfolios/{id} | Detalle + holdings — Dapper |
-| POST | /api/v1/portfolios/{id}/holdings | Añadir posición — EF Core |
-| PUT | /api/v1/portfolios/{id}/holdings/{hId} | Actualizar — EF Core |
-| DELETE | /api/v1/portfolios/{id}/holdings/{hId} | Borrado lógico — EF Core |
-| GET | /api/v1/portfolios/{id}/performance | Rentabilidad — Dapper |
+| GET | /api/v1/portfolios | Listar carteras con MarketValue consolidado — Dapper |
+| POST | /api/v1/portfolios | Crear cartera — EF Core |
+| GET | /api/v1/portfolios/{id} | Detalle + holdings con OpenShares — Dapper |
+| POST | /api/v1/portfolios/{id}/holdings | Añadir lote de compra — EF Core |
+| PUT | /api/v1/portfolios/{id}/holdings/{hId} | Actualizar notas del lote — EF Core |
+| DELETE | /api/v1/portfolios/{id}/holdings/{hId} | Borrado lógico + reversa de realizado — EF Core |
+| POST | /api/v1/portfolios/{id}/sales | Venta FIFO a nivel (Portfolio, Company) → N Disposals — EF Core |
+| GET | /api/v1/portfolios/{id}/performance | Rentabilidad consolidada (realizado + no realizado) — Dapper |
 
-### RAG (proxy al RAG Service Python)
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | /api/v1/rag/chat | Mensaje al LLM |
-| GET | /api/v1/rag/documents | Listar documentos — Dapper |
-| POST | /api/v1/rag/documents | Subir documento — EF Core |
-| DELETE | /api/v1/rag/documents/{id} | Eliminar — EF Core |
+### IA / RAG
+
+> **MVP**: `POST /api/v1/rag/chat` (o endpoint equivalente) reenvía el mensaje a un **LLM de pago externo** (Claude / GPT-4o) y la gestión de documentos (`/rag/documents`) recibe la subida que alimentará el futuro indexer. **Trabajo futuro**: el proxy al servicio RAG Python con Qdrant + LLM de Azure para recuperación semántica. La tabla siguiente describe el diseño objetivo completo.
+
+| Método | Ruta | Descripción | Estado |
+|--------|------|-------------|--------|
+| POST | /api/v1/rag/chat | Mensaje al LLM (MVP: LLM de pago externo; futuro: con contexto RAG) | MVP (mínimo) |
+| GET | /api/v1/rag/documents | Listar documentos — Dapper | MVP |
+| POST | /api/v1/rag/documents | Subir documento (alimentador del indexer) — EF Core | MVP |
+| DELETE | /api/v1/rag/documents/{id} | Eliminar — EF Core | MVP |
+| _(futuro)_ | indexación + búsqueda semántica | Servicio Python + Qdrant + embeddings Azure | 🔜 Futuro |
 
 ---
 
@@ -481,18 +693,22 @@ Backend.sln
 │   │   ├── Entities/
 │   │   │   ├── BaseEntity.cs           → DomainEvents list + RaiseDomainEvent()
 │   │   │   ├── IAggregateRoot.cs       → Marcador para Aggregate Roots
-│   │   │   ├── User.cs
-│   │   │   ├── Transaction.cs
-│   │   │   ├── MainCategory.cs
-│   │   │   ├── SubCategory.cs
-│   │   │   ├── Company.cs
-│   │   │   ├── Portfolio.cs
-│   │   │   ├── Holding.cs
-│   │   │   ├── Valuation.cs
-│   │   │   └── RagDocument.cs
+│   │   │   ├── User.cs                 → AR (posee SubCategories como entidad hija)
+│   │   │   ├── SubCategory.cs          → Entidad hija de User (constructor private)
+│   │   │   ├── Transaction.cs          → AR independiente (referencia User por IdUser)
+│   │   │   ├── Company.cs              → AR (posee Valuations como entidad hija)
+│   │   │   ├── Valuation.cs            → Entidad hija de Company
+│   │   │   ├── Portfolio.cs            → AR (posee Holdings como entidad hija)
+│   │   │   ├── Holding.cs              → Entidad hija de Portfolio
+│   │   │   ├── RagDocument.cs          → AR independiente (referencia User por IdUser)
+│   │   │   └── ExchangeRate.cs         → Dato de referencia/cache (NO es AR ni BaseEntity)
+│   │   ├── ValueObjects/
+│   │   │   ├── Money.cs                 → Importe + Currency
+│   │   │   └── MoneyConversion.cs       → Snapshot conversión (owned type) reutilizable
 │   │   ├── Enums/
 │   │   │   ├── TransactionType.cs
 │   │   │   ├── RecurrencePeriod.cs
+│   │   │   ├── Currency.cs
 │   │   │   └── EntityStatus.cs
 │   │   ├── Events/
 │   │   │   ├── IDomainEvent.cs          → Interfaz propia (sin MediatR)
@@ -505,26 +721,35 @@ Backend.sln
 │   ├── BigSchool.Application/
 │   │   ├── Interfaces/
 │   │   │   ├── IRepository.cs          → IRepository<T, Y> where T : IAggregateRoot
-│   │   │   ├── IUserRepository.cs
-│   │   │   ├── ITransactionRepository.cs
-│   │   │   ├── ICompanyRepository.cs
-│   │   │   ├── IPortfolioRepository.cs
-│   │   │   ├── IHoldingRepository.cs
-│   │   │   ├── IRagDocumentRepository.cs
+│   │   │   ├── IUserRepository.cs      → AR User + SubCategories (entidad hija)
+│   │   │   ├── ITransactionRepository.cs → AR independiente
+│   │   │   ├── ICompanyRepository.cs   → AR Company + Valuations
+│   │   │   ├── IPortfolioRepository.cs → AR Portfolio + Holdings
+│   │   │   ├── IRagDocumentRepository.cs → AR independiente
 │   │   │   ├── IRagServiceClient.cs
+│   │   │   ├── IExchangeRateProvider.cs → Tipos de cambio (atajo from==to → 1)
 │   │   │   └── IDbConnectionFactory.cs → Para Dapper
 │   │   ├── Events/
 │   │   │   └── DomainEventNotification.cs → Wrapper IDomainEvent → INotification
 │   │   ├── EventHandlers/
 │   │   │   └── ...
 │   │   ├── Commands/
-│   │   │   ├── CreateTransaction/
-│   │   │   ├── UpdateTransaction/
-│   │   │   ├── DeleteTransaction/
-│   │   │   ├── CreateCompany/
-│   │   │   ├── AddHolding/
-│   │   │   ├── AddValuation/
-│   │   │   └── UploadRagDocument/
+│   │   │   ├── Auth/
+│   │   │   │   ├── Register/
+│   │   │   │   └── Login/
+│   │   │   ├── Transactions/
+│   │   │   │   ├── CreateTransaction/
+│   │   │   │   ├── UpdateTransaction/
+│   │   │   │   └── DeleteTransaction/
+│   │   │   ├── SubCategories/
+│   │   │   │   └── AddSubCategory/      → Accede via User AR
+│   │   │   ├── Companies/
+│   │   │   │   └── CreateCompany/
+│   │   │   ├── Portfolios/
+│   │   │   │   ├── AddHolding/
+│   │   │   │   └── AddValuation/
+│   │   │   └── Rag/
+│   │   │       └── UploadRagDocument/
 │   │   ├── Queries/
 │   │   │   ├── GetTransactions/         → Usa Dapper via IDbConnectionFactory
 │   │   │   ├── GetTransactionSummary/
@@ -551,7 +776,8 @@ Backend.sln
 │   │   └── Services/
 │   │       ├── JwtService.cs
 │   │       ├── Argon2PasswordHasher.cs
-│   │       └── RagServiceClient.cs     → HttpClient al RAG Python
+│   │       ├── RagServiceClient.cs     → HttpClient al RAG Python
+│   │       └── ExchangeRateApiClient.cs → HttpClient API tipos (Frankfurter) + cache Dapper
 │   │
 │   └── BigSchool.WebApi/
 │       ├── Controllers/
@@ -586,7 +812,7 @@ Backend.sln
 | DI Container | **Autofac** con registro modular por Assemblies |
 | Object Mapping | **AutoMapper** con Profiles por feature |
 | Validation | **FluentValidation** en Commands |
-| Anti-corruption Layer | RagServiceClient → RAG Service Python |
+| Anti-corruption Layer | RagServiceClient → RAG Service Python; ExchangeRateApiClient → API de tipos de cambio |
 | Envelope | Respuestas: `{ data, errors, meta }` |
 | Soft Delete | IdStatus=4, Global Query Filter en EF Core |
 
@@ -619,22 +845,27 @@ Backend.sln
 - xUnit
 - FluentAssertions
 - Moq
-- Testcontainers
-- Microsoft.AspNetCore.Mvc.Testing
+- WireMock.Net (fake de servidor HTTP para el anti-corruption layer de tipos de cambio)
+- MySqlConnector + Dapper (fixture de integración sobre el MySQL real de docker-compose, BD `bigschool_test`)
+- Microsoft.AspNetCore.Mvc.Testing (E2E con `WebApplicationFactory<Program>`)
 
 ---
 
 ## Notas de Implementación
 
 - **Argon2** para hashing de contraseñas (Hash + Salt)
-- **JWT** con claims: IdUser, Email
+- **JWT** con claims: IdUser (encriptado con DPAPI), Email
 - **EF Core Fluent API** (no Data Annotations) para configuración de entidades
-- **Dapper** con `IDbConnectionFactory` para todas las queries de lectura
+- **Dapper** con `IDbConnectionFactory` para todas las queries de lectura. **Convención**: el SQL se declara como `private const string` a nivel de clase en UPPERCASE terminado en `_QUERY`, y los parámetros se pasan con `DynamicParameters` (no objetos anónimos). Ver `src/backend/AGENTS.md` › *Dapper y SQL*.
 - **Autofac** registra automáticamente: Handlers, Repositories, Services, Profiles, Validators
 - **AutoMapper** mapea entidades ↔ DTOs en cada Profile
 - **Migraciones** con `dotnet ef migrations`
 - **Seed** en migración inicial: SubCategories predefinidas (Status y MainCategories son enums, no se seedean en BD)
+- **Multimoneda**: `Money`/`MoneyConversion` se mapean como **EF owned types**; `Currency` con `ValueConverter<Currency,string>` → CHAR(3). `Users.BaseCurrency` con `DEFAULT 'EUR'`.
+- **Tipos de cambio**: `ExchangeRateApiClient` (HttpClient a Frankfurter/ECB) cachea en `ExchangeRates` vía Dapper (UPSERT), desacoplado del `UnitOfWork`. Seed de tipos fijos para una demo determinista. El dominio recibe el `Rate` ya resuelto (atajo `from==to → 1`).
 - **Swagger/OpenAPI** con Swashbuckle
 - **Health check**: `/health`
 - **Global Query Filter** en EF Core: `entity.IdStatus != 4` (soft delete transparente)
 - **Rate limit** en endpoints del RAG (proteger consumo Azure OpenAI)
+- **Agregados pequeños** (Vaughn Vernon): Transaction y RagDocument son ARs independientes para evitar fat aggregate en User. SubCategory sí es hija de User por tener invariante de unicidad y volumen bajo.
+- **Entidades hijas con constructor private**: se acceden solo a través de métodos del AR padre (ej: `user.AddSubCategory(...)`). No necesitan `InternalsVisibleTo` — se testean a través del AR.

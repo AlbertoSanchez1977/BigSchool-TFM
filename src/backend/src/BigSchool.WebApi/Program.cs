@@ -29,14 +29,17 @@ try
         options.Jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
         options.RagService = builder.Configuration.GetSection("RagService").Get<RagServiceSettings>()
             ?? new RagServiceSettings { BaseUrl = "http://localhost:8000" };
+        options.ExchangeRate = builder.Configuration.GetSection("ExchangeRate").Get<ExchangeRateSettings>()
+            ?? new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" };
     });
 
     // Autofac como DI container (simplified: one RegisterAssemblyTypes per layer)
     builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
-        // Domain layer
+        // Domain layer (excluir entidades — solo servicios de dominio)
         containerBuilder.RegisterAssemblyTypes(typeof(BigSchool.Domain.Entities.BaseEntity).Assembly)
+            .Where(t => !t.Namespace!.Contains("Entities") && !t.Namespace!.Contains("Enums") && !t.Namespace!.Contains("Exceptions"))
             .AsImplementedInterfaces();
 
         // Application layer
@@ -70,6 +73,7 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(AppSettings).Assembly);
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.Behaviors.ValidationBehavior<,>));
     });
     builder.Services.AddTransient<IMediator, CustomMediatR>();
 
@@ -83,10 +87,42 @@ try
             Version = "v1",
             Description = "API de finanzas personales e inversiones"
         });
+
+        c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Introduce el JWT obtenido en /login o /register."
+        });
+        c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
 
-    // Controllers
-    builder.Services.AddControllers();
+    // HttpClient factory (para IHttpClientFactory en ExchangeRateApiClient)
+    builder.Services.AddHttpClient();
+
+    // Dapper: DateOnly no tiene soporte nativo en Dapper; MySQL DATE → DateTime, necesita handler
+    Dapper.SqlMapper.AddTypeHandler(new BigSchool.Infrastructure.Persistence.DateOnlyTypeHandler());
+
+    // Controllers — JsonStringEnumConverter: acepta nombres string ("USD") e ints (840) para enums
+    builder.Services.AddControllers()
+        .AddJsonOptions(o =>
+            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
     // Health checks
     builder.Services.AddHealthChecks();
@@ -100,9 +136,37 @@ try
         });
     });
 
+    // Data Protection (para encrypt de userId en JWT)
+    builder.Services.AddDataProtection();
+
+    // JWT Authentication
+    var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtSecret))
+        };
+    });
+    builder.Services.AddAuthorization();
+
     var app = builder.Build();
 
     // Middleware pipeline
+    app.UseMiddleware<BigSchool.WebApi.Middleware.ExceptionHandlingMiddleware>();
+    
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -111,6 +175,8 @@ try
 
     app.UseSerilogRequestLogging();
     app.UseCors();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.MapControllers();
     app.MapHealthChecks("/health");
 

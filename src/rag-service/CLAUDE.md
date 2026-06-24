@@ -1,0 +1,1 @@
+Usar: src\rag-service\AGENTS.md

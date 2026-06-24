@@ -91,4 +91,101 @@ Este documento registra las decisiones de arquitectura (ADR ligero) tomadas dura
 
 ---
 
+## ADR-006: Soporte multimoneda con moneda base por usuario
+
+**Fecha**: 2026-06-17
+**Estado**: Aceptado
+
+**Contexto**: El modelo inicial era monomoneda implícita: las transacciones no tenían moneda y las inversiones no contemplaban conversión. En el BC de Inversiones (Plan 3) las empresas cotizan en distintas monedas y cada valoración es un punto temporal con su propio tipo de cambio. Sin un modelo multimoneda, `Transaction` nacería monomoneda y habría que rehacerlo.
+
+**Decisión**: Introducir soporte multimoneda transversal desde el Plan 2 (BC Finanzas Personales):
+
+- **Moneda base por usuario** (`Users.BaseCurrency`, EUR por defecto). Balances y carteras se consolidan en ella.
+- **Value Objects de dominio reutilizables**: `Currency` (enum), `Money` (importe + moneda) y `MoneyConversion` (snapshot: original + tipo + convertido + fecha).
+- **Conversión por snapshot** en el momento del registro: se persiste el importe original, su moneda, el tipo aplicado, el importe convertido a base y la fecha del tipo. El balance histórico no cambia aunque cambien los tipos.
+- **Tipos de cambio vía API externa** (Frankfurter/ECB) encapsulada en un anti-corruption layer (`ExchangeRateApiClient`), con tabla cache `ExchangeRates`: EF posee el esquema, el cliente lee/escribe con Dapper (UPSERT) desacoplado del `UnitOfWork` de negocio. El dominio recibe el tipo ya resuelto y **no realiza llamadas externas**.
+
+**Consecuencias**:
+- (+) `Transaction`, `Holding` y `Valuation` comparten el mismo modelo `Money`/`MoneyConversion`.
+- (+) Balances y valoraciones consolidados en la moneda base del usuario; auditables.
+- (+) Determinismo y resiliencia: el cache permite seeds reproducibles y operar sin red.
+- (+) Dominio puro (sin dependencias HTTP); la llamada externa vive en Application/Infrastructure.
+- (-) Más columnas por fila (snapshot) y una tabla/servicio adicionales.
+- (-) Dependencia de una API externa de tipos (mitigada por el cache y un fallback).
+
+**Alternativas descartadas**:
+- Guardar solo el importe convertido a base (pierde el importe/moneda original).
+- Conversión on-the-fly en queries (el balance histórico cambiaría al cambiar los tipos).
+- Moneda base global única (no permite usuarios con bases distintas).
+- Tipos introducidos manualmente por el usuario (carga al usuario, menos realista).
+
+**Referencia**: `docs/superpowers/specs/2026-06-17-backend-finanzas-multicurrency-design.md`
+
+---
+
+## ADR-007: BC Inversiones — value investing multimoneda (Plan 3B)
+
+**Fecha**: 2026-06-21
+**Estado**: Aceptado
+
+**Contexto**: El BC Inversiones necesita modelar una cartera por usuario con posiciones en empresas que cotizan en distintas monedas, soporte para ventas FIFO (obligatorio IRPF) y cálculo de performance realizada/no realizada en la moneda base del usuario.
+
+**Decisión**: Tres entidades en un único agregado jerárquico de tres niveles:
+
+- **`Portfolio` (AR por-usuario)** → **`Holding` (lote de compra)** → **`Disposal` (venta)**.
+- **Catálogo global** (`Company`/`Valuation`) separado del agregado por-usuario: `Valuation.Price` es `Money` en moneda de la empresa; la conversión a base de usuario se realiza en las queries (no se snapshotea en el catálogo).
+- **Modelo de compra**: `AddHolding` registra un nuevo lote siempre (recompra ≠ promedio); `AvgBuyPrice` es un `MoneyConversion` snapshot congelado a `BuyDate`.
+- **Venta FIFO obligatoria** a nivel `(Portfolio, Company)`: `SellShares` ordena lotes por `BuyDate asc, IdHolding asc` y genera un `Disposal` por lote tocado. Motivo: obligación legal IRPF en España (criterio FIFO para cálculo de plusvalías).
+- **`SellPrice` como `MoneyConversion` snapshot** congelado a `SellDate`: igual que `AvgBuyPrice`, garantiza que el cálculo de `RealizedPnL` por disposal sea inmutable e independiente de variaciones posteriores de tipos.
+- **`RealizedPnL` persistido en `Portfolio`**: columna acumulada actualizada por el agregado en cada `SellShares` y revertida en `DeleteHolding`. Evita recalcular desde `Disposals` en tiempo de query; es el valor canónico.
+- **Hijas/nietas accedidas solo a través del AR**: sin `InternalsVisibleTo`; `Holding.Create` y `Disposal.Create` son `internal`; los tests del agregado usan únicamente la API pública de `Portfolio`. Consecuencia: el AR debe cargar `Holdings` + `Disposals` en el mismo query (`GetByIdWithHoldingsAsync`).
+- **Performance consolidada en base** mediante query Dapper con fallback de tipo (`HOLDING_VALUATION` fragment): última valoración de la empresa convertida al tipo cuya fecha ≤ fecha de valoración.
+
+**Consecuencias**:
+- (+) Invariantes FIFO y de realizado garantizados por el AR; imposible crear `Disposal` fuera del flujo `SellShares`.
+- (+) `RealizedPnL` siempre consistente; sin posibilidad de inconsistencia entre columna y suma de disposals.
+- (+) Sin `InternalsVisibleTo` — tests del agregado son verdaderamente de caja negra.
+- (+) Snapshot multimoneda: ni el `AvgBuyPrice` ni el `SellPrice` cambian si cambian los tipos de cambio históricos.
+- (-) El AR debe cargar todos los `Holdings` + `Disposals` activos para ejecutar FIFO — aceptable para colecciones pequeñas por usuario.
+- (-) Bug de Pomelo MySQL con shared owned-entity instances en batch INSERT (workaround: `Money.Create` fresco por disposal en el loop FIFO).
+
+**Alternativas descartadas**:
+- FIFO calculado en query (sin persistir `RealizedPnL`): recalcular en tiempo real complica las queries y rompe el modelo de snapshot.
+- `Holding` como AR independiente (sin `Portfolio` como padre): pierde el control de invariantes FIFO y la consolidación del realizado.
+- Promediar precio en recompra (PEPS promediado): no es el criterio IRPF obligatorio en España.
+
+---
+
+## ADR-008: Reenfoque a MVP — IA mínima externa, RAG/MCP/Mobile a futuro
+
+**Fecha**: 2026-06-23
+**Estado**: Aceptado
+
+**Contexto**: Tres factores obligan a revisar el alcance:
+1. **Blocker de Azure**: la suscripción disponible no permite crear recursos de IA (Azure OpenAI), por lo que el RAG tal como estaba diseñado (embeddings + LLM en Azure) no es ejecutable ahora.
+2. **Revisión de arquitectura del MCP**: el MCP se concibió como widget para ChatGPT (de ahí el TypeScript separado). En la práctica aporta más valor como **MCP integrado** consumible por un LLM de pago (Claude u otro), con una capa de IA por detrás (Azure para indexar/buscar en el RAG; un modelo económico tipo GPT-4o para tareas auxiliares).
+3. **Necesidad de un MVP**: con el Backend ya implementado (Finanzas + Inversiones) es posible entregar valor construyendo ya el Frontend-Web, sin bloquearse por la IA.
+
+**Decisión**: Reorientar la entrega del TFM a un **MVP** y reclasificar el resto como **trabajo futuro**.
+
+- **MVP (entrega)**: Backend API (completo) + **Frontend-Web**. El frontend incluye una **zona de chat y subida de documentos**; el chat pasa por el **Backend API** hacia un **LLM de pago externo** (Claude / GPT-4o), **no Azure**. La subida de documentos queda como alimentador del futuro indexer.
+- **Trabajo futuro**:
+  - **RAG completo**: Indexer en Python + Qdrant + LLM de Azure para embeddings/indexación, cuando se habilite el acceso.
+  - **MCP en Python** (se abandona el TypeScript): herramienta de **flujos de análisis** — *screener* (filtrar empresas), *criterios* (revisión a fondo de una empresa) y *revisión de cartera*.
+  - **Mobile** (React Native, solo lectura).
+
+**Consecuencias**:
+- (+) Entrega desbloqueada: el MVP no depende de Azure ni del servicio Python.
+- (+) La IA sigue presente en la entrega (chat vía LLM de pago) → cubre "aplicaciones potenciadas por IA" sin Azure.
+- (+) El RAG/MCP/Mobile quedan documentados como roadmap coherente, no eliminados.
+- (+) La subida de documentos por el Backend deja el "enganche" listo para el indexer futuro.
+- (-) El RAG vectorial (Qdrant + embeddings) no se demuestra en la entrega; queda como diseño.
+- (-) Reescritura pendiente del módulo MCP (TypeScript → Python) cuando se aborde.
+
+**Notas**:
+- El detalle de la pieza **Frontend-Web** se tratará en una conversación de diseño aparte (no incluida en este reenfoque preliminar).
+- Afecta a `README.md`, `docs/00-vision.md` y `docs/02-backend-design.md` (sección IA/RAG reclasificada).
+
+---
+
 *Añadir nuevas decisiones al final del documento siguiendo el mismo formato.*

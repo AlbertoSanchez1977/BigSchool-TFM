@@ -1,0 +1,1 @@
+Usar: src\mcp-server\AGENTS.md
