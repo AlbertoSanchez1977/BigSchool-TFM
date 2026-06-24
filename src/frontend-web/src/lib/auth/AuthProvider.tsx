@@ -36,24 +36,31 @@ export const REFRESH_CHECK_INTERVAL_MS = 30_000
 
 // ── AuthProvider ──────────────────────────────────────────────────────────────
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [expiresAt, setExpiresAt] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+// Lee la sesión de localStorage de forma SÍNCRONA.
+// Guard `typeof window`: en el servidor (prerender estático) no existe localStorage,
+// así que devolvemos sesión vacía; en el cliente leemos el token ya en el primer render.
+function readInitialSession(): { user: AuthUser | null; token: string | null; expiresAt: string | null } {
+  if (typeof window === 'undefined') {
+    return { user: null, token: null, expiresAt: null }
+  }
+  const data = tokenStore.load()
+  if (!data) return { user: null, token: null, expiresAt: null }
+  return {
+    user: { email: data.email, fullName: data.fullName },
+    token: data.accessToken,
+    expiresAt: data.expiresAt,
+  }
+}
 
-  // Hidratación al montar: restaurar sesión previa desde localStorage.
-  // Equivale al constructor de un servicio de sesión que lee de una cookie/cache.
-  useEffect(() => {
-    const data = tokenStore.load()
-    if (data) {
-      setUser({ email: data.email, fullName: data.fullName })
-      setToken(data.accessToken)
-      setExpiresAt(data.expiresAt)
-    }
-    setIsLoading(false)
-  }, [])
+export function AuthProvider({ children }: { children: ReactNode }) {
+  // Inicializador perezoso (lazy): la función solo se ejecuta en el PRIMER render, no en cada uno.
+  // Así el usuario ya está disponible cuando React monta en el cliente, sin esperar a un useEffect
+  // posterior al pintado → se elimina el parpadeo Login/Registro → Dashboard.
+  const [user, setUser] = useState<AuthUser | null>(() => readInitialSession().user)
+  const [token, setToken] = useState<string | null>(() => readInitialSession().token)
+  const [expiresAt, setExpiresAt] = useState<string | null>(() => readInitialSession().expiresAt)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const logout = useCallback(() => {
     tokenStore.clear()
