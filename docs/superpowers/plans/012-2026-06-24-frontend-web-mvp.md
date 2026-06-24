@@ -42,27 +42,27 @@ para datos, react-hook-form + zod para formularios, JWT en `localStorage` + `Bea
 `src/app/providers.tsx`, `src/app/layout.tsx`, `.env.local`, `.env.example`,
 `src/lib/apiClient.ts`, `src/types/*.ts`, `components.json`.
 
-- [ ] **Step 1**: deps de runtime (`@tanstack/react-query`, `react-hook-form`, `zod`,
+- [x] **Step 1**: deps de runtime (`@tanstack/react-query`, `react-hook-form`, `zod`,
   `@hookform/resolvers`) y de test (`vitest`, `@testing-library/react`, `@testing-library/jest-dom`,
   `@testing-library/user-event`, `jsdom`, `@playwright/test`). Configurar `vitest.config.ts`
   (entorno jsdom, setup) y `playwright.config.ts` (baseURL del dev server).
-- [ ] **Step 2**: añadir componentes shadcn que se usarán: input, label, form, table, dialog,
+- [x] **Step 2**: añadir componentes shadcn que se usarán: input, label, form, table, dialog,
   sheet, tabs, select, dropdown-menu, sonner, badge, skeleton, separator, avatar. Alinear
   `components.json` al alias `@/` (tsconfig manda).
-- [ ] **Step 3**: `providers.tsx` (client) con `QueryClientProvider` + `<Toaster/>` (sonner);
+- [x] **Step 3**: `providers.tsx` (client) con `QueryClientProvider` + `<Toaster/>` (sonner);
   montarlo en `layout.tsx` envolviendo `children`.
-- [ ] **Step 4**: `.env.local` + `.env.example` con `NEXT_PUBLIC_API_URL=http://localhost:5285`.
-- [ ] **Step 5 (TDD)**: `lib/apiClient.ts`. Tests Vitest primero, casos:
+- [x] **Step 4**: `.env.local` + `.env.example` con `NEXT_PUBLIC_API_URL=http://localhost:5285`.
+- [x] **Step 5 (TDD)**: `lib/apiClient.ts`. Tests Vitest primero, casos:
   - éxito → devuelve `data` desestructurado del envelope;
   - respuesta con `errors[]` → lanza error tipado con `code`/`message`/`field`;
   - HTTP no-2xx sin envelope → error genérico;
   - inyecta `Authorization: Bearer <token>` si hay token;
   - 401 → invoca el gancho de sesión (logout) [se conecta en Task 2].
-- [ ] **Step 6**: `types/` — interfaces TS espejo de DTOs backend: auth (`AuthResponse`), transactions
+- [x] **Step 6**: `types/` — interfaces TS espejo de DTOs backend: auth (`AuthResponse`), transactions
   (`Transaction`, `CreateTransactionDto`, `TransactionListItem`, `Summary`, `MonthlyChartPoint`),
   categories, portfolios (`PortfolioListItem`, `PortfolioDetail`, `Holding`, `Disposal`,
   `SellResult`, `Performance`), companies. Monedas como `string` en DTOs de lectura.
-- [ ] **Step 7**: verificar `pnpm build` y `pnpm dev` OK; `pnpm test` (Vitest) en verde.
+- [x] **Step 7**: verificar `pnpm build` y `pnpm dev` OK; `pnpm test` (Vitest) en verde.
 
 **Aceptación**: build limpio; tests de `apiClient` verdes; providers activos.
 **Aprenderás**: estructura Next App Router, providers, `NEXT_PUBLIC_*`, HTTP centralizado (≈ `HttpClient` tipado).
