@@ -34,7 +34,7 @@ frontend-web/
 ├── src/
 │   ├── app/                  → App Router (páginas y layouts)
 │   │   ├── (public)/         → Landing, Contacto, Alcance, Login, Registro
-│   │   ├── (app)/            → Rutas protegidas (requieren JWT)
+│   │   ├── (private)/            → Rutas protegidas (requieren JWT)
 │   │   │   ├── dashboard/
 │   │   │   ├── expenses/     → Gastos/Ingresos
 │   │   │   ├── investments/  → Carteras → holdings
