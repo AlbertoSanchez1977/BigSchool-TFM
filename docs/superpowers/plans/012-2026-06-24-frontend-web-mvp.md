@@ -82,14 +82,14 @@ tipado), lógica pura testeable (política de refresco).
 **Files**: `src/lib/auth/tokenStore.ts`, `src/lib/auth/AuthProvider.tsx`, `src/hooks/useAuth.ts`,
 integración en `apiClient`. Reutiliza `lib/auth/refreshPolicy` (ya creado en Task 1).
 
-- [ ] **Step 1 (TDD)**: `tokenStore` (get/set/clear de `accessToken`, `expiresAt`, `sessionStartedAt`
+- [x] **Step 1 (TDD)**: `tokenStore` (get/set/clear de `accessToken`, `expiresAt`, `sessionStartedAt`
   y `refreshCount` en `localStorage`). Tests: set→get, clear, persistencia de contadores.
-- [ ] **Step 2 (TDD)**: `AuthProvider` + `useAuth` (estado `user`/`token`; `login`, `register`,
+- [x] **Step 2 (TDD)**: `AuthProvider` + `useAuth` (estado `user`/`token`; `login`, `register`,
   `logout`, `refresh`). Tests de transición (login setea token + `sessionStartedAt`; logout limpia).
-- [ ] **Step 3 (TDD)**: refresco proactivo — timer que ante `shouldRefreshSoon` llama a
+- [x] **Step 3 (TDD)**: refresco proactivo — timer que ante `shouldRefreshSoon` llama a
   `POST /auth/refresh` si `canRefresh`; si no, `logout`. Incrementa `refreshCount`. Tests con timers
   simulados y `refreshPolicy`.
-- [ ] **Step 4**: conectar `apiClient` ↔ token (Bearer, vía `getToken`) y el gancho `onUnauthorized`
+- [x] **Step 4**: conectar `apiClient` ↔ token (Bearer, vía `getToken`) y el gancho `onUnauthorized`
   (401) → `logout` + redirección a `/login`.
 
 **Aceptación**: tests de store, provider y refresco verdes; `apiClient` adjunta el token real.

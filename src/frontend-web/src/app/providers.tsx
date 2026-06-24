@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/lib/auth/AuthProvider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // useState garantiza que cada usuario/request tiene su propio QueryClient (análogo a un
@@ -22,8 +23,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <Toaster position="bottom-right" richColors />
+      <AuthProvider>
+        {children}
+        <Toaster position="bottom-right" richColors />
+      </AuthProvider>
     </QueryClientProvider>
   )
 }
