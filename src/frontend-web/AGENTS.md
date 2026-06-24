@@ -69,9 +69,9 @@ frontend-web/
 
 ### Públicas
 - **Landing**: generada con v0 (ver prompt). Secciones coherentes con capacidades reales.
-- **Contacto**: formulario **simulado** (sin envío real; el email es pieza futura separada).
+- **Contacto**: formulario **simulado** (sin envío real; el email es pieza futura separada) NOTA HUMANA: Tendrá su endPoint en backend simulando el envío guardando registro en tabla.
 - **Alcance y trabajos futuros**: página estática (se hace al final).
-- **Registro / Login**: JWT real contra `/auth/register` y `/auth/login`; redirección a Dashboard.
+- **Registro / Login**: JWT real contra `/auth/register` y `/auth/login`; redirección a Dashboard. NOTA HUMANA: `/auth/register` Disparará en backend Evento de Dominio que simulará envío de email de bienvenida, simulación de envío guardando registro en tabla.
 
 ### Privadas (requieren JWT)
 - **Dashboard**: KPIs + barras ingresos/gastos + línea de balance + resumen de inversiones +
@@ -84,6 +84,7 @@ frontend-web/
   tocar varios lotes), editar Notes, añadir y borrar holding.
 - **AI Scanner**: configuración con **toggle** activar/desactivar (solo local por coste). Si está
   off → pantalla **"Próximamente"**.
+- NOTA HUMANA: **Emails Logging**: pantalla de listado sencilla (Esa tabla simulada) con: Emails de contacto enviados + email de bienvenida del usuario
 
 ### Fuera de alcance MVP
 - **Editar usuario** (el Backend no tiene update de usuario aún).
