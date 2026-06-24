@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // El token caducó del todo o el refresh fue rechazado → re-login obligatorio
       logout()
-      router.push('/login')
+      router.push('/')
     }
   }, [logout, router])
 
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh()
       } else {
         logout()
-        router.push('/login')
+        router.push('/')
       }
     }, REFRESH_CHECK_INTERVAL_MS)
 

@@ -102,12 +102,17 @@ integración en `apiClient`. Reutiliza `lib/auth/refreshPolicy` (ya creado en Ta
 **Files**: `src/app/(public)/login/page.tsx`, `src/app/(public)/register/page.tsx`,
 `src/lib/schemas/auth.ts`, `tests/e2e/login.spec.ts`.
 
-- [ ] **Step 1 (TDD)**: esquemas zod login/registro. Tests: email inválido, password corto,
-  campos requeridos.
-- [ ] **Step 2**: formularios react-hook-form + zod; estados error/carga; toasts; redirección a
-  `/dashboard` tras éxito; enlaces entre login/registro.
-- [ ] **Step 3 (E2E — hito)**: Playwright registro → login → acceso a ruta privada (con backend en
-  marcha).
+- [x] **Step 1 (TDD)**: esquemas zod login/registro. 10 tests: email inválido, password corto,
+  confirmPassword no coincide, campos requeridos.
+- [x] **Step 2**: formularios react-hook-form + zod. Dualidad Desktop/Mobile:
+  - Desktop navbar: `NavbarPublic` con panel CSS-absolute flotante (top-right, 8 px de aire,
+    click-outside para cerrar).
+  - Móvil navbar: botones redirigen a páginas físicas `/login` y `/register`.
+  - CTA: `render={<Link>}` + `nativeButton={false}` — renderiza `<a>` manteniendo estilos.
+  - `app/(public)/login/page.tsx` y `register/page.tsx`: card centrada en pantalla completa.
+- [x] **Step 3 (E2E — hito)**: Playwright 9 tests: apertura de paneles, switch login↔registro,
+  click-outside, validación client-side, flujo registro→login con backend.
+  Acceso a ruta privada se completa en Task 4. `tests/e2e` excluido de Vitest.
 
 **Aceptación**: validación testeada; E2E de login verde.
 **Aprenderás**: formularios controlados, validación tipada, errores de API en UI.

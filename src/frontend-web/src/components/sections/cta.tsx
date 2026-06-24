@@ -1,6 +1,7 @@
-import { ArrowUpRight } from "lucide-react"
-import { Section } from "@/components/section"
-import { Button } from "@/components/ui/button"
+import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
+import { Section } from '@/components/section'
+import { Button } from '@/components/ui/button'
 
 export function Cta() {
   return (
@@ -14,11 +15,17 @@ export function Cta() {
           hacia el value investing.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button size="lg" className="gap-1.5">
+          {/* render={<Link />} hace que Button se renderice como <a> manteniendo todos sus estilos */}
+          {/*
+            nativeButton={false}: le decimos explícitamente a Base UI que sabemos que
+            estamos renderizando un <a> (Link de navegación), no un <button>.
+            Semánticamente es correcto: <a> = navegar a otro sitio, <button> = acción.
+          */}
+          <Button size="lg" className="gap-1.5" render={<Link href="/register" />} nativeButton={false}>
             Registrarse
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <Button size="lg" variant="outline">
+          <Button size="lg" variant="outline" render={<Link href="/login" />} nativeButton={false}>
             Iniciar sesión
           </Button>
         </div>

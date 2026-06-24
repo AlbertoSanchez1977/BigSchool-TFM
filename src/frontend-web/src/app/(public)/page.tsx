@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/navbar"
+import { NavbarPublic } from "@/components/navbar-public"
 import { Footer } from "@/components/footer"
 import { Hero } from "@/components/sections/hero"
 import { Expenses } from "@/components/sections/expenses"
@@ -9,7 +9,7 @@ import { Cta } from "@/components/sections/cta"
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
-      <Navbar />
+      <NavbarPublic />
       <main className="flex-1">
         <Hero />
         <Expenses />
