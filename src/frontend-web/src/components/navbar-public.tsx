@@ -20,7 +20,7 @@ const navLinks = [
 
 export function NavbarPublic() {
   const router = useRouter()
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>('login')
@@ -88,7 +88,12 @@ export function NavbarPublic() {
           (nombre/email, editar perfil, logout) llega en Task 4.
         */}
         <div ref={authAreaRef} className="relative hidden items-center gap-2 md:flex">
-          {user ? (
+          {isLoading ? (
+            // Placeholder neutro mientras leemos localStorage tras montar.
+            // Reserva ~120px (ancho aprox. de los botones) para no provocar saltos de layout.
+            // El usuario logueado NO ve "Login/Registro" aquí, evitando el parpadeo.
+            <div className="h-7 w-[120px] animate-pulse rounded-md bg-muted" aria-hidden="true" />
+          ) : user ? (
             <>
               <Button size="sm" onClick={() => router.push('/dashboard')}>
                 <LayoutDashboard className="mr-1.5 h-4 w-4" />
@@ -155,7 +160,11 @@ export function NavbarPublic() {
             </li>
           ))}
           <li className="mt-2 flex flex-col gap-2 px-1">
-            {user ? (
+            {isLoading ? (
+              // El menú móvil se abre con un toque (la hidratación ya habrá terminado),
+              // pero guardamos isLoading por coherencia con el comportamiento desktop.
+              <div className="h-7 w-full animate-pulse rounded-md bg-muted" aria-hidden="true" />
+            ) : user ? (
               <>
                 <Button
                   size="sm"

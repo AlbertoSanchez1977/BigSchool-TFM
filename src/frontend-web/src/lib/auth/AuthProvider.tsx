@@ -36,31 +36,28 @@ export const REFRESH_CHECK_INTERVAL_MS = 30_000
 
 // ── AuthProvider ──────────────────────────────────────────────────────────────
 
-// Lee la sesión de localStorage de forma SÍNCRONA.
-// Guard `typeof window`: en el servidor (prerender estático) no existe localStorage,
-// así que devolvemos sesión vacía; en el cliente leemos el token ya en el primer render.
-function readInitialSession(): { user: AuthUser | null; token: string | null; expiresAt: string | null } {
-  if (typeof window === 'undefined') {
-    return { user: null, token: null, expiresAt: null }
-  }
-  const data = tokenStore.load()
-  if (!data) return { user: null, token: null, expiresAt: null }
-  return {
-    user: { email: data.email, fullName: data.fullName },
-    token: data.accessToken,
-    expiresAt: data.expiresAt,
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Inicializador perezoso (lazy): la función solo se ejecuta en el PRIMER render, no en cada uno.
-  // Así el usuario ya está disponible cuando React monta en el cliente, sin esperar a un useEffect
-  // posterior al pintado → se elimina el parpadeo Login/Registro → Dashboard.
-  const [user, setUser] = useState<AuthUser | null>(() => readInitialSession().user)
-  const [token, setToken] = useState<string | null>(() => readInitialSession().token)
-  const [expiresAt, setExpiresAt] = useState<string | null>(() => readInitialSession().expiresAt)
-  const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
+  // isLoading=true hasta que montamos en cliente y leemos localStorage.
+  // CLAVE: servidor y cliente renderizan IGUAL en el primer render (user=null, isLoading=true),
+  // por eso NO hay error de hidratación. La UI usa isLoading para mostrar un placeholder
+  // neutro en vez del estado deslogueado, evitando el parpadeo "Login/Registro → Dashboard".
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+
+  // Hidratación al montar: restaurar sesión previa desde localStorage.
+  // Corre después del primer pintado → no afecta al HTML del servidor → sin mismatch.
+  useEffect(() => {
+    const data = tokenStore.load()
+    if (data) {
+      setUser({ email: data.email, fullName: data.fullName })
+      setToken(data.accessToken)
+      setExpiresAt(data.expiresAt)
+    }
+    setIsLoading(false)
+  }, [])
 
   const logout = useCallback(() => {
     tokenStore.clear()
