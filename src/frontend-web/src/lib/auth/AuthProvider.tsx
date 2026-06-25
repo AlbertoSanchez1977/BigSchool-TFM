@@ -40,11 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
+  // isLoading=true hasta que montamos en cliente y leemos localStorage.
+  // CLAVE: servidor y cliente renderizan IGUAL en el primer render (user=null, isLoading=true),
+  // por eso NO hay error de hidratación. La UI usa isLoading para mostrar un placeholder
+  // neutro en vez del estado deslogueado, evitando el parpadeo "Login/Registro → Dashboard".
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   // Hidratación al montar: restaurar sesión previa desde localStorage.
-  // Equivale al constructor de un servicio de sesión que lee de una cookie/cache.
+  // Corre después del primer pintado → no afecta al HTML del servidor → sin mismatch.
   useEffect(() => {
     const data = tokenStore.load()
     if (data) {
@@ -112,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // El token caducó del todo o el refresh fue rechazado → re-login obligatorio
       logout()
-      router.push('/login')
+      router.push('/')
     }
   }, [logout, router])
 
@@ -133,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh()
       } else {
         logout()
-        router.push('/login')
+        router.push('/')
       }
     }, REFRESH_CHECK_INTERVAL_MS)
 

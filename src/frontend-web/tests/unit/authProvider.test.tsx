@@ -190,7 +190,7 @@ describe('AuthProvider', () => {
       fireEvent.click(screen.getByText('Refresh'))
 
       await waitFor(() => expect(screen.getByTestId('token').textContent).toBe('none'))
-      expect(mockPush).toHaveBeenCalledWith('/login')
+      expect(mockPush).toHaveBeenCalledWith('/')
     })
   })
 
@@ -266,7 +266,7 @@ describe('AuthProvider', () => {
 
       // logout() es síncrono → el estado ya está en none tras el act
       await waitFor(() => expect(screen.getByTestId('token').textContent).toBe('none'))
-      expect(mockPush).toHaveBeenCalledWith('/login')
+      expect(mockPush).toHaveBeenCalledWith('/')
     })
   })
 })

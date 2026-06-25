@@ -1,4 +1,7 @@
+'use client'
+
 import { LineChart } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 const footerColumns = [
   {
@@ -20,6 +23,8 @@ const footerColumns = [
 ]
 
 export function Footer() {
+  const { user, isLoading } = useAuth()
+
   return (
     <footer className="w-full border-t border-border bg-muted/40">
       <div className="mx-auto w-full max-w-6xl px-5 py-12 md:px-8">
@@ -41,16 +46,18 @@ export function Footer() {
               <div key={col.title}>
                 <h3 className="text-sm font-semibold text-foreground">{col.title}</h3>
                 <ul className="mt-4 flex flex-col gap-3">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
+                  {col.links
+                    .filter((link) => !(link.label === "Iniciar sesión" && !isLoading && user))
+                    .map((link) => (
+                      <li key={link.label}>
+                        <a
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
                 </ul>
               </div>
             ))}

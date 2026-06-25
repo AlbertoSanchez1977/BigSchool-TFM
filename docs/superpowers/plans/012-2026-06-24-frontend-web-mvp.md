@@ -102,29 +102,47 @@ integración en `apiClient`. Reutiliza `lib/auth/refreshPolicy` (ya creado en Ta
 **Files**: `src/app/(public)/login/page.tsx`, `src/app/(public)/register/page.tsx`,
 `src/lib/schemas/auth.ts`, `tests/e2e/login.spec.ts`.
 
-- [ ] **Step 1 (TDD)**: esquemas zod login/registro. Tests: email inválido, password corto,
-  campos requeridos.
-- [ ] **Step 2**: formularios react-hook-form + zod; estados error/carga; toasts; redirección a
-  `/dashboard` tras éxito; enlaces entre login/registro.
-- [ ] **Step 3 (E2E — hito)**: Playwright registro → login → acceso a ruta privada (con backend en
-  marcha).
+- [x] **Step 1 (TDD)**: esquemas zod login/registro. 10 tests: email inválido, password corto,
+  confirmPassword no coincide, campos requeridos.
+- [x] **Step 2**: formularios react-hook-form + zod. Dualidad Desktop/Mobile:
+  - Desktop navbar: `NavbarPublic` con panel CSS-absolute flotante (top-right, 8 px de aire,
+    click-outside para cerrar).
+  - Móvil navbar: botones redirigen a páginas físicas `/login` y `/register`.
+  - CTA: `render={<Link>}` + `nativeButton={false}` — renderiza `<a>` manteniendo estilos.
+  - `app/(public)/login/page.tsx` y `register/page.tsx`: card centrada en pantalla completa.
+- [x] **Step 3 (E2E — hito)**: Playwright 9 tests: apertura de paneles, switch login↔registro,
+  click-outside, validación client-side, flujo registro→login con backend.
+  Acceso a ruta privada se completa en Task 4. `tests/e2e` excluido de Vitest.
 
 **Aceptación**: validación testeada; E2E de login verde.
 **Aprenderás**: formularios controlados, validación tipada, errores de API en UI.
 
 ---
 
-## Task 4 — Route groups, guard y App shell
+## Task 4 — Route groups, guard, App shell y ProfileDropdown compartido
 
 **Files**: `src/app/(private)/layout.tsx`, `src/components/app-shell/{sidebar,topbar}.tsx`,
-páginas placeholder.
+`src/components/auth/profile-dropdown.tsx`, `src/components/navbar-private.tsx`,
+ajustes en `src/components/navbar-public.tsx`, páginas placeholder.
 
 - [ ] **Step 1**: separar route groups `(public)` / `(private)`.
 - [ ] **Step 2 (TDD)**: guard del layout privado (sin token → redirige a `/login`). Test de comportamiento.
-- [ ] **Step 3**: App shell — sidebar + topbar (bloque shadcn) con navegación, item activo y logout.
-- [ ] **Step 4**: placeholders de dashboard/expenses/investments/ai-scanner para navegar.
+- [ ] **Step 3 (TDD)**: `ProfileDropdown` — componente **compartido** entre navbar público y privado.
+  Muestra nombre/email del usuario, enlace "Editar perfil" (→ `/profile`, Task 15) y "Cerrar sesión".
+  Usa `dropdown-menu` (shadcn) + `avatar`. Tests: render con `user`, acción logout, item editar.
+- [ ] **Step 4**: App shell privado — sidebar (navegación de secciones privadas) + topbar con
+  logo→`/`, item activo y el `ProfileDropdown` en la zona derecha (donde estaba el login).
+- [ ] **Step 5**: adaptar `NavbarPublic` al estado autenticado (sustituye la corrección mínima de
+  Task 3): si `user` → ocultar login/registro, mostrar acceso destacado a Dashboard +
+  `ProfileDropdown`; si no → login/registro como hasta ahora.
+- [ ] **Step 6**: placeholders de dashboard/expenses/investments/ai-scanner para navegar.
 
-**Aceptación**: rutas privadas redirigen sin sesión; navegación visible.
+**Nota (decisión de Task 3)**: en Task 3 se añadió una corrección mínima en `NavbarPublic`
+(si hay sesión → botón "Ir al Dashboard" + logout, sin dropdown). El `ProfileDropdown` completo
+y su uso en ambos navbars se materializa aquí (Steps 3 y 5).
+
+**Aceptación**: rutas privadas redirigen sin sesión; navegación visible; `ProfileDropdown`
+funciona en navbar público y privado.
 **Aprenderás**: layouts anidados, route groups, protección de rutas en cliente.
 
 ---
