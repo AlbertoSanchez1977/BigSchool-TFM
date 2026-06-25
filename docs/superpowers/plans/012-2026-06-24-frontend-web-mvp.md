@@ -125,17 +125,17 @@ integración en `apiClient`. Reutiliza `lib/auth/refreshPolicy` (ya creado en Ta
 `src/components/auth/profile-dropdown.tsx`, `src/components/navbar-private.tsx`,
 ajustes en `src/components/navbar-public.tsx`, páginas placeholder.
 
-- [ ] **Step 1**: separar route groups `(public)` / `(private)`.
-- [ ] **Step 2 (TDD)**: guard del layout privado (sin token → redirige a `/login`). Test de comportamiento.
-- [ ] **Step 3 (TDD)**: `ProfileDropdown` — componente **compartido** entre navbar público y privado.
+- [x] **Step 1**: separar route groups `(public)` / `(private)`.
+- [x] **Step 2 (TDD)**: guard del layout privado (sin token → redirige a `/`). Test de comportamiento.
+- [x] **Step 3 (TDD)**: `ProfileDropdown` — componente **compartido** entre navbar público y privado.
   Muestra nombre/email del usuario, enlace "Editar perfil" (→ `/profile`, Task 15) y "Cerrar sesión".
   Usa `dropdown-menu` (shadcn) + `avatar`. Tests: render con `user`, acción logout, item editar.
-- [ ] **Step 4**: App shell privado — sidebar (navegación de secciones privadas) + topbar con
-  logo→`/`, item activo y el `ProfileDropdown` en la zona derecha (donde estaba el login).
-- [ ] **Step 5**: adaptar `NavbarPublic` al estado autenticado (sustituye la corrección mínima de
+- [x] **Step 4**: `NavbarPrivate` — topbar horizontal con logo→`/`, links de sección con item activo
+  (usePathname) y `ProfileDropdown` en zona derecha. Sin sidebar lateral (se añade si escalan opciones).
+- [x] **Step 5**: adaptar `NavbarPublic` al estado autenticado (sustituye la corrección mínima de
   Task 3): si `user` → ocultar login/registro, mostrar acceso destacado a Dashboard +
   `ProfileDropdown`; si no → login/registro como hasta ahora.
-- [ ] **Step 6**: placeholders de dashboard/expenses/investments/ai-scanner para navegar.
+- [x] **Step 6**: placeholders de dashboard/expenses/investments/ai-scanner para navegar.
 
 **Nota (decisión de Task 3)**: en Task 3 se añadió una corrección mínima en `NavbarPublic`
 (si hay sesión → botón "Ir al Dashboard" + logout, sin dropdown). El `ProfileDropdown` completo
