@@ -1,3 +1,5 @@
+"use client"
+
 import { NavbarPublic } from "@/components/navbar-public"
 import { Footer } from "@/components/footer"
 import { Hero } from "@/components/sections/hero"
