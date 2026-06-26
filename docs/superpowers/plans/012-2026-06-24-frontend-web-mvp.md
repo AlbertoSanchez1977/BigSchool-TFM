@@ -152,10 +152,10 @@ funciona en navbar público y privado.
 **Files**: `src/services/transactionService.ts`, `src/hooks/useTransactions.ts`,
 `src/app/(private)/expenses/page.tsx`.
 
-- [ ] **Step 1 (TDD)**: service + `useTransactions` (TanStack Query) con filtros (tipo, categoría,
+- [x] **Step 1 (TDD)**: service + `useTransactions` (TanStack Query) con filtros (tipo, categoría,
   from/to) y paginación. Tests de hook (loading/success/error) con `QueryClient` de test.
-- [ ] **Step 2**: tabla con selector mes/año (por defecto mes actual) + paginación.
-- [ ] **Step 3 (TDD)**: estados carga/vacío/error (tests de render condicional).
+- [x] **Step 2**: tabla con selector mes/año (por defecto mes actual) + paginación.
+- [x] **Step 3 (TDD)**: estados carga/vacío/error (tests de render condicional).
 
 **Aceptación**: lista filtrable y paginada con datos reales; estados cubiertos por test.
 **Aprenderás**: TanStack Query (queryKeys, cache), tablas, estados de datos.
