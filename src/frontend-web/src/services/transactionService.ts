@@ -1,5 +1,8 @@
 import { api } from '@/lib/api'
-import type { TransactionListItem, Transaction, TransactionFilters, PagedTransactions, Summary } from '@/types/transactions'
+import type {
+  TransactionListItem, Transaction, TransactionFilters,
+  PagedTransactions, Summary, CreateTransactionDto, UpdateTransactionDto,
+} from '@/types/transactions'
 import type { TransactionType, MainCategory, Currency } from '@/types/enums'
 
 // ── Mapeo numérico → string enum ──────────────────────────────────────────────
@@ -83,5 +86,20 @@ export const transactionService = {
   async summary(from: string, to: string): Promise<Summary> {
     const qs = new URLSearchParams({ from, to }).toString()
     return api.get<Summary>(`/transactions/summary?${qs}`)
+  },
+
+  // POST /transactions — devuelve TransactionDto (enums como string, sin necesidad de mapeo numérico)
+  async create(data: CreateTransactionDto): Promise<Transaction> {
+    return api.post<Transaction>('/transactions', data)
+  },
+
+  // PUT /transactions/{id}
+  async update(id: number, data: UpdateTransactionDto): Promise<Transaction> {
+    return api.put<Transaction>(`/transactions/${id}`, data)
+  },
+
+  // DELETE /transactions/{id}
+  async delete(id: number): Promise<void> {
+    await api.delete<void>(`/transactions/${id}`)
   },
 }

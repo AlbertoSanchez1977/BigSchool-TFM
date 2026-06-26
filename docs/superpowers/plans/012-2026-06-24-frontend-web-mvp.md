@@ -167,11 +167,11 @@ funciona en navbar público y privado.
 **Files**: `expenses/` (Sheet alta/edición), `src/hooks/useCategories.ts`,
 `src/lib/schemas/transaction.ts`, `tests/e2e/create-expense.spec.ts`.
 
-- [ ] **Step 1 (TDD)**: esquema zod de transacción + mutations (crear/editar/borrar) con
+- [x] **Step 1 (TDD)**: esquema zod de transacción + mutations (crear/editar/borrar) con
   invalidación de queries. Tests primero.
-- [ ] **Step 2**: panel lateral (Sheet) con formulario; select de categorías (`/categories`);
+- [x] **Step 2**: panel lateral (Sheet) con formulario; select de categorías (`/categories`);
   borrar con confirmación; toasts.
-- [ ] **Step 3 (E2E — hito)**: Playwright crear gasto → aparece en la lista.
+- [x] **Step 3 (E2E — hito)**: Playwright crear gasto → aparece en la lista.
 
 **Aceptación**: CRUD funcional con invalidación; E2E de creación verde.
 **Aprenderás**: mutaciones, invalidación de cache, formularios de edición reutilizables.

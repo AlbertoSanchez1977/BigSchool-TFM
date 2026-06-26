@@ -18,10 +18,11 @@ export interface RegisterDto {
 // (refresco proactivo y política de caducidad) es 100% en cliente — ver lib/auth/refreshPolicy.
 export interface AuthResponse {
   accessToken: string
-  expiresAt: string // ISO 8601 (DateTime) — momento de caducidad del token
+  expiresAt: string  // ISO 8601 (DateTime) — momento de caducidad del token
   email: string
   fullName: string
+  // DEUDA TÉCNICA: el backend no devuelve currency aún (siempre crea EUR por defecto).
+  // Campo preparado para cuando AuthResponseDto incluya la moneda del usuario.
+  // Hasta entonces será undefined y los formularios usarán 'EUR' como fallback.
+  currency?: Currency
 }
-
-// La moneda base del usuario no viene en el login; se obtiene del primer summary/perfil.
-export type UserBaseCurrency = Currency

@@ -1,33 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { TransactionSheet } from '@/components/transactions/transaction-sheet'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSummary } from '@/hooks/useSummary'
 import {
-  TRANSACTION_TYPE_LABEL,
-  MAIN_CATEGORY_LABEL,
-  formatAmount,
-  formatDate,
+  TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL, formatAmount, formatDate,
 } from '@/lib/transactions/labels'
+import type { Transaction } from '@/types/transactions'
 
 // ── Helpers de fecha ──────────────────────────────────────────────────────────
 
 function monthRange(year: number, month: number): { from: string; to: string } {
-  const from = `${year}-${String(month).padStart(2, '0')}-01`
-  const lastDay = new Date(year, month, 0).getDate() // new Date(y, m, 0) = último día del mes m
-  const to   = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const from    = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const to      = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
   return { from, to }
 }
 
@@ -74,10 +68,14 @@ function SkeletonRow() {
 
 export default function ExpensesPage() {
   const now   = new Date()
-  const [year, setYear]   = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1) // getMonth() es base 0
-  const [page, setPage]   = useState(1)
+  const [year,  setYear]  = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [page,  setPage]  = useState(1)
   const pageSize = 20
+
+  // Estado del Sheet: undefined = modo crear; Transaction = modo editar
+  const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const { from, to } = monthRange(year, month)
 
@@ -96,31 +94,57 @@ export default function ExpensesPage() {
     else setMonth((m) => m + 1)
   }
 
-  const summary = summaryQ.data
-  const currency = summary?.baseCurrency ?? 'EUR'
+  function openCreate() {
+    setEditingTx(undefined)
+    setSheetOpen(true)
+  }
+
+  function openEdit(tx: Transaction) {
+    setEditingTx(tx)
+    setSheetOpen(true)
+  }
+
+  const summary  = summaryQ.data
+  const currency = summary?.baseCurrency || 'EUR'
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
 
-      {/* ── Cabecera ─────────────────────────────────────────────────────── */}
+      {/* ── Cabecera ──────────────────────────────────────────────────────── */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-semibold">Gastos e ingresos</h1>
 
-        {/* Selector de mes/año */}
-        <div className="flex items-center gap-2" data-testid="month-selector">
-          <Button variant="outline" size="icon" onClick={prevMonth} aria-label="Mes anterior">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-[130px] text-center text-sm font-medium">
-            {MONTH_NAMES[month - 1]} {year}
-          </span>
-          <Button variant="outline" size="icon" onClick={nextMonth} aria-label="Mes siguiente">
-            <ChevronRight className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          {/* Selector de mes/año */}
+          <div className="flex items-center gap-2" data-testid="month-selector">
+            <Button
+              variant="outline" size="icon"
+              onClick={prevMonth}
+              aria-label="Mes anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[130px] text-center text-sm font-medium">
+              {MONTH_NAMES[month - 1]} {year}
+            </span>
+            <Button
+              variant="outline" size="icon"
+              onClick={nextMonth}
+              aria-label="Mes siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Botón "Nueva transacción" */}
+          <Button onClick={openCreate} data-testid="btn-nueva-transaccion">
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva transacción
           </Button>
         </div>
       </div>
 
-      {/* ── KPIs de resumen ──────────────────────────────────────────────── */}
+      {/* ── KPIs de resumen ───────────────────────────────────────────────── */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {summaryQ.isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -153,7 +177,7 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      {/* ── Tabla de transacciones ────────────────────────────────────────── */}
+      {/* ── Tabla de transacciones ─────────────────────────────────────────── */}
       <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
@@ -167,10 +191,10 @@ export default function ExpensesPage() {
           </TableHeader>
           <TableBody>
 
-            {/* Estado: cargando */}
+            {/* Cargando */}
             {isLoading && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
 
-            {/* Estado: error */}
+            {/* Error */}
             {isError && (
               <TableRow>
                 <TableCell colSpan={5}>
@@ -184,7 +208,7 @@ export default function ExpensesPage() {
               </TableRow>
             )}
 
-            {/* Estado: vacío */}
+            {/* Vacío */}
             {!isLoading && !isError && data?.items.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5}>
@@ -198,9 +222,14 @@ export default function ExpensesPage() {
               </TableRow>
             )}
 
-            {/* Estado: datos */}
+            {/* Datos — fila clickable para editar */}
             {!isLoading && !isError && data?.items.map((tx) => (
-              <TableRow key={tx.idTransaction} data-testid="tx-row">
+              <TableRow
+                key={tx.idTransaction}
+                data-testid="tx-row"
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => openEdit(tx)}
+              >
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(tx.transactionDate)}
                 </TableCell>
@@ -209,8 +238,8 @@ export default function ExpensesPage() {
                     variant={tx.type === 'Income' ? 'default' : 'outline'}
                     className={
                       tx.type === 'Income'
-                        ? 'bg-positive/10 text-positive hover:bg-positive/20 border-0'
-                        : 'bg-negative/10 text-negative hover:bg-negative/20 border-0'
+                        ? 'border-0 bg-positive/10 text-positive hover:bg-positive/20'
+                        : 'border-0 bg-negative/10 text-negative hover:bg-negative/20'
                     }
                   >
                     {TRANSACTION_TYPE_LABEL[tx.type]}
@@ -219,11 +248,19 @@ export default function ExpensesPage() {
                 <TableCell className="text-sm">
                   {MAIN_CATEGORY_LABEL[tx.idMainCategory]}
                 </TableCell>
-                <TableCell className="max-w-[200px] truncate text-sm" title={tx.description ?? ''}>
+                <TableCell
+                  className="max-w-[200px] truncate text-sm"
+                  title={tx.description ?? ''}
+                >
                   {tx.description ?? '—'}
                 </TableCell>
-                <TableCell className={`text-right font-medium ${tx.type === 'Income' ? 'text-positive' : 'text-negative'}`}>
-                  {tx.type === 'Income' ? '+' : '-'}{formatAmount(tx.originalAmount, tx.originalCurrency)}
+                <TableCell
+                  className={`text-right font-medium ${
+                    tx.type === 'Income' ? 'text-positive' : 'text-negative'
+                  }`}
+                >
+                  {tx.type === 'Income' ? '+' : '-'}
+                  {formatAmount(tx.originalAmount, tx.originalCurrency)}
                 </TableCell>
               </TableRow>
             ))}
@@ -232,11 +269,12 @@ export default function ExpensesPage() {
         </Table>
       </div>
 
-      {/* ── Paginación ────────────────────────────────────────────────────── */}
+      {/* ── Paginación ─────────────────────────────────────────────────────── */}
       {data && data.meta.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, data.meta.totalCount)} de {data.meta.totalCount}
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, data.meta.totalCount)} de{' '}
+            {data.meta.totalCount}
           </span>
           <div className="flex gap-2">
             <Button
@@ -256,6 +294,17 @@ export default function ExpensesPage() {
           </div>
         </div>
       )}
+
+      {/* Sheet de creación/edición — montado condicionalmente para que sus hooks
+          no se ejecuten cuando está cerrado (evita mocks adicionales en tests). */}
+      {sheetOpen && (
+        <TransactionSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          transaction={editingTx}
+        />
+      )}
+
     </div>
   )
 }
