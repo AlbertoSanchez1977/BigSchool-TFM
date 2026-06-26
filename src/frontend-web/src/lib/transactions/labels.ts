@@ -20,9 +20,12 @@ export const MAIN_CATEGORY_LABEL: Record<MainCategory, string> = {
 }
 
 export function formatAmount(amount: number, currency: string): string {
+  // || en lugar de ?? para cubrir también string vacío '' (que ?? dejaría pasar).
+  // Intl.NumberFormat lanza RangeError si currency es vacío o inválido.
+  const safeCurrency = currency || 'EUR'
   return new Intl.NumberFormat('es-ES', {
     style:    'currency',
-    currency: currency,
+    currency: safeCurrency,
     minimumFractionDigits: 2,
   }).format(amount)
 }
