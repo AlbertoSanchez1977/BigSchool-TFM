@@ -44,12 +44,22 @@ export function ProfileDropdown() {
         </Avatar>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={8}>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-52 max-w-52">
         {/* Cabecera con nombre y email — DropdownMenuLabel requiere DropdownMenuGroup padre */}
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-1.5">
-            <span className="text-sm font-semibold text-foreground">{user.fullName}</span>
-            <span className="text-xs font-normal text-muted-foreground">{user.email}</span>
+          <DropdownMenuLabel className="flex min-w-0 flex-col gap-0.5 px-2 py-1.5">
+            <span
+              className="truncate text-sm font-semibold text-foreground"
+              title={user.fullName}
+            >
+              {user.fullName}
+            </span>
+            <span
+              className="truncate text-xs font-normal text-muted-foreground"
+              title={user.email}
+            >
+              {user.email}
+            </span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
 
