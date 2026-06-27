@@ -13,6 +13,8 @@ import type { LoginDto, RegisterDto, AuthResponse } from '../../types/auth'
 export interface AuthUser {
   email: string
   fullName: string
+  // Preparado para cuando AuthResponseDto incluya currency. Será undefined hasta entonces.
+  currency?: import('../../types/enums').Currency
 }
 
 // Forma análoga a un servicio de sesión en C#:
@@ -76,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStartedAt: Date.now(), // inicio de sesión fresco
       refreshCount: 0,
     })
-    setUser({ email: response.email, fullName: response.fullName })
+    setUser({ email: response.email, fullName: response.fullName, currency: response.currency })
     setToken(response.accessToken)
     setExpiresAt(response.expiresAt)
   }, [])
@@ -91,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStartedAt: Date.now(),
       refreshCount: 0,
     })
-    setUser({ email: response.email, fullName: response.fullName })
+    setUser({ email: response.email, fullName: response.fullName, currency: response.currency })
     setToken(response.accessToken)
     setExpiresAt(response.expiresAt)
   }, [])
@@ -110,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStartedAt: existing?.sessionStartedAt ?? Date.now(),
         refreshCount: (existing?.refreshCount ?? 0) + 1,
       })
-      setUser({ email: response.email, fullName: response.fullName })
+      setUser({ email: response.email, fullName: response.fullName, currency: response.currency })
       setToken(response.accessToken)
       setExpiresAt(response.expiresAt)
     } catch {

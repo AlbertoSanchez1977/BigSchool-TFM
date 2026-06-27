@@ -24,6 +24,12 @@ vi.mock('@/hooks/useSummary', () => ({
   useSummary: (...args: unknown[]) => mockUseSummary(...args),
 }))
 
+// useCategories resuelve los nombres de subcategoría en la tabla. La página lo llama
+// siempre, así que lo mockeamos para no necesitar QueryClientProvider en este test.
+vi.mock('@/hooks/useCategories', () => ({
+  useCategories: () => ({ data: [] }),
+}))
+
 import ExpensesPage from '@/app/(private)/expenses/page'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -81,9 +87,12 @@ describe('ExpensesPage', () => {
 
     render(<ExpensesPage />)
 
+    // tx-row está solo en la presentación desktop (las tarjetas móviles no lo llevan),
+    // por eso el conteo es exactamente 2 aunque jsdom renderice ambas vistas.
     expect(screen.getAllByTestId('tx-row').length).toBe(2)
-    expect(screen.getByText('Nómina junio')).toBeTruthy()
-    expect(screen.getByText('Alquiler')).toBeTruthy()
+    // La descripción ya no se muestra como texto (es un icono con title); en su lugar
+    // verificamos que la categoría (Nómina = Salary) aparece en las filas renderizadas.
+    expect(screen.getAllByText('Nómina').length).toBeGreaterThan(0)
   })
 
   it('muestra mensaje de error cuando la carga falla', () => {
