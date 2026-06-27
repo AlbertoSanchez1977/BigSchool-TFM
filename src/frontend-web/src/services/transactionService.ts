@@ -1,7 +1,8 @@
 import { api } from '@/lib/api'
 import type {
   TransactionListItem, Transaction, TransactionFilters,
-  PagedTransactions, Summary, CreateTransactionDto, UpdateTransactionDto,
+  PagedTransactions, Summary, MonthlyChartPoint,
+  CreateTransactionDto, UpdateTransactionDto,
 } from '@/types/transactions'
 import type { TransactionType, MainCategory, Currency } from '@/types/enums'
 
@@ -86,6 +87,11 @@ export const transactionService = {
   async summary(from: string, to: string): Promise<Summary> {
     const qs = new URLSearchParams({ from, to }).toString()
     return api.get<Summary>(`/transactions/summary?${qs}`)
+  },
+
+  // GET /transactions/monthly-chart?year=N → MonthlyChartPointDto[]
+  async monthlyChart(year: number): Promise<MonthlyChartPoint[]> {
+    return api.get<MonthlyChartPoint[]>(`/transactions/monthly-chart?year=${year}`)
   },
 
   // POST /transactions — devuelve TransactionDto (enums como string, sin necesidad de mapeo numérico)
