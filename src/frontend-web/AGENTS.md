@@ -62,6 +62,10 @@ frontend-web/
   tokens semánticos (`bg-background`, `text-foreground`, `text-positive`, `text-negative`…).
 - Verde/rojo **solo** para signo de dinero; azul para acción; grises para el resto.
 - Gráficas de línea en azul celeste apagado; barras agrupadas por año con la paleta `--chart-1..4`.
+- **Altas/ediciones y acciones puntuales** (crear, editar, vender…) → **modal centrado** (`Dialog`),
+  **nunca** panel lateral. Un solo componente desktop/móvil: centrado, `sm:max-w-md`, `max-h` con
+  scroll interno, X arriba para cerrar. Referencia: `src/components/transactions/transaction-sheet.tsx`
+  (detalle del patrón en `docs/03-frontend-design.md` §7).
 
 ---
 
@@ -76,11 +80,11 @@ frontend-web/
 ### Privadas (requieren JWT)
 - **Dashboard**: KPIs + barras ingresos/gastos + línea de balance + resumen de inversiones +
   últimas transacciones (ver composición en el design doc).
-- **Gastos/Ingresos**: master-detail en una pantalla (lista + panel de alta/edición), selector
-  mes/año (por defecto mes actual), CRUD. Pestaña de gráficas: barras por categoría de los últimos
-  4 años — **agregación en cliente** (el Backend no agrega por categoría).
+- **Gastos/Ingresos**: lista + **modal centrado** de alta/edición, selector mes/año (por defecto
+  mes actual), CRUD. Tabla responsive (en móvil, tarjetas de 2 líneas). Pestaña de gráficas: barras
+  por categoría de los últimos 4 años — **agregación en cliente** (el Backend no agrega por categoría).
 - **Inversiones**: carteras como cards (solo crear; no hay renombrar/borrar en Backend) →
-  holdings como cards con panel lateral para **vender** (Disposal **FIFO a nivel empresa**, puede
+  holdings como cards con **modal centrado** para **vender** (Disposal **FIFO a nivel empresa**, puede
   tocar varios lotes), editar Notes, añadir y borrar holding.
 - **AI Scanner**: configuración con **toggle** activar/desactivar (solo local por coste). Si está
   off → pantalla **"Próximamente"**.

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, Plus, StickyNote, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -11,6 +11,7 @@ import {
 import { TransactionSheet } from '@/components/transactions/transaction-sheet'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSummary } from '@/hooks/useSummary'
+import { useCategories } from '@/hooks/useCategories'
 import {
   TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL, formatAmount, formatDate,
 } from '@/lib/transactions/labels'
@@ -54,16 +55,6 @@ function SummaryCard({
   )
 }
 
-function SkeletonRow() {
-  return (
-    <TableRow data-testid="skeleton-row">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <TableCell key={i}><Skeleton className="h-4 w-full" /></TableCell>
-      ))}
-    </TableRow>
-  )
-}
-
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
@@ -81,6 +72,19 @@ export default function ExpensesPage() {
 
   const { data, isLoading, isError } = useTransactions({ from, to, page, pageSize })
   const summaryQ = useSummary(from, to)
+
+  // El listado trae idSubCategory como número; resolvemos su nombre con /categories.
+  // Map<idSubCategory, name> construido una vez (useMemo) a partir de todas las categorías.
+  const { data: categories } = useCategories()
+  const subCatNameById = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const c of categories ?? []) {
+      for (const s of c.subCategories) m.set(s.idSubCategory, s.name)
+    }
+    return m
+  }, [categories])
+
+  const subCatName = (id: number | null) => (id != null ? subCatNameById.get(id) ?? null : null)
 
   function prevMonth() {
     setPage(1)
@@ -178,97 +182,150 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      {/* ── Tabla de transacciones ─────────────────────────────────────────── */}
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead className="text-right">Importe</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* ── Lista de transacciones ─────────────────────────────────────────── */}
 
-            {/* Cargando */}
-            {isLoading && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+      {/* Cargando — barras neutras válidas en desktop y móvil */}
+      {isLoading && (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} data-testid="skeleton-row" className="h-14 rounded-lg" />
+          ))}
+        </div>
+      )}
 
-            {/* Error */}
-            {isError && (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <div
-                    className="py-10 text-center text-sm text-destructive"
-                    data-testid="error-state"
+      {/* Error */}
+      {isError && (
+        <div
+          className="rounded-lg border border-border bg-card py-10 text-center text-sm text-destructive"
+          data-testid="error-state"
+        >
+          Error al cargar las transacciones. Inténtalo de nuevo.
+        </div>
+      )}
+
+      {/* Vacío */}
+      {!isLoading && !isError && data?.items.length === 0 && (
+        <div
+          className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground"
+          data-testid="empty-state"
+        >
+          No hay transacciones en {MONTH_NAMES[month - 1].toLowerCase()} {year}.
+        </div>
+      )}
+
+      {/* Datos */}
+      {!isLoading && !isError && data && data.items.length > 0 && (
+        <>
+          {/* Desktop (md+): tabla. La descripción no es columna: se indica con un icono
+              (StickyNote) que aparece solo si existe, con la descripción en el title. */}
+          <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="w-8" />
+                  <TableHead className="text-right">Importe</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.items.map((tx) => (
+                  <TableRow
+                    key={tx.idTransaction}
+                    data-testid="tx-row"
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => openEdit(tx)}
                   >
-                    Error al cargar las transacciones. Inténtalo de nuevo.
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(tx.transactionDate)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={tx.type === 'Income' ? 'default' : 'outline'}
+                        className={
+                          tx.type === 'Income'
+                            ? 'border-0 bg-positive/10 text-positive hover:bg-positive/20'
+                            : 'border-0 bg-negative/10 text-negative hover:bg-negative/20'
+                        }
+                      >
+                        {TRANSACTION_TYPE_LABEL[tx.type]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {MAIN_CATEGORY_LABEL[tx.idMainCategory]}
+                      {subCatName(tx.idSubCategory) && (
+                        <span className="text-muted-foreground">
+                          {' · '}{subCatName(tx.idSubCategory)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="w-8 text-muted-foreground">
+                      {tx.description && (
+                        <span title={tx.description} className="inline-flex">
+                          <StickyNote className="h-4 w-4" aria-label="Tiene descripción" />
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-medium ${
+                        tx.type === 'Income' ? 'text-positive' : 'text-negative'
+                      }`}
+                    >
+                      {tx.type === 'Income' ? '+' : '-'}
+                      {formatAmount(tx.originalAmount, tx.originalCurrency)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-            {/* Vacío */}
-            {!isLoading && !isError && data?.items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <div
-                    className="py-10 text-center text-sm text-muted-foreground"
-                    data-testid="empty-state"
-                  >
-                    No hay transacciones en {MONTH_NAMES[month - 1].toLowerCase()} {year}.
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-
-            {/* Datos — fila clickable para editar */}
-            {!isLoading && !isError && data?.items.map((tx) => (
-              <TableRow
+          {/* Móvil (<md): tarjetas de 2 líneas — Fecha | Importe / Categoría · Subcategoría */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {data.items.map((tx) => (
+              <button
                 key={tx.idTransaction}
-                data-testid="tx-row"
-                className="cursor-pointer hover:bg-muted/50"
+                type="button"
                 onClick={() => openEdit(tx)}
+                className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted/50"
               >
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(tx.transactionDate)}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={tx.type === 'Income' ? 'default' : 'outline'}
-                    className={
-                      tx.type === 'Income'
-                        ? 'border-0 bg-positive/10 text-positive hover:bg-positive/20'
-                        : 'border-0 bg-negative/10 text-negative hover:bg-negative/20'
-                    }
+                {/* Línea 1: Fecha · · · Importe */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {formatDate(tx.transactionDate)}
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      tx.type === 'Income' ? 'text-positive' : 'text-negative'
+                    }`}
                   >
-                    {TRANSACTION_TYPE_LABEL[tx.type]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {MAIN_CATEGORY_LABEL[tx.idMainCategory]}
-                </TableCell>
-                <TableCell
-                  className="max-w-[200px] truncate text-sm"
-                  title={tx.description ?? ''}
-                >
-                  {tx.description ?? '—'}
-                </TableCell>
-                <TableCell
-                  className={`text-right font-medium ${
-                    tx.type === 'Income' ? 'text-positive' : 'text-negative'
-                  }`}
-                >
-                  {tx.type === 'Income' ? '+' : '-'}
-                  {formatAmount(tx.originalAmount, tx.originalCurrency)}
-                </TableCell>
-              </TableRow>
+                    {tx.type === 'Income' ? '+' : '-'}
+                    {formatAmount(tx.originalAmount, tx.originalCurrency)}
+                  </span>
+                </div>
+                {/* Línea 2: Categoría · Subcategoría (+ icono si hay descripción) */}
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span>
+                    {MAIN_CATEGORY_LABEL[tx.idMainCategory]}
+                    {subCatName(tx.idSubCategory) && (
+                      <span className="text-muted-foreground">
+                        {' · '}{subCatName(tx.idSubCategory)}
+                      </span>
+                    )}
+                  </span>
+                  {tx.description && (
+                    <StickyNote
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                      aria-label="Tiene descripción"
+                    />
+                  )}
+                </div>
+              </button>
             ))}
-
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* ── Paginación ─────────────────────────────────────────────────────── */}
       {data && data.meta.totalPages > 1 && (
