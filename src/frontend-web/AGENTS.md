@@ -97,6 +97,10 @@ frontend-web/
 
 ## Huecos del Backend a tener presentes
 1. Sin agregación por categoría → agregar en cliente desde la lista de transacciones.
+   La costura está aislada en `hooks/useCategoryChart.ts` (devuelve `CategoryAggregation`):
+   hoy calcula en cliente con `lib/charts/aggregateByCategory.ts`; el día que exista
+   `GET /transactions/category-chart?from&to&type` solo cambia ese hook — ni la página ni
+   `components/charts/category-bars.tsx` se tocan. El contrato futuro está documentado en el hook.
 2. Sin renombrar/borrar cartera → en el MVP la cartera solo se crea.
 3. La venta es FIFO a nivel empresa → el botón "vender" de un holding vende acciones de *esa
    empresa* y consume lotes en orden FIFO.

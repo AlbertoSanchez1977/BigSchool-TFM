@@ -183,10 +183,10 @@ funciona en navbar público y privado.
 **Files**: `src/lib/charts/aggregateByCategory.ts`, `src/components/charts/category-bars.tsx`,
 pestaña en `expenses/`.
 
-- [ ] **Step 1 (TDD)**: función pura `aggregateByCategory` (últimos 4 años, agrupado por categoría
+- [x] **Step 1 (TDD)**: función pura `aggregateByCategory` (últimos 4 años, agrupado por categoría
   y año). Tests exhaustivos: varios años, categorías mixtas, meses sin datos, ingreso vs gasto.
   (Es el corazón del hueco #1 de la spec.)
-- [ ] **Step 2**: gráfica de barras agrupadas por año (Recharts) con tokens `--chart-*`.
+- [x] **Step 2**: gráfica de barras agrupadas por año (Recharts) con tokens `--chart-*`.
 
 **Aceptación**: agregación cubierta por tests; barras por año coherentes con el design doc.
 **Aprenderás**: transformar datos en cliente; separar lógica pura (testeable) de la gráfica.
