@@ -1,92 +1,148 @@
-// ⚠️ PROVISIONAL — estos tipos se verificarán contra el backend (PortfoliosController /
-// DTOs) al inicio de las Tasks 8-10. Pueden cambiar.
+// Verificado contra PortfoliosController.cs y DTOs de BigSchool.Application (Task 8).
+// Los DTOs de "query" (Dapper) devuelven Currency como string; los de "comando"
+// la devuelven como enum (JsonStringEnumConverter → string con el nombre del miembro).
 
+import type { Currency } from './enums'
+
+// ── GET /portfolios → PortfolioListItemDto (Dapper: currency como string) ────────
 export interface PortfolioListItem {
   idPortfolio: number
   name: string
-  baseCurrency: string
-  totalMarketValue: number
-  totalRealizedPnL: number
-  createdAt: string
+  realizedPnL: number
+  realizedPnLCurrency: string
+  marketValue: number
+  costBasis: number
+  unrealizedPnL: number
+  totalPnL: number
 }
 
-export interface PortfolioDetail extends PortfolioListItem {
-  holdings: Holding[]
+// ── POST /portfolios → PortfolioDto (comando: currency tipada) ────────────────────
+export interface Portfolio {
+  idPortfolio: number
+  name: string
+  realizedPnL: number
+  realizedPnLCurrency: Currency
 }
 
+// ── GET /portfolios/{id} → PortfolioDetailDto ─────────────────────────────────────
+export interface PortfolioDetail {
+  idPortfolio: number
+  name: string
+  realizedPnL: number
+  realizedPnLCurrency: string
+  holdings: HoldingListItem[]
+}
+
+// Body de POST /portfolios — solo Name (el backend derive la divisa del usuario)
 export interface CreatePortfolioDto {
   name: string
-  baseCurrency: string
 }
 
-export interface Holding {
+// ── Holdings en GET /portfolios/{id} → HoldingListItemDto (Dapper) ───────────────
+export interface HoldingListItem {
   idHolding: number
-  idPortfolio: number
   idCompany: number
-  companyName: string
+  ticker: string
   companyCurrency: string
-  companyTicker: string
   shares: number
   openShares: number
-  buyPriceLocal: number  // precio de compra en moneda de la empresa
-  buyPriceBase: number   // precio de compra convertido a moneda base (snapshot FX)
-  buyDate: string
+  buyOriginalAmount: number
+  buyOriginalCurrency: string
+  buyExchangeRate: number
+  buyBaseAmount: number
+  buyBaseCurrency: string
+  buyRateDate: string         // "YYYY-MM-DD"
+  buyDate: string             // "YYYY-MM-DD"
   notes: string | null
-  disposals: Disposal[]
+  marketValue: number
+  costBasis: number
+  unrealizedPnL: number
 }
 
-export interface CreateHoldingDto {
+// ── POST/PUT /portfolios/{id}/holdings → HoldingDto (comando: currency tipada) ────
+export interface HoldingDto {
+  idHolding: number
   idCompany: number
   shares: number
-  buyPriceLocal: number
+  buyOriginalAmount: number
+  buyOriginalCurrency: Currency
+  buyExchangeRate: number
+  buyBaseAmount: number
+  buyBaseCurrency: Currency
+  buyRateDate: string
   buyDate: string
-  notes?: string
+  notes: string | null
 }
 
+// Body de POST /portfolios/{id}/holdings (AddHoldingRequest del controller)
+export interface AddHoldingDto {
+  idCompany: number
+  shares: number
+  buyPrice: number            // campo real: BuyPrice (no buyPriceLocal)
+  buyDate: string
+  notes?: string | null
+}
+
+// Body de PUT /portfolios/{id}/holdings/{holdingId} (UpdateHoldingRequest)
 export interface UpdateHoldingNotesDto {
-  notes: string
+  notes: string | null
 }
 
+// ── GET /portfolios/{id}/performance → PortfolioPerformanceDto ───────────────────
+export interface PortfolioPerformance {
+  idPortfolio: number
+  name: string
+  baseCurrency: string
+  marketValue: number
+  costBasis: number
+  unrealizedPnL: number
+  realizedPnL: number
+  totalPnL: number
+  returnPct: number
+  holdings: HoldingPerformance[]
+}
+
+// Elemento de HoldingPerformanceDto (sin companyName — solo ticker)
+export interface HoldingPerformance {
+  idHolding: number
+  idCompany: number
+  ticker: string
+  openShares: number
+  costBasis: number
+  marketValue: number
+  unrealizedPnL: number
+  unrealizedPnLPct: number    // campo real: UnrealizedPnLPct (≠ returnPct)
+}
+
+// ── Body de POST /portfolios/{id}/sales (SellSharesRequest) ──────────────────────
+export interface SellSharesDto {
+  companyId: number           // campo real: CompanyId (no idCompany)
+  shares: number
+  sellPrice: number           // campo real: SellPrice (no sellPriceLocal)
+  sellDate: string
+  notes?: string | null
+}
+
+// ── Response de POST /portfolios/{id}/sales → SellSharesResultDto ────────────────
+export interface SellSharesResult {
+  disposals: Disposal[]
+  portfolioRealizedPnL: number
+  realizedPnLCurrency: Currency
+}
+
+// ── DisposalDto (dentro de SellSharesResultDto) ───────────────────────────────────
 export interface Disposal {
   idDisposal: number
   idHolding: number
   shares: number
-  sellPriceLocal: number
-  sellPriceBase: number
+  sellOriginalAmount: number
+  sellOriginalCurrency: Currency
+  sellExchangeRate: number
+  sellBaseAmount: number
+  sellBaseCurrency: Currency
+  sellRateDate: string
   sellDate: string
   realizedPnL: number
-}
-
-export interface SellDto {
-  idCompany: number   // venta FIFO a nivel empresa dentro de la cartera
-  shares: number
-  sellPriceLocal: number
-  sellDate: string
-}
-
-export interface SellResult {
-  disposals: Disposal[]
-  totalRealizedPnL: number
-}
-
-export interface Performance {
-  totalMarketValue: number
-  totalCostBase: number
-  totalUnrealizedPnL: number
-  totalRealizedPnL: number
-  totalPnL: number
-  returnPct: number
-  currency: string
-  holdingPerformances: HoldingPerformance[]
-}
-
-export interface HoldingPerformance {
-  idHolding: number
-  companyName: string
-  companyTicker: string
-  openShares: number
-  costBase: number
-  marketValue: number
-  unrealizedPnL: number
-  returnPct: number
+  realizedPnLCurrency: Currency
+  notes: string | null
 }

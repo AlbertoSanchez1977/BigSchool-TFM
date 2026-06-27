@@ -66,6 +66,10 @@ frontend-web/
   **nunca** panel lateral. Un solo componente desktop/móvil: centrado, `sm:max-w-md`, `max-h` con
   scroll interno, X arriba para cerrar. Referencia: `src/components/transactions/transaction-sheet.tsx`
   (detalle del patrón en `docs/03-frontend-design.md` §7).
+- **Navegación maestro-detalle** (p. ej. Inversiones → Holdings): la vista de detalle incluye
+  siempre un breadcrumb-header con `← [Lista padre]` usando `<Link href="…">` (nunca
+  `router.back()`, que falla si el usuario llega directamente por URL). Formato:
+  `[←] Inversiones  ·  [Nombre cartera]` — flecha como enlace, nombre como `h1`.
 
 ---
 

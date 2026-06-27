@@ -1,18 +1,24 @@
-// ⚠️ PROVISIONAL — se verificará contra el backend (CompaniesController / DTOs) en la Task 8.
+// Verificado contra CompaniesController.cs y DTOs de BigSchool.Application (Task 8).
+// CompanyListItemDto usa Dapper → currency como string (no enum).
 
-export interface Company {
+// GET /companies → CompanyListItemDto (Dapper)
+export interface CompanyListItem {
   idCompany: number
   name: string
   ticker: string
-  currency: string
   sector: string | null
   market: string | null
+  currency: string
+  lastPrice: number | null
+  lastValuationDate: string | null   // "YYYY-MM-DD"
 }
 
-export interface Valuation {
+// GET /companies/{id}/valuations → ValuationListItemDto (Dapper)
+export interface ValuationListItem {
   idValuation: number
   idCompany: number
   price: number
-  currency: string
-  valuationDate: string
+  priceCurrency: string
+  date: string           // "YYYY-MM-DD"
+  source: string | null
 }
