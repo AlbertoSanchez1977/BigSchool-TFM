@@ -385,10 +385,10 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
       {/* ── Breadcrumb-header ─────────────────────────────────────────────── */}
       {/* Patrón maestro-detalle: <Link> fijo a /investments, no router.back() */}
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <Link
             href="/investments"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
             aria-label="Volver a Inversiones"
             data-testid="back-link"
           >
@@ -397,17 +397,18 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
           </Link>
           {portfolio && (
             <>
-              <span className="text-muted-foreground/50">/</span>
-              <h1 className="font-heading text-lg font-semibold">{portfolio.name}</h1>
+              <span className="shrink-0 text-muted-foreground/50">/</span>
+              <h1 className="truncate font-heading text-lg font-semibold">{portfolio.name}</h1>
             </>
           )}
-          {isLoading && <Skeleton className="h-6 w-32" />}
+          {isLoading && <Skeleton className="h-6 w-32 shrink-0" />}
         </div>
 
         <Button
           onClick={() => setAddOpen(true)}
           data-testid="btn-add-holding"
           aria-label="Añadir holding"
+          className="shrink-0"
         >
           <Plus className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Añadir holding</span>
