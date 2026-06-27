@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,8 +13,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
-} from '@/components/ui/sheet'
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 import { transactionSchema, type TransactionFormValues } from '@/lib/schemas/transaction'
 import {
   useCreateTransaction, useUpdateTransaction, useDeleteTransaction,
@@ -22,7 +23,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { useAuth } from '@/hooks/useAuth'
 import { TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL } from '@/lib/transactions/labels'
 import type { Transaction } from '@/types/transactions'
-import type { MainCategory } from '@/types/enums'
+import type { MainCategory, TransactionType } from '@/types/enums'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,26 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'JPY'] as const
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]
+}
+
+// Campo de formulario reutilizable: label + control + error con espaciado consistente.
+// Centraliza el "aire" vertical para que ningún input quede pegado a otro.
+function Field({
+  label, htmlFor, error, className, children,
+}: {
+  label: React.ReactNode
+  htmlFor?: string
+  error?: string
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  )
 }
 
 // ── Componente ────────────────────────────────────────────────────────────────
@@ -83,8 +104,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
   const selectedType     = watch('type')
   const selectedCategory = watch('idMainCategory')
 
-  // Resetear formulario cada vez que se abre el sheet o cambia la transacción a editar.
-  // El useEffect se dispara cuando open cambia a true — equivale al OnParametersSet de Blazor.
+  // Resetear formulario cada vez que se abre el modal o cambia la transacción a editar.
   useEffect(() => {
     if (open) {
       reset(
@@ -121,7 +141,6 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
   }, [selectedType, setValue])
 
   // Categorías filtradas por tipo: Income → idMainCategory >= 10; Expense → < 10.
-  // El backend asigna 1-7 a gastos y 10-13 a ingresos (ver CATEGORY_MAP en transactionService).
   const filteredCategories = categories.filter((c) =>
     selectedType === 'Expense' ? c.idMainCategory < 10 : c.idMainCategory >= 10
   )
@@ -129,6 +148,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
   // category.name = mc.ToString() del backend → coincide con el string union MainCategory.
   const subCategories =
     categories.find((c) => c.name === selectedCategory)?.subCategories ?? []
+  const hasSubCategories = subCategories.length > 0
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -173,26 +193,27 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader className="mb-6">
-          <SheetTitle>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 sm:max-w-md">
+        <DialogHeader className="mb-2">
+          <DialogTitle>
             {isEdit ? 'Editar transacción' : 'Nueva transacción'}
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-          {/* Tipo */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="type">Tipo</Label>
+          {/* Tipo — ancho completo (gobierna las categorías disponibles) */}
+          <Field label="Tipo" htmlFor="type">
             <Controller
               control={form.control}
               name="type"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="type" data-testid="select-type">
-                    <SelectValue />
+                  <SelectTrigger id="type" className="w-full" data-testid="select-type">
+                    <SelectValue>
+                      {(v: TransactionType) => TRANSACTION_TYPE_LABEL[v]}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Expense">{TRANSACTION_TYPE_LABEL.Expense}</SelectItem>
@@ -201,120 +222,117 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                 </Select>
               )}
             />
+          </Field>
+
+          {/* Fila: Fecha | Importe */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Fecha" htmlFor="transactionDate"
+              error={form.formState.errors.transactionDate?.message}>
+              <Input
+                id="transactionDate"
+                type="date"
+                data-testid="input-date"
+                {...form.register('transactionDate')}
+              />
+            </Field>
+
+            <Field label="Importe" htmlFor="amount"
+              error={form.formState.errors.amount?.message}>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="0,00"
+                data-testid="input-amount"
+                {...form.register('amount', { valueAsNumber: true })}
+              />
+            </Field>
           </div>
 
-          {/* Categoría principal */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="idMainCategory">Categoría</Label>
-            <Controller
-              control={form.control}
-              name="idMainCategory"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v)
-                    setValue('idSubCategory', null)
-                  }}
-                >
-                  <SelectTrigger id="idMainCategory" data-testid="select-category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredCategories.map((c) => (
-                      <SelectItem key={c.idMainCategory} value={c.name}>
-                        {MAIN_CATEGORY_LABEL[c.name as MainCategory] ?? c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {form.formState.errors.idMainCategory && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.idMainCategory.message}
-              </p>
-            )}
-          </div>
-
-          {/* Subcategoría — solo si la categoría tiene subcategorías */}
-          {subCategories.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="idSubCategory">
-                Subcategoría{' '}
-                <span className="text-muted-foreground">(opcional)</span>
-              </Label>
+          {/* Fila: Categoría | Subcategoría (subcategoría solo si la categoría tiene) */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="Categoría"
+              htmlFor="idMainCategory"
+              error={form.formState.errors.idMainCategory?.message}
+              className={!hasSubCategories ? 'col-span-2' : undefined}
+            >
               <Controller
                 control={form.control}
-                name="idSubCategory"
+                name="idMainCategory"
                 render={({ field }) => (
                   <Select
-                    value={field.value != null ? String(field.value) : '__none__'}
-                    onValueChange={(v) =>
-                      field.onChange(v === '__none__' ? null : Number(v))
-                    }
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v)
+                      setValue('idSubCategory', null)
+                    }}
                   >
-                    <SelectTrigger id="idSubCategory">
-                      <SelectValue placeholder="Sin subcategoría" />
+                    <SelectTrigger id="idMainCategory" className="w-full" data-testid="select-category">
+                      <SelectValue>
+                        {(v: MainCategory) => MAIN_CATEGORY_LABEL[v] ?? v}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Sin subcategoría</SelectItem>
-                      {subCategories.map((sc) => (
-                        <SelectItem key={sc.idSubCategory} value={String(sc.idSubCategory)}>
-                          {sc.name}
+                      {filteredCategories.map((c) => (
+                        <SelectItem key={c.idMainCategory} value={c.name}>
+                          {MAIN_CATEGORY_LABEL[c.name as MainCategory] ?? c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
-            </div>
-          )}
+            </Field>
 
-          {/* Fecha */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="transactionDate">Fecha</Label>
-            <Input
-              id="transactionDate"
-              type="date"
-              data-testid="input-date"
-              {...form.register('transactionDate')}
-            />
-            {form.formState.errors.transactionDate && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.transactionDate.message}
-              </p>
+            {hasSubCategories && (
+              <Field
+                label={<>Subcat.{' '}<span className="text-muted-foreground">(opc.)</span></>}
+                htmlFor="idSubCategory"
+              >
+                <Controller
+                  control={form.control}
+                  name="idSubCategory"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value != null ? String(field.value) : '__none__'}
+                      onValueChange={(v) =>
+                        field.onChange(v === '__none__' ? null : Number(v))
+                      }
+                    >
+                      <SelectTrigger id="idSubCategory" className="w-full">
+                        <SelectValue placeholder="Ninguna">
+                          {(v: string) =>
+                            v === '__none__'
+                              ? 'Ninguna'
+                              : (subCategories.find((s) => String(s.idSubCategory) === v)?.name ?? 'Ninguna')
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Ninguna</SelectItem>
+                        {subCategories.map((sc) => (
+                          <SelectItem key={sc.idSubCategory} value={String(sc.idSubCategory)}>
+                            {sc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </Field>
             )}
           </div>
 
-          {/* Importe */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="amount">Importe</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="0,00"
-              data-testid="input-amount"
-              {...form.register('amount', { valueAsNumber: true })}
-            />
-            {form.formState.errors.amount && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.amount.message}
-              </p>
-            )}
-          </div>
-
-          {/* Moneda */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="currency">Moneda</Label>
+          {/* Moneda — ancho completo */}
+          <Field label="Moneda" htmlFor="currency">
             <Controller
               control={form.control}
               name="currency"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="currency" data-testid="select-currency">
+                  <SelectTrigger id="currency" className="w-full" data-testid="select-currency">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,24 +343,23 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                 </Select>
               )}
             />
-          </div>
+          </Field>
 
-          {/* Descripción */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="description">
-              Descripción{' '}
-              <span className="text-muted-foreground">(opcional)</span>
-            </Label>
+          {/* Descripción — ancho completo */}
+          <Field
+            label={<>Descripción{' '}<span className="text-muted-foreground">(opcional)</span></>}
+            htmlFor="description"
+          >
             <Input
               id="description"
               placeholder="Descripción..."
               data-testid="input-description"
               {...form.register('description')}
             />
-          </div>
+          </Field>
 
-          {/* Footer */}
-          <SheetFooter className="mt-2 flex-col gap-2 sm:flex-col">
+          {/* Acciones */}
+          <div className="flex flex-col gap-2 pt-2">
             <Button
               type="submit"
               disabled={isBusy}
@@ -395,10 +412,10 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                 </div>
               </div>
             )}
-          </SheetFooter>
+          </div>
 
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

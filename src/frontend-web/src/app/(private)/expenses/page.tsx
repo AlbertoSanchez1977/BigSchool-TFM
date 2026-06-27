@@ -136,10 +136,11 @@ export default function ExpensesPage() {
             </Button>
           </div>
 
-          {/* Botón "Nueva transacción" */}
-          <Button onClick={openCreate} data-testid="btn-nueva-transaccion">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva transacción
+          {/* Botón "Nueva transacción": en móvil solo el icono "+", en ≥sm texto completo.
+              Puro CSS — el <span> del texto se oculta bajo el breakpoint sm. */}
+          <Button onClick={openCreate} data-testid="btn-nueva-transaccion" aria-label="Nueva transacción">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nueva transacción</span>
           </Button>
         </div>
       </div>
