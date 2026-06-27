@@ -198,9 +198,9 @@ pestaña en `expenses/`.
 **Files**: `src/services/portfolioService.ts`, `src/hooks/usePortfolios.ts`,
 `src/app/(private)/investments/page.tsx`.
 
-- [ ] **Step 1 (TDD)**: service + hooks de carteras (lista + crear). Tests de hook.
-- [ ] **Step 2**: lista de cards alargadas + crear en panel lateral (sin renombrar/borrar, hueco #2).
-- [ ] **Step 3**: navegación a holdings de la cartera (`investments/[id]`).
+- [x] **Step 1 (TDD)**: service + hooks de carteras (lista + crear). Tests de hook.
+- [x] **Step 2**: lista de cards alargadas + crear en **modal centrado** (Dialog; no panel lateral — decisión 2026-06-27).
+- [x] **Step 3**: navegación a holdings de la cartera (`investments/[id]`).
 
 **Aceptación**: listar y crear carteras con datos reales.
 **Aprenderás**: navegación con parámetros de ruta, patrón card+panel reutilizable.
