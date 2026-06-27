@@ -527,41 +527,71 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
         ))}
       </div>
 
-      {/* Cards por holding */}
+      {/* Cards por holding — 3 columnas: base | original | mercado+% */}
+      {/* Los campos *Original provienen de HoldingPerformance (deuda técnica backend pendiente) */}
       {perf.holdings.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {perf.holdings.map((h: HoldingPerformance) => (
-            <div key={h.idHolding} className="rounded-lg border border-border bg-card p-4">
-              {/* Cabecera: ticker + acciones abiertas */}
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="font-mono text-sm font-semibold">{h.ticker}</span>
-                <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
+          {perf.holdings.map((h: HoldingPerformance) => {
+            const origCur    = h.buyOriginalCurrency ?? cur
+            const hasCostOrig = h.costBasisOriginal != null
+            const hasPnlOrig  = h.unrealizedPnLOriginal != null
+
+            return (
+              <div key={h.idHolding} className="rounded-lg border border-border bg-card p-4">
+                {/* Cabecera */}
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold">{h.ticker}</span>
+                    {origCur !== cur && (
+                      <span className="text-xs text-muted-foreground">{origCur}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
+                </div>
+
+                {/* Grid 3 col × 2 filas */}
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Coste base</p>
+                    <p className="font-medium tabular-nums">{formatAmount(h.costBasis, cur)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Coste original</p>
+                    <p className="font-medium tabular-nums">
+                      {hasCostOrig ? formatAmount(h.costBasisOriginal!, origCur) : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Valor mercado</p>
+                    <p className="font-medium tabular-nums">{formatAmount(h.marketValue, cur)}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">PnL base</p>
+                    <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnL)}`}>
+                      {signPnL(h.unrealizedPnL)}{formatAmount(h.unrealizedPnL, cur)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">PnL original</p>
+                    {hasPnlOrig ? (
+                      <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLOriginal!)}`}>
+                        {signPnL(h.unrealizedPnLOriginal!)}{formatAmount(h.unrealizedPnLOriginal!, origCur)}
+                      </p>
+                    ) : (
+                      <p className="font-medium text-muted-foreground">—</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rentabilidad</p>
+                    <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
+                      {signPnL(h.unrealizedPnLPct)}{h.unrealizedPnLPct.toFixed(2)} %
+                    </p>
+                  </div>
+                </div>
               </div>
-              {/* Métricas en grid 2×2 */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Coste base</p>
-                  <p className="font-medium tabular-nums">{formatAmount(h.costBasis, cur)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Valor mercado</p>
-                  <p className="font-medium tabular-nums">{formatAmount(h.marketValue, cur)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">PnL no realizado</p>
-                  <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnL)}`}>
-                    {signPnL(h.unrealizedPnL)}{formatAmount(h.unrealizedPnL, cur)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Rentabilidad</p>
-                  <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
-                    {signPnL(h.unrealizedPnLPct)}{h.unrealizedPnLPct.toFixed(2)} %
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <p className="text-center text-sm text-muted-foreground">

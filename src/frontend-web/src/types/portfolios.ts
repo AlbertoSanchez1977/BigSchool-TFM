@@ -103,6 +103,9 @@ export interface PortfolioPerformance {
 }
 
 // Elemento de HoldingPerformanceDto (sin companyName — solo ticker)
+// TODO (deuda técnica): el endpoint GET /portfolios/{id}/performance debe añadir los campos
+// de moneda original para evitar que el frontend los calcule a partir del detalle de cartera.
+// Ver BigSchool.Application.DTOs.Investments.HoldingPerformanceDto — pending backend iteration.
 export interface HoldingPerformance {
   idHolding: number
   idCompany: number
@@ -111,7 +114,12 @@ export interface HoldingPerformance {
   costBasis: number
   marketValue: number
   unrealizedPnL: number
-  unrealizedPnLPct: number    // campo real: UnrealizedPnLPct (≠ returnPct)
+  unrealizedPnLPct: number           // campo real: UnrealizedPnLPct (≠ returnPct)
+  // Campos pendientes de backend — undefined hasta que el endpoint los materialice
+  buyOriginalCurrency?: string
+  costBasisOriginal?: number         // coste de acciones abiertas en moneda original
+  marketValueOriginal?: number       // valor de mercado en moneda original
+  unrealizedPnLOriginal?: number     // PnL no realizado en moneda original
 }
 
 // ── Body de POST /portfolios/{id}/sales (SellSharesRequest) ──────────────────────
