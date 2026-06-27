@@ -211,8 +211,8 @@ pestaña en `expenses/`.
 
 **Files**: `src/app/(private)/investments/[id]/page.tsx`, `src/hooks/useHoldings.ts`.
 
-- [ ] **Step 1 (TDD)**: hooks de holdings (detalle cartera, añadir, editar Notes, borrar). Tests.
-- [ ] **Step 2**: cabecera con **breadcrumb-header** (`← Inversiones / [nombre cartera]`) +
+- [x] **Step 1 (TDD)**: hooks de holdings (detalle cartera, añadir, editar Notes, borrar). Tests.
+- [x] **Step 2**: cabecera con **breadcrumb-header** (`← Inversiones / [nombre cartera]`) +
   cards de holdings con `openShares` + **modal centrado** (Dialog, no panel lateral) para añadir,
   editar Notes y borrar (con confirmación inline).
 
