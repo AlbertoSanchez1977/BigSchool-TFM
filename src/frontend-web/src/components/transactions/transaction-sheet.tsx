@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -215,7 +216,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                       {(v: TransactionType) => TRANSACTION_TYPE_LABEL[v]}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent alignItemWithTrigger={false}>
                     <SelectItem value="Expense">{TRANSACTION_TYPE_LABEL.Expense}</SelectItem>
                     <SelectItem value="Income">{TRANSACTION_TYPE_LABEL.Income}</SelectItem>
                   </SelectContent>
@@ -274,7 +275,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                         {(v: MainCategory) => MAIN_CATEGORY_LABEL[v] ?? v}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent alignItemWithTrigger={false}>
                       {filteredCategories.map((c) => (
                         <SelectItem key={c.idMainCategory} value={c.name}>
                           {MAIN_CATEGORY_LABEL[c.name as MainCategory] ?? c.name}
@@ -310,7 +311,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                           }
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent alignItemWithTrigger={false}>
                         <SelectItem value="__none__">Ninguna</SelectItem>
                         {subCategories.map((sc) => (
                           <SelectItem key={sc.idSubCategory} value={String(sc.idSubCategory)}>
@@ -335,7 +336,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                   <SelectTrigger id="currency" className="w-full" data-testid="select-currency">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent alignItemWithTrigger={false}>
                     {CURRENCIES.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
@@ -350,9 +351,11 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
             label={<>Descripción{' '}<span className="text-muted-foreground">(opcional)</span></>}
             htmlFor="description"
           >
-            <Input
+            <Textarea
               id="description"
               placeholder="Descripción..."
+              rows={3}
+              className="resize-none overflow-y-auto"
               data-testid="input-description"
               {...form.register('description')}
             />
