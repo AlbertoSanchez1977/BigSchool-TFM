@@ -8,14 +8,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TransactionSheet } from '@/components/transactions/transaction-sheet'
+import { CategoryBars } from '@/components/charts/category-bars'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSummary } from '@/hooks/useSummary'
 import { useCategories } from '@/hooks/useCategories'
+import { useCategoryChart } from '@/hooks/useCategoryChart'
 import {
   TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL, formatAmount, formatDate,
 } from '@/lib/transactions/labels'
 import type { Transaction } from '@/types/transactions'
+import type { TransactionType } from '@/types/enums'
 
 // ── Helpers de fecha ──────────────────────────────────────────────────────────
 
@@ -68,10 +72,18 @@ export default function ExpensesPage() {
   const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  // Pestañas: listado (por defecto) vs gráficas. El tipo de la gráfica (gasto/ingreso).
+  const [tab, setTab] = useState<'list' | 'charts'>('list')
+  const [chartType, setChartType] = useState<TransactionType>('Expense')
+
   const { from, to } = monthRange(year, month)
 
   const { data, isLoading, isError } = useTransactions({ from, to, page, pageSize })
   const summaryQ = useSummary(from, to)
+
+  // Datos de la gráfica (últimos 4 años). Diferido hasta abrir la pestaña (enabled).
+  // El hook es la costura que oculta si la agregación es cliente (hoy) o backend (futuro).
+  const chart = useCategoryChart(chartType, now.getFullYear(), { enabled: tab === 'charts' })
 
   // El listado trae idSubCategory como número; resolvemos su nombre con /categories.
   // Map<idSubCategory, name> construido una vez (useMemo) a partir de todas las categorías.
@@ -115,36 +127,46 @@ export default function ExpensesPage() {
     <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
 
       {/* ── Cabecera ──────────────────────────────────────────────────────── */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="font-heading text-2xl font-semibold">Gastos e ingresos</h1>
 
-        <div className="flex items-center gap-3">
-          {/* Selector de mes/año */}
-          <div className="flex items-center gap-2" data-testid="month-selector">
-            <Button
-              variant="outline" size="icon"
-              onClick={prevMonth}
-              aria-label="Mes anterior"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-[130px] text-center text-sm font-medium">
-              {MONTH_NAMES[month - 1]} {year}
-            </span>
-            <Button
-              variant="outline" size="icon"
-              onClick={nextMonth}
-              aria-label="Mes siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+        {/* Botón "Nueva transacción": en móvil solo el icono "+", en ≥sm texto completo.
+            Puro CSS — el <span> del texto se oculta bajo el breakpoint sm. */}
+        <Button onClick={openCreate} data-testid="btn-nueva-transaccion" aria-label="Nueva transacción">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Nueva transacción</span>
+        </Button>
+      </div>
 
-          {/* Botón "Nueva transacción": en móvil solo el icono "+", en ≥sm texto completo.
-              Puro CSS — el <span> del texto se oculta bajo el breakpoint sm. */}
-          <Button onClick={openCreate} data-testid="btn-nueva-transaccion" aria-label="Nueva transacción">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Nueva transacción</span>
+      {/* ── Pestañas: Listado / Gráficas ──────────────────────────────────── */}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as 'list' | 'charts')}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="list" data-testid="tab-list">Listado</TabsTrigger>
+          <TabsTrigger value="charts" data-testid="tab-charts">Gráficas</TabsTrigger>
+        </TabsList>
+
+        {/* ════════════ Pestaña LISTADO ════════════ */}
+        <TabsContent value="list">
+
+      {/* Selector de mes/año */}
+      <div className="mb-6 flex justify-end">
+        <div className="flex items-center gap-2" data-testid="month-selector">
+          <Button
+            variant="outline" size="icon"
+            onClick={prevMonth}
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[130px] text-center text-sm font-medium">
+            {MONTH_NAMES[month - 1]} {year}
+          </span>
+          <Button
+            variant="outline" size="icon"
+            onClick={nextMonth}
+            aria-label="Mes siguiente"
+          >
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -352,6 +374,61 @@ export default function ExpensesPage() {
           </div>
         </div>
       )}
+
+        </TabsContent>
+
+        {/* ════════════ Pestaña GRÁFICAS ════════════ */}
+        <TabsContent value="charts">
+
+          {/* Conmutador Gastos / Ingresos */}
+          <div className="mb-6 inline-flex rounded-lg border border-border p-0.5" role="tablist" aria-label="Tipo de gráfica">
+            {(['Expense', 'Income'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={chartType === t}
+                onClick={() => setChartType(t)}
+                data-testid={`chart-type-${t}`}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  chartType === t
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {TRANSACTION_TYPE_LABEL[t]}s
+              </button>
+            ))}
+          </div>
+
+          <p className="mb-4 text-sm text-muted-foreground">
+            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por categoría — últimos 4 años
+            (importes en {currency}).
+          </p>
+
+          {chart.isLoading && (
+            <Skeleton className="h-[340px] w-full rounded-lg" data-testid="chart-loading" />
+          )}
+
+          {chart.isError && (
+            <div
+              className="rounded-lg border border-border bg-card py-16 text-center text-sm text-destructive"
+              data-testid="chart-error"
+            >
+              Error al cargar los datos de la gráfica. Inténtalo de nuevo.
+            </div>
+          )}
+
+          {!chart.isLoading && !chart.isError && (
+            <CategoryBars
+              data={chart.data}
+              currency={currency}
+              emptyLabel={`No hay ${chartType === 'Expense' ? 'gastos' : 'ingresos'} en los últimos 4 años.`}
+            />
+          )}
+
+        </TabsContent>
+      </Tabs>
 
       {/* Sheet de creación/edición — montado condicionalmente para que sus hooks
           no se ejecuten cuando está cerrado (evita mocks adicionales en tests). */}
