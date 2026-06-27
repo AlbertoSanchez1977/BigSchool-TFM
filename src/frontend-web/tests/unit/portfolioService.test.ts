@@ -103,3 +103,104 @@ describe('portfolioService.create', () => {
     await expect(portfolioService.create({ name: '' })).rejects.toBeInstanceOf(ApiError)
   })
 })
+
+// ── portfolioService.performance ──────────────────────────────────────────────
+
+function makePerformance(overrides = {}) {
+  return {
+    idPortfolio: 1,
+    name: 'Mi cartera',
+    baseCurrency: 'EUR',
+    marketValue: 12000,
+    costBasis: 10000,
+    unrealizedPnL: 2000,
+    realizedPnL: 500,
+    totalPnL: 2500,
+    returnPct: 25,
+    holdings: [],
+    ...overrides,
+  }
+}
+
+describe('portfolioService.performance', () => {
+
+  beforeEach(() => vi.resetAllMocks())
+
+  it('llama a GET /portfolios/{id}/performance', async () => {
+    mockGet.mockResolvedValue(makePerformance())
+
+    await portfolioService.performance(5)
+
+    expect(mockGet).toHaveBeenCalledWith('/portfolios/5/performance')
+  })
+
+  it('devuelve PortfolioPerformance con returnPct correcto', async () => {
+    const perf = makePerformance({ returnPct: 15.5 })
+    mockGet.mockResolvedValue(perf)
+
+    const result = await portfolioService.performance(1)
+
+    expect(result.returnPct).toBe(15.5)
+    expect(result.baseCurrency).toBe('EUR')
+    expect(result.holdings).toEqual([])
+  })
+
+  it('propaga ApiError cuando la cartera no existe', async () => {
+    mockGet.mockRejectedValue(
+      new ApiError('ENTITY_NOT_FOUND', 'Cartera no encontrada', undefined, 404)
+    )
+
+    await expect(portfolioService.performance(999)).rejects.toBeInstanceOf(ApiError)
+  })
+})
+
+// ── portfolioService.sellShares ───────────────────────────────────────────────
+
+function makeSellResult(overrides = {}) {
+  return {
+    disposals: [],
+    portfolioRealizedPnL: 250,
+    realizedPnLCurrency: 'EUR',
+    ...overrides,
+  }
+}
+
+describe('portfolioService.sellShares', () => {
+
+  beforeEach(() => vi.resetAllMocks())
+
+  it('llama a POST /portfolios/{id}/sales con el DTO', async () => {
+    mockPost.mockResolvedValue(makeSellResult())
+
+    await portfolioService.sellShares(3, {
+      companyId: 10, shares: 5, sellPrice: 150, sellDate: '2024-06-01',
+    })
+
+    expect(mockPost).toHaveBeenCalledWith('/portfolios/3/sales', {
+      companyId: 10, shares: 5, sellPrice: 150, sellDate: '2024-06-01',
+    })
+  })
+
+  it('devuelve SellSharesResult con el PnL actualizado', async () => {
+    const sellResult = makeSellResult({ portfolioRealizedPnL: 750 })
+    mockPost.mockResolvedValue(sellResult)
+
+    const res = await portfolioService.sellShares(1, {
+      companyId: 5, shares: 10, sellPrice: 200, sellDate: '2024-01-15',
+    })
+
+    expect(res.portfolioRealizedPnL).toBe(750)
+    expect(res.disposals).toEqual([])
+    expect(res.realizedPnLCurrency).toBe('EUR')
+  })
+
+  it('propaga ApiError cuando las acciones son insuficientes', async () => {
+    mockPost.mockRejectedValue(
+      new ApiError('INSUFFICIENT_SHARES', 'Acciones insuficientes', undefined, 400)
+    )
+
+    await expect(
+      portfolioService.sellShares(1, { companyId: 5, shares: 999, sellPrice: 100, sellDate: '2024-01-01' })
+    ).rejects.toBeInstanceOf(ApiError)
+  })
+})
