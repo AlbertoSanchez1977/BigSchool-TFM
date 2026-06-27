@@ -212,10 +212,19 @@ pestaña en `expenses/`.
 **Files**: `src/app/(private)/investments/[id]/page.tsx`, `src/hooks/useHoldings.ts`.
 
 - [ ] **Step 1 (TDD)**: hooks de holdings (detalle cartera, añadir, editar Notes, borrar). Tests.
-- [ ] **Step 2**: cards de holdings con `OpenShares` + panel lateral para añadir / editar Notes / borrar.
+- [ ] **Step 2**: cabecera con **breadcrumb-header** (`← Inversiones / [nombre cartera]`) +
+  cards de holdings con `openShares` + **modal centrado** (Dialog, no panel lateral) para añadir,
+  editar Notes y borrar (con confirmación inline).
 
-**Aceptación**: alta/edición Notes/borrado de holdings con invalidación.
-**Aprenderás**: vistas maestro-detalle anidadas.
+  **Patrón de navegación maestro-detalle** (aplica aquí y a cualquier vista de detalle futura):
+  - La vista de detalle incluye siempre un `BackButton` (`← [Nombre de la lista padre]`) que
+    enlaza con `<Link href="/investments">` (no `router.back()`, que falla con acceso directo).
+  - Se muestra el nombre de la entidad padre como subtítulo/breadcrumb junto al botón de vuelta.
+  - Formato: `[←] Inversiones  ·  [nombre cartera]` en la cabecera, con la flecha como enlace y
+    el nombre de la cartera como `h1`.
+
+**Aceptación**: alta/edición Notes/borrado de holdings con invalidación; breadcrumb-header funcional.
+**Aprenderás**: vistas maestro-detalle anidadas, patrón de navegación de vuelta robusto.
 
 ---
 
@@ -225,8 +234,10 @@ pestaña en `expenses/`.
 `tests/e2e/sell-holding.spec.ts`.
 
 - [ ] **Step 1 (TDD)**: mutation de venta (`/portfolios/{id}/sales`) + hook de performance. Tests.
-- [ ] **Step 2**: acción "vender" a **nivel empresa** (FIFO); la UI debe explicar que consume
-  varios lotes (hueco #3). Vista performance (KPIs realizado/no realizado/% + por holding).
+- [ ] **Step 2**: acción "vender" en **modal centrado** (Dialog) a **nivel empresa** (FIFO);
+  el modal debe explicar que puede consumir varios lotes (hueco #3). Vista performance
+  (KPIs realizado/no realizado/% + tabla por holding). El breadcrumb-header de la Task 9
+  permanece — no hace falta nueva navegación.
 - [ ] **Step 3 (E2E — hito)**: Playwright vender → realizado/holdings actualizados.
 
 **Aceptación**: venta FIFO funcional; E2E de venta verde; performance coherente.
