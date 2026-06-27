@@ -233,12 +233,12 @@ pestaña en `expenses/`.
 **Files**: `investments/[id]/` (acción vender + vista performance), `src/hooks/usePerformance.ts`,
 `tests/e2e/sell-holding.spec.ts`.
 
-- [ ] **Step 1 (TDD)**: mutation de venta (`/portfolios/{id}/sales`) + hook de performance. Tests.
-- [ ] **Step 2**: acción "vender" en **modal centrado** (Dialog) a **nivel empresa** (FIFO);
+- [x] **Step 1 (TDD)**: mutation de venta (`/portfolios/{id}/sales`) + hook de performance. Tests.
+- [x] **Step 2**: acción "vender" en **modal centrado** (Dialog) a **nivel empresa** (FIFO);
   el modal debe explicar que puede consumir varios lotes (hueco #3). Vista performance
   (KPIs realizado/no realizado/% + tabla por holding). El breadcrumb-header de la Task 9
   permanece — no hace falta nueva navegación.
-- [ ] **Step 3 (E2E — hito)**: Playwright vender → realizado/holdings actualizados.
+- [x] **Step 3 (E2E — hito)**: Playwright vender → realizado/holdings actualizados.
 
 **Aceptación**: venta FIFO funcional; E2E de venta verde; performance coherente.
 **Aprenderás**: alinear UX con reglas de dominio (FIFO), consolidación de métricas.

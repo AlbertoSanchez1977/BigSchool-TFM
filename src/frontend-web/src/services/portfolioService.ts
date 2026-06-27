@@ -1,11 +1,8 @@
 import { api } from '@/lib/api'
 import type {
-  PortfolioListItem, Portfolio, PortfolioDetail,
-  CreatePortfolioDto,
+  PortfolioListItem, Portfolio, PortfolioDetail, PortfolioPerformance,
+  CreatePortfolioDto, SellSharesDto, SellSharesResult,
 } from '@/types/portfolios'
-
-// POST /portfolios solo acepta Name (CreatePortfolioRequest del controller).
-// El backend asigna automáticamente la divisa del usuario como RealizedPnLCurrency.
 
 export const portfolioService = {
 
@@ -22,5 +19,15 @@ export const portfolioService = {
   // POST /portfolios → PortfolioDto (comando)
   async create(data: CreatePortfolioDto): Promise<Portfolio> {
     return api.post<Portfolio>('/portfolios', data)
+  },
+
+  // GET /portfolios/{id}/performance → PortfolioPerformanceDto
+  async performance(id: number): Promise<PortfolioPerformance> {
+    return api.get<PortfolioPerformance>(`/portfolios/${id}/performance`)
+  },
+
+  // POST /portfolios/{id}/sales → SellSharesResultDto (SellSharesRequest del controller)
+  async sellShares(id: number, data: SellSharesDto): Promise<SellSharesResult> {
+    return api.post<SellSharesResult>(`/portfolios/${id}/sales`, data)
   },
 }
