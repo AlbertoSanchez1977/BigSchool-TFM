@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { LogOut, UserPen } from 'lucide-react'
+import { LogOut, MessageSquare, UserPen } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -68,6 +68,11 @@ export function ProfileDropdown() {
         <DropdownMenuItem onClick={() => router.push('/profile')}>
           <UserPen className="mr-2 h-4 w-4" aria-hidden="true" />
           Editar perfil
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => router.push('/contacts')}>
+          <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+          Contacto
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
