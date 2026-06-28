@@ -35,3 +35,23 @@ export function formatDate(isoDate: string): string {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
     .format(new Date(y, m - 1, d))
 }
+
+// Formatea un porcentaje con locale es-ES (separador decimal coma).
+export function formatPct(value: number, decimals = 1): string {
+  return value.toLocaleString('es-ES', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }) + ' %'
+}
+
+// Clase CSS para colorear valores de PnL / balance / tasa de ahorro.
+export function colorPnL(value: number): string {
+  if (value > 0) return 'text-positive'
+  if (value < 0) return 'text-negative'
+  return ''
+}
+
+// Prefijo '+' para valores positivos (negativos llevan el signo automático).
+export function signPnL(value: number): string {
+  return value > 0 ? '+' : ''
+}

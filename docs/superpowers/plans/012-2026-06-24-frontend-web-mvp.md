@@ -34,6 +34,29 @@ para datos, react-hook-form + zod para formularios, JWT en `localStorage` + `Bea
   message, field? }`.
 - **Explicar mientras se construye** (objetivo de aprendizaje del autor).
 
+### Regla de huecos de backend (deuda técnica) — aplica de Task 11 en adelante
+
+El backend tiene **deuda técnica conocida** que se abordará en **otra sesión** al cerrar este plan
+de frontend. Mientras tanto, cuando un dato que la UI necesita **no** lo expone hoy el backend:
+
+1. **NO inventes el dato cruzando fuentes** (p. ej. recalcular conversiones de divisa a partir de
+   tipos de cambio históricos, derivar a mano agregados que debería dar un endpoint, sumar listas
+   paginadas para fingir un total, etc.). Esos cruces son frágiles y ocultan el hueco real.
+2. **Explicita el hueco en el código**: marca el campo/sección con un `TODO (deuda técnica backend)`
+   y, si tienes el tipo, deja el campo **opcional** (`?`) en la interfaz TS con un comentario que
+   apunte al DTO/endpoint C# que debería materializarlo. Renderiza un placeholder neutro (`—`,
+   "Próximamente", o skeleton) en lugar de un valor aproximado.
+3. **Prioriza pasar por el backend**: el camino correcto es que el endpoint devuelva el dato ya
+   calculado. Deja el frontend **preparado** para consumirlo (campo opcional + render condicional)
+   de modo que cuando el backend lo materialice, **no haga falta tocar la UI**.
+4. **Documenta lo que necesitas del backend**: en el PR (o en una nota junto al `TODO`) describe el
+   contrato esperado — endpoint, campos, tipos, en qué moneda/unidad — para la sesión de backend.
+5. **Si hay duda razonable, PREGUNTA** antes de implementar un apaño. Mejor un hueco explícito y una
+   pregunta que un dato "mágico" que parezca correcto y no lo sea.
+
+Precedente ya aplicado: `HoldingPerformance` (Task 10) lleva campos `*Original` opcionales con
+`TODO (deuda técnica)` y la UI muestra `—` hasta que el endpoint `/performance` los retorne.
+
 ---
 
 ## Task 1 — Fundamentos del proyecto
@@ -250,9 +273,18 @@ pestaña en `expenses/`.
 **Files**: `src/app/(private)/dashboard/page.tsx`, hooks de summary/monthly-chart/performance,
 `src/lib/dashboard/derive.ts`.
 
-- [ ] **Step 1 (TDD)**: hooks de agregados + lógica de derivados (balance acumulado, tasa de
+> ⚠️ **Aplica la _Regla de huecos de backend_** (ver "Convenciones de ejecución"). El dashboard
+> compone datos de varias fuentes; **antes de cruzar datos a mano para rellenar un KPI**, comprueba
+> qué expone realmente cada endpoint (`/transactions/summary`, `/transactions/monthly-chart`,
+> `/portfolios`...). Lo que esos endpoints **ya** devuelven → úsalo. Lo que **no** → no lo inventes:
+> marca `TODO (deuda técnica backend)`, deja el campo opcional, renderiza placeholder y documenta el
+> contrato esperado para la sesión de backend. La lógica pura de `derive.ts` solo debe combinar
+> datos **ya provistos** por el backend (p. ej. balance acumulado a partir de la serie mensual que
+> sí existe), nunca fabricar magnitudes que el backend debería calcular. Ante la duda, **pregunta**.
+
+- [x] **Step 1 (TDD)**: hooks de agregados + lógica de derivados (balance acumulado, tasa de
   ahorro). Tests de la lógica pura `derive`.
-- [ ] **Step 2**: composición — 4 KPIs + barras ingresos/gastos + línea de balance + resumen de
+- [x] **Step 2**: composición — 4 KPIs + barras ingresos/gastos + línea de balance + resumen de
   inversiones + últimas 5 transacciones.
 
 **Aceptación**: dashboard con datos reales; lógica de derivados testeada.
