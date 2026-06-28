@@ -4,11 +4,13 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import {
   BarChart, Bar,
-  LineChart, Line,
+  AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, BarChart2, ArrowRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, ArrowRight } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button }  from '@/components/ui/button'
+
 import { useSummary }      from '@/hooks/useSummary'
 import { useMonthlyChart } from '@/hooks/useMonthlyChart'
 import { usePortfolios }   from '@/hooks/usePortfolios'
@@ -19,32 +21,54 @@ import {
   deriveSavingsRate,
   derivePortfolioTotals,
 } from '@/lib/dashboard/derive'
-import { MAIN_CATEGORY_LABEL } from '@/lib/transactions/labels'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatAmount(amount: number, currency: string): string {
-  if (!currency) return amount.toFixed(2)
-  try {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency', currency, minimumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `${currency} ${amount.toFixed(2)}`
-  }
-}
-
-function colorPnL(value: number) {
-  if (value > 0) return 'text-[hsl(var(--positive))]'
-  if (value < 0) return 'text-[hsl(var(--negative))]'
-  return ''
-}
-
-function signPnL(value: number) {
-  return value > 0 ? '+' : ''
-}
+import {
+  MAIN_CATEGORY_LABEL,
+  formatAmount, formatPct, colorPnL, signPnL,
+} from '@/lib/transactions/labels'
 
 const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+const MONTH_NAMES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+// ── Tooltip custom (mismo estilo que la landing) ──────────────────────────────
+
+function BarTooltip({ active, payload, label, currency }: {
+  active?: boolean; payload?: { dataKey: string; color: string; value: number }[]
+  label?: string | number; currency: string
+}) {
+  if (!active || !payload?.length) return null
+  const monthName = MONTH_NAMES[Number(label) - 1] ?? String(label)
+  return (
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+      <p className="mb-1 font-medium text-popover-foreground">{monthName}</p>
+      {payload.map(item => (
+        <p key={item.dataKey} className="flex items-center justify-between gap-4 text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+            {item.dataKey === 'income' ? 'Ingresos' : 'Gastos'}
+          </span>
+          <span className="font-medium text-popover-foreground">{formatAmount(item.value, currency)}</span>
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function AreaTooltip({ active, payload, label, currency }: {
+  active?: boolean; payload?: { value: number }[]
+  label?: string | number; currency: string
+}) {
+  if (!active || !payload?.length) return null
+  const monthName = MONTH_NAMES[Number(label) - 1] ?? String(label)
+  return (
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+      <p className="mb-1 font-medium text-popover-foreground">{monthName}</p>
+      <p className="flex items-center justify-between gap-4 text-muted-foreground">
+        <span>Balance acumulado</span>
+        <span className="font-medium text-popover-foreground">{formatAmount(payload[0].value, currency)}</span>
+      </p>
+    </div>
+  )
+}
 
 // ── Subcomponentes de sección ─────────────────────────────────────────────────
 
@@ -56,10 +80,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export default function DashboardPage() {
   const today = new Date()
-  const currentYear = today.getFullYear()
+  const currentYear  = today.getFullYear()
+  const currentMonth = today.getMonth() + 1   // 1-indexed; corta los arrays al mes en curso
 
   // Rango del mes en curso para el summary (primer día → hoy)
-  const from = `${currentYear}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+  const from = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
   const to   = today.toISOString().split('T')[0]
 
   const { data: summary,    isLoading: summaryLoading    } = useSummary(from, to)
@@ -67,8 +92,15 @@ export default function DashboardPage() {
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios()
   const { data: recentTxns, isLoading: txnsLoading       } = useTransactions({ page: 1, pageSize: 5 })
 
-  const monthlyPoints    = useMemo(() => deriveMonthlyPoints(rawPoints ?? []),    [rawPoints])
-  const cumulativePoints = useMemo(() => deriveCumulativeBalance(rawPoints ?? []), [rawPoints])
+  // Solo mostramos hasta el mes actual — meses futuros ni barras ni línea plana
+  const monthlyPoints    = useMemo(
+    () => deriveMonthlyPoints(rawPoints ?? []).slice(0, currentMonth),
+    [rawPoints, currentMonth]
+  )
+  const cumulativePoints = useMemo(
+    () => deriveCumulativeBalance(rawPoints ?? []).slice(0, currentMonth),
+    [rawPoints, currentMonth]
+  )
   const portfolioTotals  = useMemo(() => derivePortfolioTotals(portfolios ?? []), [portfolios])
   const savingsRate      = useMemo(
     () => summary ? deriveSavingsRate(summary.totalIncome, summary.totalExpense) : null,
@@ -77,10 +109,6 @@ export default function DashboardPage() {
 
   const cur         = summary?.baseCurrency ?? 'EUR'
   const portfolioCur = portfolios?.[0]?.realizedPnLCurrency ?? cur
-
-  // ── Formateo para tooltip de Recharts (ValueType = number | string | Array<...>) ─
-  const fmtTooltip = (v: unknown) => formatAmount(Number(v ?? 0), cur)
-  const fmtLabel   = (m: unknown) => MONTH_LABELS[Number(m) - 1] ?? ''
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:px-8">
@@ -98,13 +126,13 @@ export default function DashboardPage() {
               icon={<TrendingUp className="size-4" />}
               label="Ingresos (mes)"
               value={formatAmount(summary?.totalIncome ?? 0, cur)}
-              valueColor="text-[hsl(var(--positive))]"
+              valueColor="text-positive"
             />
             <KpiCard
               icon={<TrendingDown className="size-4" />}
               label="Gastos (mes)"
               value={formatAmount(summary?.totalExpense ?? 0, cur)}
-              valueColor="text-[hsl(var(--negative))]"
+              valueColor="text-negative"
             />
             <KpiCard
               icon={<Wallet className="size-4" />}
@@ -115,7 +143,7 @@ export default function DashboardPage() {
             <KpiCard
               icon={<PiggyBank className="size-4" />}
               label="Tasa de ahorro"
-              value={savingsRate !== null ? `${savingsRate.toFixed(1)} %` : '—'}
+              value={savingsRate !== null ? formatPct(savingsRate) : '—'}
               valueColor={colorPnL(savingsRate ?? 0)}
             />
           </>
@@ -125,72 +153,93 @@ export default function DashboardPage() {
       {/* ── 2. Gráficas Ingresos/Gastos + Balance acumulado ───────────────────── */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
 
-        {/* Barras mensuales */}
+        {/* Barras mensuales — mismos colores que IncomeExpenseChart de la landing */}
         <div className="rounded-lg border border-border bg-card p-4">
           <SectionTitle>Ingresos vs Gastos — {currentYear}</SectionTitle>
           {chartLoading ? (
             <Skeleton className="h-52 w-full rounded" />
           ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={monthlyPoints} barSize={7} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={m => MONTH_LABELS[Number(m) - 1]}
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tickFormatter={v => `${(Number(v) / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={32}
-                />
-                <Tooltip formatter={fmtTooltip} labelFormatter={fmtLabel} />
-                <Bar dataKey="income"  name="Ingresos" fill="hsl(var(--positive))" radius={[3,3,0,0]} />
-                <Bar dataKey="expense" name="Gastos"   fill="hsl(var(--negative))" radius={[3,3,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyPoints} margin={{ top: 8, right: 4, left: -16, bottom: 0 }} barGap={4}>
+                    <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="month"
+                      tickFormatter={m => MONTH_LABELS[Number(m) - 1]}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickFormatter={v => `${Number(v) / 1000}k`}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                    />
+                    <Tooltip cursor={{ fill: 'var(--muted)' }} content={<BarTooltip currency={cur} />} />
+                    <Bar dataKey="income"  fill="var(--chart-1)" radius={[4,4,0,0]} maxBarSize={22} />
+                    <Bar dataKey="expense" fill="var(--chart-2)" radius={[4,4,0,0]} maxBarSize={22} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: 'var(--chart-1)' }} />
+                  Ingresos
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: 'var(--chart-2)' }} />
+                  Gastos
+                </span>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Línea balance acumulado */}
+        {/* Area chart balance acumulado — mismo estilo que PortfolioChart de la landing */}
         <div className="rounded-lg border border-border bg-card p-4">
           <SectionTitle>Balance acumulado — {currentYear}</SectionTitle>
           {chartLoading ? (
             <Skeleton className="h-52 w-full rounded" />
           ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <LineChart data={cumulativePoints}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={m => MONTH_LABELS[Number(m) - 1]}
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tickFormatter={v => `${(Number(v) / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={32}
-                />
-                <Tooltip formatter={fmtTooltip} labelFormatter={fmtLabel} />
-                <Line
-                  type="monotone"
-                  dataKey="balance"
-                  name="Balance acumulado"
-                  stroke="hsl(var(--chart-line))"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={cumulativePoints} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="dashboardBalanceFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="var(--chart-5)" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="var(--chart-5)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="month"
+                    tickFormatter={m => MONTH_LABELS[Number(m) - 1]}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickFormatter={v => `${Number(v) / 1000}k`}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                    domain={['dataMin - 200', 'dataMax + 200']}
+                  />
+                  <Tooltip cursor={{ stroke: 'var(--border)' }} content={<AreaTooltip currency={cur} />} />
+                  <Area
+                    type="monotone"
+                    dataKey="balance"
+                    stroke="var(--chart-5)"
+                    strokeWidth={2.5}
+                    fill="url(#dashboardBalanceFill)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: 'var(--chart-5)' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
       </div>
@@ -210,9 +259,16 @@ export default function DashboardPage() {
         {portfoliosLoading ? (
           <Skeleton className="h-24 rounded-lg" />
         ) : !portfolios || portfolios.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            No hay carteras. <Link href="/investments" className="underline">Crear una</Link>
-          </div>
+        <div
+          className="rounded-lg border border-border bg-card py-12 text-center"
+          data-testid="empty-state"
+        >
+          <TrendingUp className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No tienes carteras aún.</p>
+          <Button variant="outline" size="sm" className="mt-4">
+            <Link href="/investments">Crea mi primera cartera</Link>
+          </Button>
+        </div>
         ) : (
           <div className="rounded-lg border border-border bg-card p-4">
             {/* Agregado total */}
@@ -239,7 +295,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Rentabilidad</p>
                 <p className={`text-sm font-semibold tabular-nums ${colorPnL(portfolioTotals.returnPct ?? 0)}`}>
                   {portfolioTotals.returnPct !== null
-                    ? `${signPnL(portfolioTotals.returnPct)}${portfolioTotals.returnPct.toFixed(2)} %`
+                    ? `${signPnL(portfolioTotals.returnPct)}${formatPct(portfolioTotals.returnPct, 2)}`
                     : '—'}
                 </p>
               </div>
@@ -286,8 +342,12 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : !recentTxns?.items.length ? (
-          <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            No hay transacciones. <Link href="/expenses" className="underline">Registrar una</Link>
+          <div className="rounded-lg border border-border bg-card py-12 text-center">
+            <TrendingDown className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">No hay transacciones registradas.</p>
+            <Button variant="outline" size="sm" className="mt-4">
+              <Link href="/expenses">Nueva transacción</Link>
+            </Button>
           </div>
         ) : (
           <div className="rounded-lg border border-border bg-card divide-y divide-border">
@@ -299,7 +359,7 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">{tx.transactionDate}</p>
                 </div>
-                <p className={`ml-4 shrink-0 tabular-nums font-semibold ${tx.type === 'Income' ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'}`}>
+                <p className={`ml-4 shrink-0 tabular-nums font-semibold ${tx.type === 'Income' ? 'text-positive' : 'text-negative'}`}>
                   {tx.type === 'Income' ? '+' : '−'}{formatAmount(tx.originalAmount, tx.originalCurrency)}
                 </p>
               </div>
