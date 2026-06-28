@@ -530,6 +530,36 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-28 — Bloque 0: Dockerfiles base backend + frontend (Plan 013, Tasks 1-3)
+
+### Fase: Implementación
+
+**Módulo**: infra
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/004-2026-06-28-infra-e2e-seed-azure-design.md` y plan `docs/superpowers/plans/013-2026-06-28-bloque0-dockerfiles.md` ya aprobados; sesión dedicada a la ejecución.
+- **Task 1 (PR #105)**: `infra/docker/backend.Dockerfile` multi-stage `sdk:8.0 → aspnet:8.0`. Restore cacheado copiando primero los `.csproj` + `Directory.Build.props`. Stage runtime instala `curl` (no incluido en `aspnet:8.0`) para el `HEALTHCHECK`. Escucha en `8081` (`ASPNETCORE_URLS`). Smoke test verificado: `/health` → `Healthy`. También: `src/backend/.dockerignore`.
+- **Task 2 (PR #106)**: `output: 'standalone'` en `src/frontend-web/next.config.mjs`. Build local verificado: `pnpm build` OK y `.next/standalone/server.js` presente. Incidencia: requiere **Developer Mode de Windows** (crea symlinks de pnpm sin permisos de admin).
+- **Task 3 (PR #107)**: `infra/docker/frontend-web.Dockerfile` (4 stages: base → deps → build → runner) + `src/frontend-web/.dockerignore`. pnpm@11.5.2 fijado via corepack. Smoke test verificado: landing → HTTP 200.
+
+**Decisiones / Problemas encontrados:**
+- **pnpm 11 + build scripts**: pnpm 11 bloquea por defecto todos los `postinstall` scripts; lanza `ERR_PNPM_IGNORED_BUILDS`. La solución es copiar `pnpm-workspace.yaml` (que ya tenía `allowBuilds: sharp: true`) y `.npmrc` al stage `deps` del Dockerfile. Ni `--ignore-scripts` (rompe el binario de Turbopack) ni `neverBuiltDependencies` (el error persiste) funcionan solos.
+- **Turbopack en Docker/Linux**: Next.js 16 usa Turbopack por defecto en `next build`. El lockfile generado en Windows no incluye el binario de Turbopack para Linux; en Docker la resolución de `@vercel/turbopack-next/internal/font/google/font` falla. Fix: `pnpm exec next build --webpack` en el Dockerfile.
+- **Google Fonts + proxy SSL corporativo**: con webpack, `next/font/google` descarga Geist de Google Fonts durante el build; el proxy corporativo presenta un certificado auto-firmado → `SELF_SIGNED_CERT_IN_CHAIN`. Fix: `ENV NODE_TLS_REJECT_UNAUTHORIZED=0` solo en el stage `build` (no llega al `runner`). En CI (Azure/GitHub sin proxy) esto no es necesario pero es inofensivo.
+- **Directorio `public/` ausente**: el proyecto no tiene carpeta `public/`; el stage `runner` intentaba `COPY --from=build /app/public` y fallaba. Fix: `mkdir -p /app/public` antes del build.
+- **smoke test del backend**: `--retry-connrefused` de curl no reintenta en `Empty reply` (la app cierra la conexión los ~100 ms de inicialización). Con `sleep 3` previo es consistente.
+
+**Resultado / Estado:**
+- Plan 013 completado (3/3 tareas, PRs #105-#107 pendientes de revisión).
+- Imágenes verificadas localmente: `bigschool-backend:dev` (→ `Healthy` en `:8081/health`) y `bigschool-frontend:dev` (→ `200` en `:3001`).
+- Base reutilizable para Bloque 1 (compose E2E), Bloque 3 (compose completo) y Bloques 4/5 (CI/deploy Azure).
+
+**Siguiente paso:**
+- [ ] Merge PRs #105, #106, #107.
+- [ ] Bloque 1: `docker-compose.e2e.yml` (backend + frontend + MySQL, smoke test E2E).
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
