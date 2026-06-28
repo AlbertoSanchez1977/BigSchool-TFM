@@ -184,3 +184,49 @@ describe('transactionService.summary', () => {
     expect(result).toEqual(summaryData)
   })
 })
+
+// ── transactionService.monthlyChart ──────────────────────────────────────────
+
+describe('transactionService.monthlyChart', () => {
+
+  beforeEach(() => vi.resetAllMocks())
+
+  it('llama a /transactions/monthly-chart?year=N', async () => {
+    mockGet.mockResolvedValue([])
+
+    await transactionService.monthlyChart(2026)
+
+    const [path] = mockGet.mock.calls[0] as [string]
+    expect(path).toContain('/transactions/monthly-chart')
+    expect(path).toContain('year=2026')
+  })
+
+  it('devuelve el array de puntos mensuales', async () => {
+    const points = [
+      { year: 2026, month: 1, income: 1000, expense: 600 },
+      { year: 2026, month: 2, income: 800,  expense: 400 },
+    ]
+    mockGet.mockResolvedValue(points)
+
+    const result = await transactionService.monthlyChart(2026)
+
+    expect(result).toHaveLength(2)
+    expect(result[0]).toEqual({ year: 2026, month: 1, income: 1000, expense: 600 })
+  })
+
+  it('devuelve array vacío cuando no hay transacciones ese año', async () => {
+    mockGet.mockResolvedValue([])
+
+    const result = await transactionService.monthlyChart(2020)
+
+    expect(result).toEqual([])
+  })
+
+  it('propaga ApiError cuando la api falla', async () => {
+    mockGet.mockRejectedValue(
+      new ApiError('UNAUTHORIZED', 'Sesión expirada', undefined, 401)
+    )
+
+    await expect(transactionService.monthlyChart(2026)).rejects.toBeInstanceOf(ApiError)
+  })
+})

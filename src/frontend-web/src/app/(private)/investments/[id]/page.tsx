@@ -27,7 +27,7 @@ import {
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
 import { useCompanies } from '@/hooks/useCompanies'
-import { formatAmount } from '@/lib/transactions/labels'
+import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
 // ── Schemas Zod ───────────────────────────────────────────────────────────────
@@ -59,14 +59,6 @@ type SellForm = z.infer<typeof sellSchemaBase>
 
 function todayISO() {
   return new Date().toISOString().split('T')[0]
-}
-
-function colorPnL(value: number) {
-  return value >= 0 ? 'text-positive' : 'text-negative'
-}
-
-function signPnL(value: number) {
-  return value >= 0 ? '+' : ''
 }
 
 function Field({
@@ -512,7 +504,7 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
     { label: 'No realizado',  value: `${signPnL(perf.unrealizedPnL)}${formatAmount(perf.unrealizedPnL, cur)}`,      color: colorPnL(perf.unrealizedPnL) },
     { label: 'Realizado',     value: `${signPnL(perf.realizedPnL)}${formatAmount(perf.realizedPnL, cur)}`,          color: colorPnL(perf.realizedPnL) },
     { label: 'Total PnL',     value: `${signPnL(perf.totalPnL)}${formatAmount(perf.totalPnL, cur)}`,                color: colorPnL(perf.totalPnL) },
-    { label: 'Rentabilidad',  value: `${signPnL(perf.returnPct)}${perf.returnPct.toFixed(2)} %`,                    color: colorPnL(perf.returnPct) },
+    { label: 'Rentabilidad',  value: `${signPnL(perf.returnPct)}${formatPct(perf.returnPct, 2)}`,                    color: colorPnL(perf.returnPct) },
   ]
 
   return (
@@ -585,7 +577,7 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
                   <div>
                     <p className="text-xs text-muted-foreground">Rentabilidad</p>
                     <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
-                      {signPnL(h.unrealizedPnLPct)}{h.unrealizedPnLPct.toFixed(2)} %
+                      {signPnL(h.unrealizedPnLPct)}{formatPct(h.unrealizedPnLPct, 2)}
                     </p>
                   </div>
                 </div>
