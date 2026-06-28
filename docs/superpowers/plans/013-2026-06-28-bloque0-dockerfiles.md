@@ -169,7 +169,7 @@ git commit -m "infra: activar output standalone de Next.js para imagen Docker m�
 - Create: `infra/docker/frontend-web.Dockerfile`
 - Create: `src/frontend-web/.dockerignore`
 
-- [ ] **Step 1: Verificar que el build falla porque el Dockerfile no existe (test rojo)**
+- [x] **Step 1: Verificar que el build falla porque el Dockerfile no existe (test rojo)**
 
 Run:
 ```bash
@@ -177,7 +177,7 @@ docker build -f infra/docker/frontend-web.Dockerfile -t bigschool-frontend:dev s
 ```
 Expected: FALLA con `failed to read dockerfile: ... no such file or directory`.
 
-- [ ] **Step 2: Crear `src/frontend-web/.dockerignore`**
+- [x] **Step 2: Crear `src/frontend-web/.dockerignore`**
 
 ```gitignore
 node_modules
@@ -189,7 +189,7 @@ test-results
 npm-debug.log*
 ```
 
-- [ ] **Step 3: Crear `infra/docker/frontend-web.Dockerfile`**
+- [x] **Step 3: Crear `infra/docker/frontend-web.Dockerfile`**
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -229,7 +229,7 @@ CMD ["node", "server.js"]
 
 > Si `pnpm install --frozen-lockfile` falla por incompatibilidad de versión de lockfile, fijar la versión exacta de pnpm que generó `pnpm-lock.yaml` en la línea `corepack prepare pnpm@<versión> --activate` (mirar el campo `lockfileVersion` del lock).
 
-- [ ] **Step 4: Construir la imagen con el build-arg (debe pasar)**
+- [x] **Step 4: Construir la imagen con el build-arg (debe pasar)**
 
 Run:
 ```bash
@@ -239,7 +239,7 @@ docker build -f infra/docker/frontend-web.Dockerfile \
 ```
 Expected: build OK (`naming to docker.io/library/bigschool-frontend:dev done`).
 
-- [ ] **Step 5: Arrancar el contenedor y verificar la landing (smoke test)**
+- [x] **Step 5: Arrancar el contenedor y verificar la landing (smoke test)**
 
 Run:
 ```bash
@@ -249,7 +249,7 @@ docker stop bs-front-smoke
 ```
 Expected: `curl` imprime `200`; `docker stop` imprime el nombre del contenedor.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add infra/docker/frontend-web.Dockerfile src/frontend-web/.dockerignore
