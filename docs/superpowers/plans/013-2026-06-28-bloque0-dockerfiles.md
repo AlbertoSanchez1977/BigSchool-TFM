@@ -37,7 +37,7 @@
 - Create: `infra/docker/backend.Dockerfile`
 - Create: `src/backend/.dockerignore`
 
-- [ ] **Step 1: Verificar que el build falla porque el Dockerfile no existe (test rojo)**
+- [x] **Step 1: Verificar que el build falla porque el Dockerfile no existe (test rojo)**
 
 Run:
 ```bash
@@ -45,7 +45,7 @@ docker build -f infra/docker/backend.Dockerfile -t bigschool-backend:dev src/bac
 ```
 Expected: FALLA con un error tipo `failed to read dockerfile: open infra/docker/backend.Dockerfile: no such file or directory`.
 
-- [ ] **Step 2: Crear `src/backend/.dockerignore`**
+- [x] **Step 2: Crear `src/backend/.dockerignore`**
 
 ```gitignore
 **/bin/
@@ -56,7 +56,7 @@ tests/
 *.user
 ```
 
-- [ ] **Step 3: Crear `infra/docker/backend.Dockerfile`**
+- [x] **Step 3: Crear `infra/docker/backend.Dockerfile`**
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -92,7 +92,7 @@ HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=20s \
 ENTRYPOINT ["dotnet", "BigSchool.WebApi.dll"]
 ```
 
-- [ ] **Step 4: Construir la imagen (debe pasar ya)**
+- [x] **Step 4: Construir la imagen (debe pasar ya)**
 
 Run:
 ```bash
@@ -100,7 +100,7 @@ docker build -f infra/docker/backend.Dockerfile -t bigschool-backend:dev src/bac
 ```
 Expected: termina en `naming to docker.io/library/bigschool-backend:dev done` (build OK).
 
-- [ ] **Step 5: Arrancar el contenedor y verificar `/health` (smoke test)**
+- [x] **Step 5: Arrancar el contenedor y verificar `/health` (smoke test)**
 
 Run:
 ```bash
@@ -117,7 +117,7 @@ docker stop bs-back-smoke
 ```
 Expected: `curl` imprime `Healthy` y devuelve código 0; `docker stop` imprime el nombre del contenedor.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add infra/docker/backend.Dockerfile src/backend/.dockerignore
