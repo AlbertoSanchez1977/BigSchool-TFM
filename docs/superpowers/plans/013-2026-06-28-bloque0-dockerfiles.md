@@ -131,7 +131,7 @@ git commit -m "infra: añadir Dockerfile multi-stage del backend (.NET 8, puerto
 **Files:**
 - Modify: `src/frontend-web/next.config.mjs`
 
-- [ ] **Step 1: Modificar `src/frontend-web/next.config.mjs`**
+- [x] **Step 1: Modificar `src/frontend-web/next.config.mjs`**
 
 Contenido completo del fichero tras el cambio:
 ```javascript
@@ -146,7 +146,7 @@ const nextConfig = {
 export default nextConfig
 ```
 
-- [ ] **Step 2: Verificar que el build emite el server standalone**
+- [x] **Step 2: Verificar que el build emite el server standalone**
 
 Run (desde `src/frontend-web`, con dependencias ya instaladas):
 ```bash
@@ -154,7 +154,7 @@ cd src/frontend-web && pnpm build && ls .next/standalone/server.js && cd -
 ```
 Expected: el build termina sin error y `ls` lista `.next/standalone/server.js` (prueba de que el modo standalone está activo).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/frontend-web/next.config.mjs
