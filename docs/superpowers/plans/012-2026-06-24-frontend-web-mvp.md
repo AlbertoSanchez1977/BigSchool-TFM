@@ -359,14 +359,20 @@ manejo de subida de ficheros en cliente, persistencia local (`localStorage`), y 
 
 ## Task 13 — Contacto (SOLO FRONTEND; backend diferido)
 
-**Files**: `src/app/(public)/contact/page.tsx`, `src/lib/schemas/contact.ts`.
+**Files**: `src/lib/schemas/contact.ts`, `src/hooks/useContacts.ts`,
+`src/components/sections/contact-form.tsx` (incrustado en la sección CTA de la landing),
+`src/app/(private)/contacts/page.tsx`. Acceso al listado desde `ProfileDropdown` → "Contacto".
 
-- [ ] **Step 1 (TDD)**: esquema zod del formulario (nombre, email, mensaje) + tests de validación.
-- [ ] **Step 2**: formulario react-hook-form; al enviar, llamada al contrato `POST /contact` (aún
-  sin backend) con feedback optimista; **documentar el contrato esperado** en el propio código.
+- [x] **Step 1 (TDD)**: esquema zod (fullName, email, message) + tests. Hook `useContacts` que
+  lee desde `localStorage` + tests.
+- [x] **Step 2**: formulario react-hook-form en sección CTA de la landing (`sections/cta.tsx`);
+  al enviar, guarda en `localStorage` y muestra feedback. Listado privado `/contacts` con tabla
+  de envíos. Link "Contacto" en `ProfileDropdown`.
+  `TODO (deuda técnica backend)`: `POST /contact { fullName, email, message }` (guarda en BD,
+  dispara email simulado); `GET /contacts → ContactSubmission[]`.
 
-**Nota**: backend (`EmailLog`, `POST /contact`) se especifica en **otra sesión**. No será
-E2E-green hasta entonces.
+**Nota**: backend (`EmailLog`, `POST /contact`) se especifica en **otra sesión**. El `localStorage`
+permite demo funcional hasta entonces.
 
 ---
 

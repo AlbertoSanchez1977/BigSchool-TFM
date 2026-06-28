@@ -53,4 +53,11 @@ describe('ProfileDropdown', () => {
     fireEvent.click(screen.getByText(/editar perfil/i))
     expect(mockPush).toHaveBeenCalledWith('/profile')
   })
+
+  it('navega a /contacts al hacer clic en "Contacto"', () => {
+    render(<ProfileDropdown />)
+    fireEvent.click(screen.getByRole('button', { name: /alberto/i }))
+    fireEvent.click(screen.getByText(/contacto/i))
+    expect(mockPush).toHaveBeenCalledWith('/contacts')
+  })
 })
