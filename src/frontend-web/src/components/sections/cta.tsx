@@ -14,7 +14,10 @@ export function Cta() {
     <Section id="contacto">
       <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
 
-        {/* CTA card */}
+        {/* Contact form — izquierda */}
+        <ContactForm />
+
+        {/* CTA card — derecha */}
         <div className="flex flex-col items-center gap-6 rounded-2xl border border-border bg-card px-6 py-14 text-center ring-1 ring-foreground/5 lg:items-start lg:text-left">
           <h2 className="text-balance font-heading text-3xl font-semibold tracking-tight md:text-4xl">
             Empieza a controlar tus finanzas e inversiones hoy
@@ -45,9 +48,6 @@ export function Cta() {
             </div>
           )}
         </div>
-
-        {/* Contact form */}
-        <ContactForm />
       </div>
     </Section>
   )

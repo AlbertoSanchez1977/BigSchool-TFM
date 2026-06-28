@@ -99,7 +99,12 @@ export function ContactForm() {
         )}
       </div>
 
-      <Button type="submit" className="gap-2 w-full sm:w-auto" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full gap-2 shadow-sm transition-transform active:scale-95"
+        disabled={isSubmitting}
+      >
         <Send className="size-4" />
         Enviar mensaje
       </Button>
