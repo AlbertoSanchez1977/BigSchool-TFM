@@ -338,11 +338,11 @@ Layout de dos columnas (responsive: en móvil la columna derecha colapsa debajo 
      backend en la versión real; aquí es solo demo local.
    - Botón de volver al chat.
 
-- [ ] **Step 1 (TDD)**: flag de configuración (activar/desactivar, solo local) + esquema/estado del
+- [x] **Step 1 (TDD)**: flag de configuración (activar/desactivar, solo local) + esquema/estado del
   selector de LLM + esquema zod del formulario de keys. Tests de: render condicional del toggle,
   cambio de modelo seleccionado, validación del formulario de keys, añadir/borrar fichero del
   estado local del panel RAG.
-- [ ] **Step 2**: composición de la pantalla — si OFF → "Próximamente"; si ON → chat-esqueleto con
+- [x] **Step 2**: composición de la pantalla — si OFF → "Próximamente"; si ON → chat-esqueleto con
   selector de LLM + panel RAG (subida + listado local) + botón a Configuración. Sub-pantalla de
   keys con persistencia local. Todos los puntos de integración con `TODO (deuda técnica backend)`
   y contrato documentado inline.
