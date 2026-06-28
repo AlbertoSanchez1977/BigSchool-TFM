@@ -228,10 +228,18 @@ export default function ExpensesPage() {
       {/* Vacío */}
       {!isLoading && !isError && data?.items.length === 0 && (
         <div
-          className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground"
+          className="rounded-lg border border-border bg-card py-12 text-center"
           data-testid="empty-state"
         >
-          No hay transacciones en {MONTH_NAMES[month - 1].toLowerCase()} {year}.
+            <TrendingDown className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">No hay transacciones en {MONTH_NAMES[month - 1].toLowerCase()} {year}.</p>
+            <Button 
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={openCreate}>
+              Nueva transacción
+           </Button>
         </div>
       )}
 
