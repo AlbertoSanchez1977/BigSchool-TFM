@@ -292,16 +292,68 @@ pestaña en `expenses/`.
 
 ---
 
-## Task 12 — AI Scanner (toggle + "Próximamente")
+## Task 12 — AI Scanner (toggle + chat-esqueleto + RAG + config de keys)
 
-**Files**: `src/app/(private)/ai-scanner/page.tsx`, `src/lib/config/aiScanner.ts`.
+**Files**: `src/app/(private)/ai-scanner/page.tsx`, `src/lib/config/aiScanner.ts`,
+`src/app/(private)/ai-scanner/settings/page.tsx` (config de keys),
+componentes de soporte en `src/components/ai-scanner/` (chat, file-panel, llm-selector).
 
-- [ ] **Step 1 (TDD)**: flag de configuración (activar/desactivar, solo local). Tests del render
-  condicional.
-- [ ] **Step 2**: si off → pantalla "Próximamente"; si on → esqueleto de chat (sin backend real).
+> ⚠️ **Aplica la _Regla de huecos de backend_** (ver "Convenciones de ejecución"). **No existe
+> backend de IA** (ni chat, ni RAG, ni almacén de keys). **Todo es esqueleto/local-only**: el chat
+> no llama a ningún LLM, la subida de ficheros no persiste en ningún RAG real, y las API keys se
+> guardan **solo en cliente** (estado local / `localStorage`), nunca se envían a backend. Marca cada
+> punto de integración futura con `TODO (deuda técnica backend)` y **documenta el contrato esperado**
+> (endpoints, payloads) en el propio código. No inventes respuestas "mágicas" del LLM: usa mensajes
+> placeholder claros ("Demo — sin backend de IA conectado"). Ante la duda, **pregunta**.
 
-**Aceptación**: toggle conmuta entre chat-esqueleto y "Próximamente".
-**Aprenderás**: feature flags en cliente, render condicional.
+### Estructura de la pantalla (cuando el toggle está ON)
+
+Layout de dos columnas (responsive: en móvil la columna derecha colapsa debajo o en un Sheet):
+
+1. **Columna principal (izquierda) — Chat**:
+   - **Selector de LLM** arriba: dropdown para escoger entre los modelos disponibles (lista
+     **local/estática** de momento: p. ej. Claude, GPT, Gemini — sin validar conexión real).
+   - **Hilo de conversación**: mensajes usuario/asistente (esqueleto). El "envío" añade el mensaje
+     del usuario y responde con un placeholder fijo. `TODO (deuda técnica backend)`: contrato
+     esperado `POST /ai/chat { model, messages[], ragFileIds[] } → { reply }`.
+   - **Caja de input** + botón enviar.
+   - **Botón "Configuración"** (icono engranaje) que navega a la sub-pantalla de keys (punto 4).
+
+2. **Columna derecha — Panel de ficheros (RAG)**:
+   - **Zona de subida** (drag-and-drop o botón "Subir fichero") — solo registra el fichero en
+     estado local; **no** sube a ningún sitio. `TODO (deuda técnica backend)`: contrato esperado
+     `POST /ai/rag/files (multipart) → { id, name, size, status }`.
+   - **Listado de ficheros subidos al RAG**: nombre, tamaño, estado (p. ej. "Pendiente de indexar"
+     como placeholder) y acción de borrar (solo del estado local). Estado vacío con CTA.
+     `TODO`: `GET /ai/rag/files`, `DELETE /ai/rag/files/{id}`.
+
+3. **Toggle activar/desactivar** (feature flag local, por coste): si **OFF** → pantalla
+   **"Próximamente"**; si **ON** → el layout de chat + panel RAG descrito arriba.
+
+4. **Sub-pantalla de Configuración de keys** (`ai-scanner/settings`):
+   - Formulario para introducir las **API keys** de los proveedores de LLM (Claude, OpenAI,
+     Gemini…). Persistencia **solo en cliente** (`localStorage`), con aviso de que es local y
+     no seguro para producción. `TODO (deuda técnica backend)`: contrato esperado
+     `PUT /ai/keys { provider, key }` (cifrado en servidor) — **nunca** mandar keys en claro al
+     backend en la versión real; aquí es solo demo local.
+   - Botón de volver al chat.
+
+- [ ] **Step 1 (TDD)**: flag de configuración (activar/desactivar, solo local) + esquema/estado del
+  selector de LLM + esquema zod del formulario de keys. Tests de: render condicional del toggle,
+  cambio de modelo seleccionado, validación del formulario de keys, añadir/borrar fichero del
+  estado local del panel RAG.
+- [ ] **Step 2**: composición de la pantalla — si OFF → "Próximamente"; si ON → chat-esqueleto con
+  selector de LLM + panel RAG (subida + listado local) + botón a Configuración. Sub-pantalla de
+  keys con persistencia local. Todos los puntos de integración con `TODO (deuda técnica backend)`
+  y contrato documentado inline.
+
+**Aceptación**: toggle conmuta entre "Próximamente" y la pantalla completa; selector de LLM
+funcional (cambia el modelo activo); subir/listar/borrar ficheros opera sobre estado local;
+formulario de keys valida y persiste en `localStorage`; navegación chat ↔ configuración. Sin
+backend real: respuestas y persistencia son placeholders documentados.
+**Aprenderás**: feature flags en cliente, render condicional, layout de dos columnas responsive,
+manejo de subida de ficheros en cliente, persistencia local (`localStorage`), y cómo dejar
+**preparados** los puntos de integración de backend sin fabricar comportamiento inexistente.
 
 ---
 
