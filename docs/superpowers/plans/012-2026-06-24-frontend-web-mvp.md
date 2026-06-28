@@ -380,8 +380,8 @@ permite demo funcional hasta entonces.
 
 **Files**: `src/app/(private)/emails/page.tsx`, `src/hooks/useEmails.ts`.
 
-- [ ] **Step 1 (TDD)**: hook de listado contra contrato `GET /emails` (mockeado) + estados.
-- [ ] **Step 2**: pantalla de listado simple (contactos enviados + email de bienvenida) con estado vacío.
+- [x] **Step 1 (TDD)**: hook de listado contra contrato `GET /emails` (mockeado) + estados.
+- [x] **Step 2**: pantalla de listado simple (contactos enviados + email de bienvenida) con estado vacío.
 
 **Nota**: backend diferido (otra sesión).
 
