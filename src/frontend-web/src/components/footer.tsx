@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { LineChart } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -7,16 +8,16 @@ const footerColumns = [
   {
     title: "Producto",
     links: [
-      { label: "Gastos e ingresos", href: "#gastos" },
-      { label: "Inversiones", href: "#inversiones" },
-      { label: "AI Scanner", href: "#ai-scanner" },
+      { label: "Gastos e ingresos", href: "/#gastos" },
+      { label: "Inversiones", href: "/#inversiones" },
+      { label: "AI Scanner", href: "/#ai-scanner" },
     ],
   },
   {
     title: "Recursos",
     links: [
-      { label: "Contacto", href: "#contacto" },
-      { label: "Alcance y trabajos futuros", href: "#contacto" },
+      { label: "Contacto", href: "/#contacto" },
+      { label: "Alcance y trabajos futuros", href: "/scope" },
       { label: "Iniciar sesión", href: "#" },
     ],
   },
@@ -50,12 +51,12 @@ export function Footer() {
                     .filter((link) => !(link.label === "Iniciar sesión" && !isLoading && user))
                     .map((link) => (
                       <li key={link.label}>
-                        <a
+                        <Link
                           href={link.href}
                           className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                         >
                           {link.label}
-                        </a>
+                        </Link>
                       </li>
                     ))}
                 </ul>

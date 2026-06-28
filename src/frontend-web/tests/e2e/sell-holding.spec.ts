@@ -25,7 +25,7 @@ async function registerAndLogin(page: Page, email: string) {
   await page.goto('/')
   await navbar(page).getByRole('button', { name: 'Registrarse' }).click()
   await page.getByLabel('Nombre completo').fill(FULL_NAME)
-  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Email', { exact: true }).fill(email)
   await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
   await page.getByLabel('Repetir contraseña').fill(PASSWORD)
   await page.getByRole('button', { name: 'Crear cuenta' }).click()

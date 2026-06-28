@@ -13,10 +13,11 @@ import { cn } from '@/lib/utils'
 type AuthMode = 'login' | 'register'
 
 const navLinks = [
-  { label: 'Gastos e ingresos', href: '#gastos' },
-  { label: 'Inversiones', href: '#inversiones' },
-  { label: 'AI Scanner', href: '#ai-scanner' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Gastos e ingresos', href: '/#gastos' },
+  { label: 'Inversiones', href: '/#inversiones' },
+  { label: 'AI Scanner', href: '/#ai-scanner' },
+  { label: 'Contacto', href: '/#contacto' },
+  { label: 'Alcance', href: '/scope' },
 ]
 
 export function NavbarPublic() {
@@ -56,7 +57,7 @@ export function NavbarPublic() {
       <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 md:px-8">
 
         {/* ── Logo ─────────────────────────────────────────────────────────── */}
-        <a href="#" className="flex items-center gap-2" aria-label="BigSchool inicio">
+        <a href="/" className="flex items-center gap-2" aria-label="BigSchool inicio">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <LineChart className="h-5 w-5" aria-hidden="true" />
           </span>
