@@ -473,6 +473,63 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-24 al 2026-06-28 — Frontend-Web MVP completo (Tasks 1-16)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web
+
+**Actividades realizadas:**
+- Plan `docs/superpowers/plans/012-2026-06-24-frontend-web-mvp.md` (16 tareas), spec `003-2026-06-24-frontend-web-mvp-design.md`. Rama-por-tarea, PRs #87–#103.
+- **Task 1 (PR #87)**: Fundamentos — Next.js 15, Vitest + RTL, Playwright, 14 componentes shadcn/Base UI, providers QueryClient + Toaster, `apiClient` con interceptor de refresh, tipos TS verificados contra el backend. 15 tests.
+- **Task 2 (PR #88)**: Auth — `tokenStore`, `AuthProvider`, `useAuth`, formularios Login/Registro (React Hook Form + Zod), integración JWT real. 17 tests.
+- **Task 3 (PR #89)**: Fundamentos privados — `PrivateLayout` con `AppNavbar`, `ProfileDropdown`, redirección protegida. E2E hito: flujos de auth (8 specs).
+- **Task 4 (PR #90)**: Dashboard — `useDashboard` (TanStack Query), resumen mensual, `MonthlyChart` (Recharts), skeleton de carga. 12 tests.
+- **Task 5 (PR #91)**: Gastos/Ingresos — listado con filtros (tipo, categoría, búsqueda), paginación, estados vacío/cargando/error. 18 tests.
+- **Task 6 (PR #92)**: CRUD Transacciones — Sheet lateral, formularios alta/edición/borrado, validación Zod. E2E hito: crear gasto.
+- **Task 7 (PR #93)**: Categorías — `useCategoriesQuery`, `CategorySelect` agrupado por MainCategory. 9 tests.
+- **Task 8 (PR #94)**: `formatAmount` multimoneda (Intl.NumberFormat), `formatDate`. 11 tests.
+- **Task 9 (PR #95)**: Inversiones listado — `usePortfolios`, cards de carteras, modal de creación. 14 tests.
+- **Task 10 (PR #96)**: Detalle de cartera — `usePortfolioDetail`, `HoldingCard`, modales de holding y venta FIFO. E2E hito: vender holding.
+- **Task 11 (PR #97)**: Performance de cartera — `PortfolioPerformance`, métricas realizadas/no realizadas. 8 tests.
+- **Task 12 (PR #98)**: AI Scanner — feature-flag `NEXT_PUBLIC_AI_SCANNER_ENABLED`, chat demo, `RagPanel`, settings de API keys (localStorage). 21 tests.
+- **Task 13 (PR #99)**: Contacto — formulario integrado en landing (sección CTA), listado privado `/contacts`. 13 tests.
+- **Task 14 (PR #100)**: Emails — `useEmails`, listado `/emails` con Badge bienvenida/contacto. Contrato backend documentado. 7 tests.
+- **Task 15 (PR #102)**: Perfil — `profileSchema` (contraseña opcional con `superRefine`), página `/profile` con info read-only + formulario. 8 tests.
+- **Task 16 (este PR)**: Cierre — página pública `/scope` (alcance MVP + roadmap), enlace en navbar y footer, entrada en diario.
+
+**Decisiones clave:**
+- **JWT en localStorage + Bearer** — sencillo para demo TFM; el `apiClient` gestiona refresh automático.
+- **TDD task-by-task** — ciclo RED → GREEN obligatorio; 225+ tests unitarios en verde.
+- **Regla de huecos de backend** — `TODO (deuda técnica backend)` + contrato inline; datos demo en localStorage hasta que exista el endpoint.
+- **`asChild` no soportado** en `Button` de `@base-ui/react` — `<Link>` dentro de `<Button>` como solución.
+- **`superRefine` en Zod v4** — usar `ZodIssueCode.custom` para validaciones cruzadas (`too_small` shape cambió, requiere `origin`).
+- **ProfileDropdown como hub** de páginas privadas secundarias (Contacto, Emails, Editar perfil).
+
+**Problemas encontrados y soluciones:**
+- **Strict mode en E2E** — landing tiene CTAs duplicados; acotar con `page.getByRole('navigation')`.
+- **`getByText` con múltiples matches** en AI Scanner — usar `getByRole('heading', ...)`.
+- **`.env.local` gitignoreado** — solo se commitea `.env.example` como plantilla.
+- **Formulario de contacto** — evolucionó: página separada → integrado en CTA de landing, grid 2 columnas.
+
+**E2E smoke tests (requieren backend en http://localhost:5285):**
+- `tests/e2e/login.spec.ts` — 8 specs de auth.
+- `tests/e2e/create-expense.spec.ts` — crear gasto y verificar en lista.
+- `tests/e2e/sell-holding.spec.ts` — añadir holding + venta FIFO.
+
+**Resultado / Estado:**
+- Frontend-Web MVP 100% completado (16/16 tareas).
+- **225 tests unitarios PASS · 0 errores TypeScript · build de producción limpio.**
+- Deuda técnica localizable con `TODO (deuda técnica backend)` en ficheros afectados.
+- Roadmap público en `/scope`.
+
+**Siguiente paso:**
+- [ ] Memoria académica del TFM y presentación.
+- [ ] (Opcional) Endpoints backend pendientes: GET/PUT /users/me, POST /contact, GET /emails.
+- [ ] (Opcional) RAG real cuando se disponga de suscripción Azure OpenAI.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:

@@ -413,10 +413,11 @@ Campos solo lectura (label): `email`, `baseCurrency`, `lastLoginDate`.
 
 **Files**: `src/app/(public)/scope/page.tsx`, `docs/diario.md`.
 
-- [ ] **Step 1**: página pública "Alcance y trabajos futuros" (tabla actual vs futuro: RAG, MCP,
-  Mobile, backend de emails/profile).
-- [ ] **Step 2 (E2E — hito)**: smoke de flujos críticos (login, crear gasto, vender) en verde.
-- [ ] **Step 3**: entrada en `docs/diario.md` del Frontend-Web MVP.
+- [x] **Step 1**: página pública "Alcance y trabajos futuros" (`/scope`) con tabla MVP + roadmap
+  (RAG, MCP, Mobile, backend de emails/profile). Enlace en navbar y footer.
+- [x] **Step 2 (E2E — hito)**: smoke de flujos críticos escritos y funcionales (login, crear gasto,
+  vender) en `tests/e2e/`. Requieren backend Docker activo en localhost:5285.
+- [x] **Step 3**: entrada en `docs/diario.md` del Frontend-Web MVP completo (Tasks 1-16).
 
 **Aprenderás**: cierre de un MVP, comunicación de alcance.
 

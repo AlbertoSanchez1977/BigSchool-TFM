@@ -37,7 +37,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
   test('botón "Iniciar sesión" abre el panel con el formulario de login', async ({ page }) => {
     await navbar(page).getByRole('button', { name: 'Iniciar sesión' }).click()
     await expect(page.getByRole('heading', { name: 'Iniciar sesión' })).toBeVisible()
-    await expect(page.getByLabel('Email')).toBeVisible()
+    await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible()
   })
 
@@ -71,7 +71,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
 
   test('login muestra error con email inválido', async ({ page }) => {
     await navbar(page).getByRole('button', { name: 'Iniciar sesión' }).click()
-    await page.getByLabel('Email').fill('no-es-email')
+    await page.getByLabel('Email', { exact: true }).fill('no-es-email')
     await page.getByLabel('Contraseña', { exact: true }).fill('pass123')
     await page.getByRole('button', { name: 'Entrar' }).click()
     await expect(page.getByText('Email inválido')).toBeVisible()
@@ -80,7 +80,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
   test('registro muestra error cuando las contraseñas no coinciden', async ({ page }) => {
     await navbar(page).getByRole('button', { name: 'Registrarse' }).click()
     await page.getByLabel('Nombre completo').fill(FULL_NAME)
-    await page.getByLabel('Email').fill('user@test.com')
+    await page.getByLabel('Email', { exact: true }).fill('user@test.com')
     // exact:true para no colisionar con "Repetir contraseña"
     await page.getByLabel('Contraseña', { exact: true }).fill('Password1!')
     await page.getByLabel('Repetir contraseña').fill('OtraPassword2!')
@@ -95,7 +95,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
     const email = uniqueEmail()
     await navbar(page).getByRole('button', { name: 'Registrarse' }).click()
     await page.getByLabel('Nombre completo').fill(FULL_NAME)
-    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
     await page.getByLabel('Repetir contraseña').fill(PASSWORD)
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
@@ -112,7 +112,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
     // 1. Registro
     await navbar(page).getByRole('button', { name: 'Registrarse' }).click()
     await page.getByLabel('Nombre completo').fill(FULL_NAME)
-    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
     await page.getByLabel('Repetir contraseña').fill(PASSWORD)
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
@@ -126,7 +126,7 @@ test.describe('Formularios de autenticación (landing page)', () => {
     // 3. Volver a / (ya sin sesión) y hacer login
     await page.goto('/')
     await navbar(page).getByRole('button', { name: 'Iniciar sesión' }).click()
-    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
     await page.getByRole('button', { name: 'Entrar' }).click()
 
