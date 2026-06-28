@@ -391,10 +391,19 @@ permite demo funcional hasta entonces.
 
 **Files**: `src/app/(private)/profile/page.tsx`, `src/lib/schemas/profile.ts`.
 
-- [ ] **Step 1 (TDD)**: esquema zod `Full name` + `password` + `repeat password` (coincidencia).
-  Tests de validación (incluye no-coincidencia).
-- [ ] **Step 2**: formulario de perfil; enlace desde la zona privada. Contrato de update
-  documentado en el código.
+Contratos:
+- `GET /users/me → { idUser, email, fullName, baseCurrency, lastLoginDate }`
+  (mock: datos derivados de `useAuth`)
+- `PUT /users/me { fullName, password? } → UserProfile`
+
+Campos editables: `fullName`, `password` (opcional) + `confirmPassword`.
+Campos solo lectura (label): `email`, `baseCurrency`, `lastLoginDate`.
+
+- [x] **Step 1 (TDD)**: esquema zod `fullName` + `password` (opcional, ≥8 si se rellena) +
+  `confirmPassword` (debe coincidir con password cuando se proporciona). Tests incluyen:
+  sin cambio de contraseña, contraseña corta, contraseñas no coinciden.
+- [x] **Step 2**: página con sección info (labels read-only) + sección edición (form).
+  Pre-rellena desde `useAuth`. Feedback optimista al guardar. Contrato documentado inline.
 
 **Nota**: backend (endpoint de update de usuario) se especifica en **otra sesión**.
 
