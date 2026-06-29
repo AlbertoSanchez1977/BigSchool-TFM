@@ -10,7 +10,7 @@
 
 **Prerrequisitos (ya en `develop`):**
 - Bloque 0 mergeado: existen `infra/docker/backend.Dockerfile` (EXPOSE 8081) y `infra/docker/frontend-web.Dockerfile` (EXPOSE 3001, build-arg `NEXT_PUBLIC_API_URL`).
-- El MySQL dev se levanta con `docker compose -f infra/docker-compose.yml up -d mysql` (contenedor `bigschool-mysql`, puerto host `3306`, credenciales en `infra/.env`).
+- El MySQL dev se levanta con `cd infra && docker compose --env-file .env up -d mysql && cd -` (contenedor `bigschool-mysql`, puerto host `3306`, credenciales en `infra/.env`). **IMPORTANTE:** especificar `-f infra/docker-compose.yml` sin el override recrea el contenedor sin el port binding `3306:3306`; siempre arrancar desde `infra/` o pasando ambos `-f`.
 
 **Contexto verificado del repo (no requiere relectura):**
 - `infra/docker/mysql/init.sql` (318 líneas): crea esquema + `__EFMigrationsHistory` + catálogo base EF (`SubCategories` 1-28 línea 70, `Companies` 1-4 línea 187, `Valuations` 1-8 línea 214). Única sentencia `USE \`bigschool\`;` en la línea 9. **NO** incluye datos demo (eso es `seed.sql`). Este catálogo base es justo lo que necesitan los specs (`create-expense` usa SubCategories; `sell-holding` selecciona "primera empresa" y su valoración).
@@ -41,7 +41,7 @@
 **Files:**
 - Create: `infra/docker-compose.e2e.yml`
 
-- [ ] **Step 1: Verificar que el compose aún no existe (test rojo)**
+- [x] **Step 1: Verificar que el compose aún no existe (test rojo)**
 
 Run:
 ```bash
@@ -49,7 +49,7 @@ docker compose --env-file infra/.env -f infra/docker-compose.e2e.yml config >/de
 ```
 Expected: FALLA con `no such file or directory` (el fichero no existe todavía).
 
-- [ ] **Step 2: Crear `infra/docker-compose.e2e.yml`**
+- [x] **Step 2: Crear `infra/docker-compose.e2e.yml`**
 
 ```yaml
 # Entorno EFÍMERO para los E2E de Playwright (Bloque 1).
@@ -87,7 +87,7 @@ services:
       - backend
 ```
 
-- [ ] **Step 3: Validar el compose (test verde de sintaxis)**
+- [x] **Step 3: Validar el compose (test verde de sintaxis)**
 
 Run:
 ```bash
@@ -95,11 +95,11 @@ docker compose --env-file infra/.env -f infra/docker-compose.e2e.yml config >/de
 ```
 Expected: imprime `compose OK` (YAML válido y variables resueltas desde `infra/.env`).
 
-- [ ] **Step 4: Smoke manual de arranque (requiere MySQL dev arriba)**
+- [x] **Step 4: Smoke manual de arranque (requiere MySQL dev arriba)**
 
 Run:
 ```bash
-docker compose -f infra/docker-compose.yml up -d mysql
+cd infra && docker compose --env-file .env up -d mysql && cd -
 # crear la BD e2e mínima para que el backend conecte (esquema completo lo hará global-setup)
 docker exec -i -e MYSQL_PWD="$(grep '^MYSQL_ROOT_PASSWORD=' infra/.env | cut -d= -f2-)" bigschool-mysql \
   mysql -uroot -e "CREATE DATABASE IF NOT EXISTS \`bigschool_e2e\`;"
@@ -112,7 +112,7 @@ docker exec -i -e MYSQL_PWD="$(grep '^MYSQL_ROOT_PASSWORD=' infra/.env | cut -d=
 ```
 Expected: el primer `curl` imprime `Healthy`; el segundo imprime `200`; `down` elimina los contenedores `bigschool-e2e-*`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add infra/docker-compose.e2e.yml
@@ -171,7 +171,7 @@ export default async function globalSetup(): Promise<void> {
   } catch {
     throw new Error(
       `El contenedor ${MYSQL_CONTAINER} no está en marcha.\n` +
-        'Ejecuta antes: docker compose -f infra/docker-compose.yml up -d mysql',
+        'Ejecuta antes: cd infra && docker compose --env-file .env up -d mysql && cd -',
     )
   }
 
@@ -364,7 +364,7 @@ git commit -m "test(e2e): dos configs Playwright (docker por defecto + local deb
 
 Run:
 ```bash
-docker compose -f infra/docker-compose.yml up -d mysql
+cd infra && docker compose --env-file .env up -d mysql && cd -
 curl --retry 30 --retry-delay 2 --retry-connrefused -fsS -o /dev/null http://localhost:6333 2>/dev/null || true
 docker inspect -f "{{.State.Running}}" bigschool-mysql
 ```
