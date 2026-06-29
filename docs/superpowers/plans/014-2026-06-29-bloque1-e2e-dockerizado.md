@@ -261,7 +261,7 @@ git commit -m "test(e2e): añadir globalSetup/globalTeardown que orquestan compo
 - Create: `src/frontend-web/playwright.local.config.ts`
 - Modify: `src/frontend-web/package.json`
 
-- [ ] **Step 1: Reescribir `src/frontend-web/playwright.config.ts` (config dockerizada por defecto)**
+- [x] **Step 1: Reescribir `src/frontend-web/playwright.config.ts` (config dockerizada por defecto)**
 
 Contenido completo del fichero:
 ```typescript
@@ -293,7 +293,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 2: Crear `src/frontend-web/playwright.local.config.ts` (debug local)**
+- [x] **Step 2: Crear `src/frontend-web/playwright.local.config.ts` (debug local)**
 
 Contenido completo del fichero:
 ```typescript
@@ -327,7 +327,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 3: Añadir el script `test:e2e:local` en `src/frontend-web/package.json`**
+- [x] **Step 3: Añadir el script `test:e2e:local` en `src/frontend-web/package.json`**
 
 Reemplazar la línea:
 ```json
@@ -339,7 +339,7 @@ por:
     "test:e2e:local": "playwright test --config playwright.local.config.ts",
 ```
 
-- [ ] **Step 4: Verificar que Playwright resuelve ambas configs**
+- [x] **Step 4: Verificar que Playwright resuelve ambas configs**
 
 Run:
 ```bash
@@ -347,7 +347,7 @@ cd src/frontend-web && npx playwright test --list >/dev/null && npx playwright t
 ```
 Expected: imprime `configs OK` (ambas configs cargan y listan los 3 specs sin error de parseo). `--list` no ejecuta `globalSetup`, así que no arranca Docker en este paso.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/frontend-web/playwright.config.ts src/frontend-web/playwright.local.config.ts src/frontend-web/package.json
