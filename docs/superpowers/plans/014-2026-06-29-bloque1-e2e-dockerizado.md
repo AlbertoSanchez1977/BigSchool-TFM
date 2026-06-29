@@ -127,7 +127,7 @@ git commit -m "infra: añadir docker-compose efímero para E2E (frontend+backend
 - Create: `src/frontend-web/tests/e2e/global-setup.ts`
 - Create: `src/frontend-web/tests/e2e/global-teardown.ts`
 
-- [ ] **Step 1: Crear `src/frontend-web/tests/e2e/global-setup.ts`**
+- [x] **Step 1: Crear `src/frontend-web/tests/e2e/global-setup.ts`**
 
 ```typescript
 import { execSync } from 'node:child_process'
@@ -200,7 +200,7 @@ export default async function globalSetup(): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: Crear `src/frontend-web/tests/e2e/global-teardown.ts`**
+- [x] **Step 2: Crear `src/frontend-web/tests/e2e/global-teardown.ts`**
 
 ```typescript
 import { execSync } from 'node:child_process'
@@ -237,15 +237,15 @@ export default async function globalTeardown(): Promise<void> {
 }
 ```
 
-- [ ] **Step 3: Verificación de compilación TypeScript de los scripts**
+- [x] **Step 3: Verificación de compilación TypeScript de los scripts**
 
 Run:
 ```bash
-cd src/frontend-web && npx tsc --noEmit tests/e2e/global-setup.ts tests/e2e/global-teardown.ts; cd -
+cd src/frontend-web && pnpm typecheck; cd -
 ```
-Expected: sin errores de tipos (salida vacía / código 0). Se valida en el flujo completo en la Task 4.
+Expected: sin errores de tipos (salida vacía / código 0). Nota: `tsc` con ficheros explícitos ignora el `tsconfig.json`; usar `pnpm typecheck` que ejecuta `tsc --noEmit` con el proyecto completo.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/frontend-web/tests/e2e/global-setup.ts src/frontend-web/tests/e2e/global-teardown.ts
