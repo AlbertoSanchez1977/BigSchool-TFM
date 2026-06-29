@@ -47,7 +47,7 @@
 - Create: `infra/docker/mysql/generate_seed.py`
 - Replace: `infra/docker/mysql/seed.sql`
 
-- [ ] **Step 1: Crear `infra/docker/mysql/generate_seed.py`**
+- [x] **Step 1: Crear `infra/docker/mysql/generate_seed.py`**
 
 ```python
 #!/usr/bin/env python3
@@ -402,7 +402,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Ejecutar el generador (regenera `seed.sql`)**
+- [x] **Step 2: Ejecutar el generador (regenera `seed.sql`)**
 
 Run:
 ```bash
@@ -410,7 +410,7 @@ python infra/docker/mysql/generate_seed.py 2026-06-01
 ```
 Expected: imprime una línea tipo `seed.sql generado: usuarios=2 companies=18 holdings=18 rates=6 valuations=... tx_eur=... tx_usd=...` y sobrescribe `infra/docker/mysql/seed.sql`.
 
-- [ ] **Step 3: Sanity check del SQL generado**
+- [x] **Step 3: Sanity check del SQL generado**
 
 Run:
 ```bash
@@ -419,7 +419,7 @@ head -3 infra/docker/mysql/seed.sql
 ```
 Expected: el `grep -c` devuelve `7` (las 7 sentencias INSERT); la cabecera muestra el comentario "GENERADO por generate_seed.py".
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add infra/docker/mysql/generate_seed.py infra/docker/mysql/seed.sql
@@ -432,7 +432,7 @@ git commit -m "infra: generador determinista de seed demo (2 usuarios EUR/USD, 1
 
 **Files:** (ninguno — verificación)
 
-- [ ] **Step 1: Asegurar el MySQL dev levantado**
+- [x] **Step 1: Asegurar el MySQL dev levantado**
 
 Run:
 ```bash
@@ -441,7 +441,7 @@ docker inspect -f "{{.State.Running}}" bigschool-mysql
 ```
 Expected: imprime `true`.
 
-- [ ] **Step 2: Cargar `init.sql` + `seed.sql` en una BD desechable `bigschool_seedtest`**
+- [x] **Step 2: Cargar `init.sql` + `seed.sql` en una BD desechable `bigschool_seedtest`**
 
 Run:
 ```bash
@@ -455,7 +455,7 @@ PW="$(grep '^MYSQL_ROOT_PASSWORD=' infra/.env | cut -d= -f2-)"
 ```
 Expected: imprime `CARGA OK` sin errores (ni FK, ni claves duplicadas, ni `Data too long`/parseo de enums).
 
-- [ ] **Step 3: Consultas de integridad**
+- [x] **Step 3: Consultas de integridad**
 
 Run:
 ```bash
@@ -489,7 +489,7 @@ Expected:
 - `holdings_huerfanos=0`.
 - En la última tabla, **todas** las filas tienen `LastPrice` no nulo y `Rate > 0` (las EUR usan la tasa `EUR→USD` sembrada; las USD tienen `Rate=1`).
 
-- [ ] **Step 4: Limpiar la BD desechable**
+- [x] **Step 4: Limpiar la BD desechable**
 
 Run:
 ```bash
@@ -498,7 +498,7 @@ docker exec -i -e MYSQL_PWD="$PW" bigschool-mysql mysql -uroot -e "DROP DATABASE
 ```
 Expected: sin salida (BD eliminada). No se ha tocado `bigschool` ni `bigschool_test`.
 
-- [ ] **Step 5: Commit (solo si la verificación obligó a retocar el generador)**
+- [x] **Step 5: Commit (solo si la verificación obligó a retocar el generador)**
 
 Si algún expected falló y corregiste `generate_seed.py`, regenera `seed.sql` (Task 1 Step 2) y commitea:
 ```bash
