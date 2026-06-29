@@ -6,6 +6,7 @@ const REPO_ROOT = path.resolve(__dirname, '../../../..')
 const COMPOSE_FILE = path.join(REPO_ROOT, 'infra/docker-compose.e2e.yml')
 const ENV_FILE = path.join(REPO_ROOT, 'infra/.env')
 const MYSQL_CONTAINER = 'bigschool-mysql'
+const E2E_PROJECT = 'bigschool-e2e'
 
 function readEnvValue(key: string): string {
   const line = readFileSync(ENV_FILE, 'utf8')
@@ -18,10 +19,13 @@ function readEnvValue(key: string): string {
 export default async function globalTeardown(): Promise<void> {
   const rootPass = process.env.MYSQL_ROOT_PASSWORD ?? readEnvValue('MYSQL_ROOT_PASSWORD')
 
-  // 1. Bajar front + back (elimina contenedores bigschool-e2e-*).
-  execSync(`docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" down --remove-orphans`, {
-    stdio: 'inherit',
-  })
+  // 1. Bajar front + back (solo contenedores del proyecto bigschool-e2e).
+  //    -p bigschool-e2e garantiza que --remove-orphans no toque bigschool-mysql
+  //    (que pertenece al proyecto 'infra', no a 'bigschool-e2e').
+  execSync(
+    `docker compose -p ${E2E_PROJECT} --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" down --remove-orphans`,
+    { stdio: 'inherit' },
+  )
 
   // 2. Eliminar la BD efímera.
   execSync(`docker exec -i -e MYSQL_PWD ${MYSQL_CONTAINER} mysql -uroot`, {

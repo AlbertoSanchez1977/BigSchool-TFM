@@ -560,6 +560,35 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-29 — Bloque 1: E2E dockerizado y aislado (Plan 014, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: infra / frontend-web (tests)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/004-2026-06-28-infra-e2e-seed-azure-design.md` (Bloque 1) y plan `docs/superpowers/plans/014-2026-06-29-bloque1-e2e-dockerizado.md`; sesión dedicada a la ejecución tarea a tarea.
+- **Task 1 (PR #109)**: `infra/docker-compose.e2e.yml` — compose efímero que levanta solo `backend` (`:8081`) y `frontend-web` (`:3001`); el MySQL dev (`bigschool-mysql`) se alcanza desde el backend por `host.docker.internal:3306` + `extra_hosts: host-gateway`. La BD de target es `bigschool_e2e` (no toca `bigschool` ni `bigschool_test`).
+- **Task 2 (PR #110)**: `global-setup.ts` y `global-teardown.ts` de Playwright. El setup: verifica que `bigschool-mysql` corre, DROP+CREATE `bigschool_e2e` con `init.sql` reescrito (`USE \`bigschool\`` → `USE \`bigschool_e2e\``), levanta el compose, polling hasta salud. El teardown: `compose down`, `DROP DATABASE bigschool_e2e`.
+- **Task 3 (PR #111)**: dos configs de Playwright — `playwright.config.ts` reescrito como config dockerizada por defecto (sin `webServer`, `globalSetup`/`globalTeardown`, `baseURL: http://localhost:3001`); `playwright.local.config.ts` creado como config de debug local (`webServer: pnpm dev`, `baseURL: http://localhost:3000`). Script `test:e2e:local` añadido a `package.json`.
+- **Task 4 (PR #112)**: verificación integral (`pnpm test:e2e`) + 2 bugs encontrados y corregidos en `global-setup.ts` / `global-teardown.ts` (ver abajo). **11/11 tests PASS**.
+
+**Decisiones / Problemas encontrados:**
+- **Bug: `--remove-orphans` eliminaba `bigschool-mysql`**. Causa raíz: ambos compose files (`docker-compose.yml` y `docker-compose.e2e.yml`) están en `infra/`; Docker Compose deriva el proyecto del directorio → ambos usan proyecto `infra`. El teardown con `down --remove-orphans` ve a `bigschool-mysql` como huérfano del mismo proyecto y lo elimina, borrando también la red `infra_default`. Fix: `-p bigschool-e2e` en todos los comandos compose e2e → proyecto aislado, red `bigschool-e2e_default`, MySQL del proyecto `infra` completamente invisible para el teardown.
+- **Bug: `create-expense` (test 1/11) timeout por cold-start del pool de BD**. El backend reporta `/health` como OK sin comprobar MySQL (conexión lazy de EF Core). El primer `POST /api/v1/auth/register` abría el pool de conexiones en frío; con 10 s de `waitForURL` en el test fallaba. Los tests 9 y 10 de login sí pasaban porque por entonces el backend llevaba ~8 minutos en marcha. Fix: `waitForApiReady` en el setup — hace `POST /api/v1/auth/login` con credenciales dummy y espera una respuesta 4xx (la BD respondió, el pool está caliente) antes de ceder el turno a los tests.
+- **Instrucción MySQL corregida en el plan**: el comando original (`docker compose -f infra/docker-compose.yml up -d mysql`, sin el override) recrea el contenedor sin port binding `3306:3306`. Corregido en las 4 ocurrencias del plan a `cd infra && docker compose --env-file .env up -d mysql && cd -`.
+- **`pnpm typecheck` en vez de `npx tsc --noEmit <ficheros>`**: pasar ficheros explícitos a `tsc` ignora el `tsconfig.json` del proyecto (sin `esModuleInterop`) y produce falsos errores TS1259 en imports `node:path`. Corrección documentada en el plan (Step 3 de Task 2).
+
+**Resultado / Estado:**
+- Plan 014 completado (4/4 tareas, PRs #109-#112).
+- `pnpm test:e2e`: 11/11 PASS incluyendo `create-expense` como test 1/11 (cold-start resuelto).
+- Teardown limpio: solo baja `bigschool-e2e-backend` y `bigschool-e2e-frontend`; `bigschool-mysql` permanece vivo; `bigschool_e2e` eliminada; `bigschool` y `bigschool_test` intactas.
+
+**Siguiente paso:**
+- [ ] Bloque 2 (seed), Bloque 3 (compose completo) y Bloques 4/5 (CI/deploy Azure) según spec 004.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:

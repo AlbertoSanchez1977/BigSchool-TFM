@@ -360,7 +360,7 @@ git commit -m "test(e2e): dos configs Playwright (docker por defecto + local deb
 
 **Files:** (ninguno nuevo — ejecución end-to-end)
 
-- [ ] **Step 1: Asegurar el MySQL dev levantado**
+- [x] **Step 1: Asegurar el MySQL dev levantado**
 
 Run:
 ```bash
@@ -370,7 +370,7 @@ docker inspect -f "{{.State.Running}}" bigschool-mysql
 ```
 Expected: el último comando imprime `true`.
 
-- [ ] **Step 2: Ejecutar la suite E2E dockerizada completa**
+- [x] **Step 2: Ejecutar la suite E2E dockerizada completa**
 
 Run:
 ```bash
@@ -378,7 +378,7 @@ cd src/frontend-web && pnpm test:e2e; cd -
 ```
 Expected: `globalSetup` construye/levanta los contenedores y crea `bigschool_e2e`; los 3 specs (`login`, `create-expense`, `sell-holding`) terminan en **PASS**; `globalTeardown` baja el compose y dropea la BD.
 
-- [ ] **Step 3: Verificar que no quedan restos**
+- [x] **Step 3: Verificar que no quedan restos**
 
 Run:
 ```bash
@@ -388,11 +388,11 @@ docker exec -i -e MYSQL_PWD="$(grep '^MYSQL_ROOT_PASSWORD=' infra/.env | cut -d=
 ```
 Expected: el primer comando no imprime ningún contenedor; el segundo no lista `bigschool_e2e` (BD eliminada). `bigschool` y `bigschool_test` quedan intactas.
 
-- [ ] **Step 4: (Opcional) Confirmar que el modo local sigue disponible**
+- [x] **Step 4: (Opcional) Confirmar que el modo local sigue disponible**
 
 Este paso es manual y NO se ejecuta en CI: requiere el backend corriendo en el IDE (`:5285`) y `NEXT_PUBLIC_API_URL=http://localhost:5285/api/v1`. Comando: `pnpm test:e2e:local`. Sirve como recordatorio de que el loop de depuración con breakpoints se conserva.
 
-- [ ] **Step 5: Commit (cierre del bloque, si procede algún ajuste)**
+- [x] **Step 5: Commit (cierre del bloque, si procede algún ajuste)**
 
 Si los pasos anteriores requirieron retoques en cualquier fichero, commitéalos:
 ```bash

@@ -2,12 +2,14 @@ import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-// tests/e2e → ../../../.. = raíz del repo
 const REPO_ROOT = path.resolve(__dirname, '../../../..')
 const COMPOSE_FILE = path.join(REPO_ROOT, 'infra/docker-compose.e2e.yml')
 const ENV_FILE = path.join(REPO_ROOT, 'infra/.env')
 const INIT_SQL = path.join(REPO_ROOT, 'infra/docker/mysql/init.sql')
 const MYSQL_CONTAINER = 'bigschool-mysql'
+// Proyecto compose separado del dev ('infra') para que --remove-orphans
+// no vea bigschool-mysql como huérfano y lo elimine.
+const E2E_PROJECT = 'bigschool-e2e'
 
 function readEnvValue(key: string): string {
   const line = readFileSync(ENV_FILE, 'utf8')
@@ -22,12 +24,28 @@ async function waitForHttp(url: string, attempts = 40): Promise<void> {
     try {
       const res = await fetch(url)
       if (res.ok) return
-    } catch {
-      /* aún no responde */
-    }
+    } catch { /* aún no responde */ }
     await new Promise((r) => setTimeout(r, 2000))
   }
   throw new Error(`Timeout esperando ${url}`)
+}
+
+// Espera a que el backend esté listo para consultas reales a la BD.
+// /health es lazy (no comprueba MySQL); el primer POST a auth/login sí lo hace.
+// Una respuesta 4xx confirma que el connection pool de EF Core está caliente.
+async function waitForApiReady(loginUrl: string, attempts = 30): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(loginUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'warmup@bigschool-e2e.local', password: 'warmup' }),
+      })
+      if (res.status >= 400 && res.status < 500) return
+    } catch { /* aún no responde */ }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  throw new Error(`Timeout esperando que la API esté lista en ${loginUrl}`)
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -56,13 +74,17 @@ export default async function globalSetup(): Promise<void> {
     stdio: ['pipe', 'inherit', 'inherit'],
   })
 
-  // 3. Levantar front + back dockerizados.
-  execSync(`docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" up -d --build`, {
-    stdio: 'inherit',
-    env: { ...process.env, MYSQL_ROOT_PASSWORD: rootPass },
-  })
+  // 3. Levantar front + back dockerizados con proyecto aislado (bigschool-e2e).
+  execSync(
+    `docker compose -p ${E2E_PROJECT} --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" up -d --build`,
+    {
+      stdio: 'inherit',
+      env: { ...process.env, MYSQL_ROOT_PASSWORD: rootPass },
+    },
+  )
 
-  // 4. Esperar a que ambos respondan.
+  // 4. Esperar a que el backend responda en /health y luego calentar el pool de BD.
   await waitForHttp('http://localhost:8081/health')
+  await waitForApiReady('http://localhost:8081/api/v1/auth/login')
   await waitForHttp('http://localhost:3001')
 }
