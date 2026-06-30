@@ -9,11 +9,11 @@ services:
     image: qdrant/qdrant:latest
     container_name: bigschool-qdrant
 
-  # backend:
-  #   build:
-  #     context: ../src/backend
-  #     dockerfile: ../../infra/docker/backend.Dockerfile
-  #   container_name: bigschool-backend
+  backend:
+    build:
+      context: ../src/backend
+      dockerfile: ../../infra/docker/backend.Dockerfile
+    container_name: bigschool-backend
 
   # rag-service:
   #   build:
@@ -21,11 +21,13 @@ services:
   #     dockerfile: ../../infra/docker/rag-service.Dockerfile
   #   container_name: bigschool-rag
 
-  # frontend-web:
-  #   build:
-  #     context: ../src/frontend-web
-  #     dockerfile: ../../infra/docker/frontend-web.Dockerfile
-  #   container_name: bigschool-frontend
+  frontend-web:
+    build:
+      context: ../src/frontend-web
+      dockerfile: ../../infra/docker/frontend-web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:8082/api/v1"
+    container_name: bigschool-frontend
 
   # mcp-server:
   #   build:

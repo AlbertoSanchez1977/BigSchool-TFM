@@ -39,7 +39,7 @@
 - Modify: `infra/docker-compose.yml`
 - Modify: `infra/docker-compose.override.yml`
 
-- [ ] **Step 1: En `infra/docker-compose.yml`, sustituir el bloque comentado de `backend` por:**
+- [x] **Step 1: En `infra/docker-compose.yml`, sustituir el bloque comentado de `backend` por:**
 
 ```yaml
   backend:
@@ -49,7 +49,7 @@
     container_name: bigschool-backend
 ```
 
-- [ ] **Step 2: En `infra/docker-compose.yml`, sustituir el bloque comentado de `frontend-web` por:**
+- [x] **Step 2: En `infra/docker-compose.yml`, sustituir el bloque comentado de `frontend-web` por:**
 
 ```yaml
   frontend-web:
@@ -63,7 +63,7 @@
 
 (Los servicios `rag-service` y `mcp-server` siguen comentados: fuera de alcance.)
 
-- [ ] **Step 3: En `infra/docker-compose.override.yml`, sustituir el bloque comentado de `backend` por:**
+- [x] **Step 3: En `infra/docker-compose.override.yml`, sustituir el bloque comentado de `backend` por:**
 
 ```yaml
   backend:
@@ -84,7 +84,7 @@
       - bigschool-network
 ```
 
-- [ ] **Step 4: En `infra/docker-compose.override.yml`, sustituir el bloque comentado de `frontend-web` por:**
+- [x] **Step 4: En `infra/docker-compose.override.yml`, sustituir el bloque comentado de `frontend-web` por:**
 
 ```yaml
   frontend-web:
@@ -98,7 +98,7 @@
       - bigschool-network
 ```
 
-- [ ] **Step 5: Validar la configuración fusionada (test verde de sintaxis)**
+- [x] **Step 5: Validar la configuración fusionada (test verde de sintaxis)**
 
 Run:
 ```bash
@@ -106,7 +106,7 @@ cd infra && docker compose --env-file .env config | grep -E "ConnectionStrings__
 ```
 Expected: la salida muestra `container_name: bigschool-backend` y `bigschool-frontend`, el mapeo `8082` (target 8081) y `3002` (target 3001), la `ConnectionStrings__DefaultConnection` con `Server=mysql`, y el build-arg `NEXT_PUBLIC_API_URL: http://localhost:8082/api/v1` — todo resuelto desde `infra/.env` sin errores.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add infra/docker-compose.yml infra/docker-compose.override.yml
@@ -119,7 +119,7 @@ git commit -m "infra: activar backend y frontend-web en docker-compose (stack co
 
 **Files:** (ninguno — verificación end-to-end)
 
-- [ ] **Step 1: Arrancar el stack desde cero (volumen limpio para re-ejecutar init.sql+seed.sql)**
+- [x] **Step 1: Arrancar el stack desde cero (volumen limpio para re-ejecutar init.sql+seed.sql)**
 
 > `down -v` elimina los volúmenes `mysql_data`/`qdrant_data` (datos locales de `bigschool`): es lo deseado para validar la inicialización completa con `init.sql` + `seed.sql`.
 
@@ -132,7 +132,7 @@ cd -
 ```
 Expected: build de `backend` y `frontend-web` OK; los contenedores `bigschool-mysql`, `bigschool-backend`, `bigschool-frontend` (y `bigschool-qdrant`) quedan creados.
 
-- [ ] **Step 2: Esperar a backend y frontend**
+- [x] **Step 2: Esperar a backend y frontend**
 
 Run:
 ```bash
@@ -141,7 +141,7 @@ curl --retry 40 --retry-delay 3 --retry-connrefused -fsS -o /dev/null -w "%{http
 ```
 Expected: el primero imprime `Healthy`; el segundo imprime `200`.
 
-- [ ] **Step 3: Estado de los servicios**
+- [x] **Step 3: Estado de los servicios**
 
 Run:
 ```bash
@@ -149,7 +149,7 @@ cd infra && docker compose --env-file .env ps; cd -
 ```
 Expected: `mysql` y `backend` en estado `healthy`; `frontend-web` y `qdrant` `running`/`healthy`. Ningún servicio en `restarting`/`exited`.
 
-- [ ] **Step 4: Round-trip de API que toca `bigschool` (cableado backend↔mysql)**
+- [x] **Step 4: Round-trip de API que toca `bigschool` (cableado backend↔mysql)**
 
 Run:
 ```bash
@@ -159,7 +159,7 @@ curl -fsS -X POST http://localhost:8082/api/v1/auth/register \
 ```
 Expected: respuesta JSON con envelope `{"data":{...}}` incluyendo un token (status 200). Esto demuestra que el backend persiste en `bigschool` a través de la red interna.
 
-- [ ] **Step 5: (Opcional) Comprobar el seed demo si el Bloque 2 ya se ejecutó**
+- [x] **Step 5: (Opcional) Comprobar el seed demo si el Bloque 2 ya se ejecutó**
 
 Run:
 ```bash
@@ -169,7 +169,7 @@ curl -fsS -X POST http://localhost:8082/api/v1/auth/login \
 ```
 Expected: si `seed.sql` ya contiene el usuario demo (Bloque 2 ejecutado), devuelve `200` con token. Si aún es el seed antiguo o no existe el usuario, devolverá `400` — informativo, no bloquea este bloque (cuyo objetivo es el stack, no el contenido del seed).
 
-- [ ] **Step 6: Dejar constancia y, si procede, parar el stack**
+- [x] **Step 6: Dejar constancia y, si procede, parar el stack**
 
 Run (opcional, para liberar recursos tras verificar):
 ```bash
@@ -177,7 +177,7 @@ cd infra && docker compose --env-file .env down; cd -
 ```
 Expected: contenedores detenidos y eliminados (sin `-v`, conservando el volumen para el siguiente arranque).
 
-- [ ] **Step 7: Commit (solo si la verificación obligó a retocar los compose)**
+- [x] **Step 7: Commit (solo si la verificación obligó a retocar los compose)**
 
 Si algún expected falló y corregiste los compose, commitéalo:
 ```bash
