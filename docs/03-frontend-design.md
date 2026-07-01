@@ -149,18 +149,36 @@ De arriba a abajo:
 
 ## 7. Layouts por página
 
+### Patrón de alta/edición/acciones — modal centrado (decisión 2026-06-27)
+
+Todos los formularios de **crear/editar** y las **acciones puntuales** (p. ej. vender) se presentan
+en un **modal centrado** (`Dialog` de shadcn/base-ui), **no** en un panel lateral. Razones: un único
+componente sirve para desktop y móvil sin bifurcar lógica, y encaja con el estándar "tarjeta
+flotante" (estilo Trade Republic) mejor que el cajón lateral (estilo DeGiro) de la primera iteración.
+
+Especificación del patrón:
+- Centrado en pantalla; ancho `sm:max-w-md` en desktop, casi pantalla completa en móvil.
+- `max-h-[calc(100dvh-2rem)]` con **scroll interno** (clave para iPhone SE y teclado abierto).
+- Botón **X** arriba a la derecha para cerrar; contenido con padding `p-6`.
+- Campos esenciales en **grid responsive** (en móvil 2 columnas para compactar verticalmente).
+- **Implementación de referencia**: `src/components/transactions/transaction-sheet.tsx`
+  (mantiene el nombre `*-sheet` por compatibilidad, pero internamente es un `Dialog` centrado).
+
 ### Gastos/Ingresos
-- **Master-detail en una pantalla**: listado a la izquierda + panel lateral de alta/edición.
+- **Listado + modal centrado de alta/edición** (ver patrón arriba). Click en una fila → modal de edición.
 - Selector de **mes/año** (por defecto, mes actual). Insertar/Modificar/Borrar desde ahí.
+- **Tabla responsive**: en desktop, tabla completa; en móvil, cada transacción es una tarjeta de
+  dos líneas (`Fecha │ Importe` arriba, `Categoría · Subcategoría` debajo). La descripción no es
+  columna: se indica con un icono (con la descripción en el `title`).
 - **Pestaña de gráficas**: barras agrupadas por año (últimos 4 años) por categoría de gasto e
   ingreso (agregación en cliente — ver hueco #1).
 
 ### Carteras
-- **Lista de cards alargadas** con todas las carteras + espacio lateral para **crear** (no editar,
+- **Lista de cards alargadas** con todas las carteras + **modal centrado** para **crear** (no editar,
   ver hueco #2). Click en una card → pantalla de holdings.
 
 ### Holdings
-- **Lista de cards alargadas** + panel lateral para: **vender** (Disposal FIFO a nivel empresa —
+- **Lista de cards alargadas** + **modal centrado** para: **vender** (Disposal FIFO a nivel empresa —
   ver hueco #3), **editar Notes** del holding, **añadir** holding y **borrar** holding.
 
 ### AI Scanner

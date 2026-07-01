@@ -49,8 +49,8 @@ frontend-web/
 │   ├── services/           → Llamadas al Backend agrupadas por recurso
 │   └── types/              → Interfaces TypeScript (DTOs del Backend)
 ├── public/
-├── tests/{unit,e2e}/
-├── next.config.ts · tailwind.config.ts · tsconfig.json
+├── tests/{unit,e2e}/      → Vitest (unit) · Playwright (e2e)
+├── next.config.mjs · tsconfig.json  (Tailwind v4: config por CSS en globals.css)
 ├── vitest.config.ts · playwright.config.ts · package.json
 ```
 
@@ -62,6 +62,14 @@ frontend-web/
   tokens semánticos (`bg-background`, `text-foreground`, `text-positive`, `text-negative`…).
 - Verde/rojo **solo** para signo de dinero; azul para acción; grises para el resto.
 - Gráficas de línea en azul celeste apagado; barras agrupadas por año con la paleta `--chart-1..4`.
+- **Altas/ediciones y acciones puntuales** (crear, editar, vender…) → **modal centrado** (`Dialog`),
+  **nunca** panel lateral. Un solo componente desktop/móvil: centrado, `sm:max-w-md`, `max-h` con
+  scroll interno, X arriba para cerrar. Referencia: `src/components/transactions/transaction-sheet.tsx`
+  (detalle del patrón en `docs/03-frontend-design.md` §7).
+- **Navegación maestro-detalle** (p. ej. Inversiones → Holdings): la vista de detalle incluye
+  siempre un breadcrumb-header con `← [Lista padre]` usando `<Link href="…">` (nunca
+  `router.back()`, que falla si el usuario llega directamente por URL). Formato:
+  `[←] Inversiones  ·  [Nombre cartera]` — flecha como enlace, nombre como `h1`.
 
 ---
 
@@ -76,11 +84,11 @@ frontend-web/
 ### Privadas (requieren JWT)
 - **Dashboard**: KPIs + barras ingresos/gastos + línea de balance + resumen de inversiones +
   últimas transacciones (ver composición en el design doc).
-- **Gastos/Ingresos**: master-detail en una pantalla (lista + panel de alta/edición), selector
-  mes/año (por defecto mes actual), CRUD. Pestaña de gráficas: barras por categoría de los últimos
-  4 años — **agregación en cliente** (el Backend no agrega por categoría).
+- **Gastos/Ingresos**: lista + **modal centrado** de alta/edición, selector mes/año (por defecto
+  mes actual), CRUD. Tabla responsive (en móvil, tarjetas de 2 líneas). Pestaña de gráficas: barras
+  por categoría de los últimos 4 años — **agregación en cliente** (el Backend no agrega por categoría).
 - **Inversiones**: carteras como cards (solo crear; no hay renombrar/borrar en Backend) →
-  holdings como cards con panel lateral para **vender** (Disposal **FIFO a nivel empresa**, puede
+  holdings como cards con **modal centrado** para **vender** (Disposal **FIFO a nivel empresa**, puede
   tocar varios lotes), editar Notes, añadir y borrar holding.
 - **AI Scanner**: configuración con **toggle** activar/desactivar (solo local por coste). Si está
   off → pantalla **"Próximamente"**.
@@ -93,9 +101,38 @@ frontend-web/
 
 ## Huecos del Backend a tener presentes
 1. Sin agregación por categoría → agregar en cliente desde la lista de transacciones.
+   La costura está aislada en `hooks/useCategoryChart.ts` (devuelve `CategoryAggregation`):
+   hoy calcula en cliente con `lib/charts/aggregateByCategory.ts`; el día que exista
+   `GET /transactions/category-chart?from&to&type` solo cambia ese hook — ni la página ni
+   `components/charts/category-bars.tsx` se tocan. El contrato futuro está documentado en el hook.
 2. Sin renombrar/borrar cartera → en el MVP la cartera solo se crea.
 3. La venta es FIFO a nivel empresa → el botón "vender" de un holding vende acciones de *esa
    empresa* y consume lotes en orden FIFO.
+
+---
+
+## Integración con el Backend (NORMA — leer antes de tocar `types/` o `services/`)
+
+- **Los tipos de `src/types/` son espejo de los DTOs del Backend.** Se **verifican contra el código
+  fuente del Backend** (mismo monorepo, `src/backend/...`) **al inicio de la tarea que los consume**,
+  nunca de memoria. Si vas a crear/editar un servicio o formulario de un recurso, primero localiza
+  su DTO/Controller real y ajusta el tipo. Ejemplo de mismatch real ya corregido: las categorías son
+  **anidadas** (`Category{idMainCategory, name, subCategories[]}`).
+- **Base URL**: `NEXT_PUBLIC_API_URL=http://localhost:5285/api/v1`. Todos los controllers cuelgan de
+  `/api/v1` (`/auth`, `/transactions`, `/categories`, `/portfolios`, `/companies`).
+- **Envelope**: toda respuesta es `{ data, errors[], meta }`; `errors[] = { code, message, field? }`.
+  No parsees `fetch` a mano: usa `lib/apiClient` (ya desenvuelve `data` y lanza `ApiError`).
+- **Enums viajan como nombre string** (`JsonStringEnumConverter`): `TransactionType`
+  (`"Income"`/`"Expense"`), `MainCategory` (`"EssentialExpenses"`…), `Currency` (`"EUR"`…). Ver
+  `src/types/enums.ts`.
+- **Sesión/refresco**: no hay refresh token en el Backend. Refresco **proactivo** en cliente con
+  `lib/auth/refreshPolicy` (máx. 5 refrescos o 24 h → re-login; token de acceso ~60 min). El
+  `AuthProvider` (Task 2) cablea el timer y la llamada `POST /auth/refresh`.
+- **Tipos provisionales**: `portfolios.ts` y `companies.ts` están marcados como tales hasta
+  verificarlos en sus tareas (8-10).
+
+> Spec de detalle: `docs/superpowers/specs/003-2026-06-24-frontend-web-mvp-design.md`.
+> Plan de ejecución: `docs/superpowers/plans/012-2026-06-24-frontend-web-mvp.md`.
 
 ---
 

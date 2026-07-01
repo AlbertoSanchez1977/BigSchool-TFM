@@ -444,6 +444,151 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-06-23 al 2026-06-24 — Inicio del Frontend-Web: diseño, v0 y arranque
+
+### Fase: Diseño → Implementación
+
+**Módulo**: frontend-web
+
+**Actividades realizadas:**
+- Sesión de brainstorming sobre tecnología de generación de UI (v0, shadcn blocks, código); estrategia en 3 capas (v0 para diseño+Landing, shadcn para "muebles", código para lógica).
+- Generación con **v0 Max** del sistema de diseño (tokens HSL light+dark, paleta fintech) y la Landing pública completa con gráficas fake en Recharts. Integración en `src/frontend-web`; compilación y validación manual.
+- Spec `003-2026-06-24-frontend-web-mvp-design.md`: cadencia pasos pequeños + gate, JWT en localStorage+Bearer, TDD unit tests por tarea + E2E en hitos, backend diferido para Emails y Profile.
+- Plan `012-2026-06-24-frontend-web-mvp.md`: 16 tareas task-by-task, autosuficiente para el modelo ejecutor (Sonnet).
+- **Task 1 (PR #88)**: fundamentos del proyecto — deps runtime + test, Vitest + Playwright configurados, componentes shadcn (14), providers QueryClient+Toaster, `.env.local`, `apiClient` con TDD, tipos TS de DTOs backend **verificados contra el código fuente** (rutas `/api/v1`, enums como nombre string, categorías anidadas, auth sin refresh token), y política de refresco en cliente `refreshPolicy` con TDD (máx. 5 refrescos o 24 h). 15 tests verdes, build limpio.
+
+**Decisiones clave:**
+- v0 solo para diseño+Landing (una tirada, modelo Max); shadcn + código para el resto.
+- JWT en `localStorage` + `Bearer`; TDD con Vitest+RTL en cada tarea.
+- Corrección `components.json`: aliases `@src/...` → `@/...` para que la CLI de shadcn genere imports resolvibles por el tsconfig.
+- Reparto de modelos: Opus para specs/planes, Sonnet para implementar, Haiku para repetitivo.
+
+**Resultado / Estado:**
+- Landing arrancando y validada (PR #85 merged).
+- Spec 003 + Plan 012 (PR #86 merged).
+- Task 1 Fundamentos (PR #87 pendiente de revisión).
+
+**Siguiente paso:**
+- [ ] Merge PR #87 y arrancar **Task 2** (auth: tokenStore + AuthProvider + useAuth).
+
+---
+
+## 2026-06-24 al 2026-06-28 — Frontend-Web MVP completo (Tasks 1-16)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web
+
+**Actividades realizadas:**
+- Plan `docs/superpowers/plans/012-2026-06-24-frontend-web-mvp.md` (16 tareas), spec `003-2026-06-24-frontend-web-mvp-design.md`. Rama-por-tarea, PRs #87–#103.
+- **Task 1 (PR #87)**: Fundamentos — Next.js 15, Vitest + RTL, Playwright, 14 componentes shadcn/Base UI, providers QueryClient + Toaster, `apiClient` con interceptor de refresh, tipos TS verificados contra el backend. 15 tests.
+- **Task 2 (PR #88)**: Auth — `tokenStore`, `AuthProvider`, `useAuth`, formularios Login/Registro (React Hook Form + Zod), integración JWT real. 17 tests.
+- **Task 3 (PR #89)**: Fundamentos privados — `PrivateLayout` con `AppNavbar`, `ProfileDropdown`, redirección protegida. E2E hito: flujos de auth (8 specs).
+- **Task 4 (PR #90)**: Dashboard — `useDashboard` (TanStack Query), resumen mensual, `MonthlyChart` (Recharts), skeleton de carga. 12 tests.
+- **Task 5 (PR #91)**: Gastos/Ingresos — listado con filtros (tipo, categoría, búsqueda), paginación, estados vacío/cargando/error. 18 tests.
+- **Task 6 (PR #92)**: CRUD Transacciones — Sheet lateral, formularios alta/edición/borrado, validación Zod. E2E hito: crear gasto.
+- **Task 7 (PR #93)**: Categorías — `useCategoriesQuery`, `CategorySelect` agrupado por MainCategory. 9 tests.
+- **Task 8 (PR #94)**: `formatAmount` multimoneda (Intl.NumberFormat), `formatDate`. 11 tests.
+- **Task 9 (PR #95)**: Inversiones listado — `usePortfolios`, cards de carteras, modal de creación. 14 tests.
+- **Task 10 (PR #96)**: Detalle de cartera — `usePortfolioDetail`, `HoldingCard`, modales de holding y venta FIFO. E2E hito: vender holding.
+- **Task 11 (PR #97)**: Performance de cartera — `PortfolioPerformance`, métricas realizadas/no realizadas. 8 tests.
+- **Task 12 (PR #98)**: AI Scanner — feature-flag `NEXT_PUBLIC_AI_SCANNER_ENABLED`, chat demo, `RagPanel`, settings de API keys (localStorage). 21 tests.
+- **Task 13 (PR #99)**: Contacto — formulario integrado en landing (sección CTA), listado privado `/contacts`. 13 tests.
+- **Task 14 (PR #100)**: Emails — `useEmails`, listado `/emails` con Badge bienvenida/contacto. Contrato backend documentado. 7 tests.
+- **Task 15 (PR #102)**: Perfil — `profileSchema` (contraseña opcional con `superRefine`), página `/profile` con info read-only + formulario. 8 tests.
+- **Task 16 (este PR)**: Cierre — página pública `/scope` (alcance MVP + roadmap), enlace en navbar y footer, entrada en diario.
+
+**Decisiones clave:**
+- **JWT en localStorage + Bearer** — sencillo para demo TFM; el `apiClient` gestiona refresh automático.
+- **TDD task-by-task** — ciclo RED → GREEN obligatorio; 225+ tests unitarios en verde.
+- **Regla de huecos de backend** — `TODO (deuda técnica backend)` + contrato inline; datos demo en localStorage hasta que exista el endpoint.
+- **`asChild` no soportado** en `Button` de `@base-ui/react` — `<Link>` dentro de `<Button>` como solución.
+- **`superRefine` en Zod v4** — usar `ZodIssueCode.custom` para validaciones cruzadas (`too_small` shape cambió, requiere `origin`).
+- **ProfileDropdown como hub** de páginas privadas secundarias (Contacto, Emails, Editar perfil).
+
+**Problemas encontrados y soluciones:**
+- **Strict mode en E2E** — landing tiene CTAs duplicados; acotar con `page.getByRole('navigation')`.
+- **`getByText` con múltiples matches** en AI Scanner — usar `getByRole('heading', ...)`.
+- **`.env.local` gitignoreado** — solo se commitea `.env.example` como plantilla.
+- **Formulario de contacto** — evolucionó: página separada → integrado en CTA de landing, grid 2 columnas.
+
+**E2E smoke tests (requieren backend en http://localhost:5285):**
+- `tests/e2e/login.spec.ts` — 8 specs de auth.
+- `tests/e2e/create-expense.spec.ts` — crear gasto y verificar en lista.
+- `tests/e2e/sell-holding.spec.ts` — añadir holding + venta FIFO.
+
+**Resultado / Estado:**
+- Frontend-Web MVP 100% completado (16/16 tareas).
+- **225 tests unitarios PASS · 0 errores TypeScript · build de producción limpio.**
+- Deuda técnica localizable con `TODO (deuda técnica backend)` en ficheros afectados.
+- Roadmap público en `/scope`.
+
+**Siguiente paso:**
+- [ ] Memoria académica del TFM y presentación.
+- [ ] (Opcional) Endpoints backend pendientes: GET/PUT /users/me, POST /contact, GET /emails.
+- [ ] (Opcional) RAG real cuando se disponga de suscripción Azure OpenAI.
+
+---
+
+## 2026-06-28 — Bloque 0: Dockerfiles base backend + frontend (Plan 013, Tasks 1-3)
+
+### Fase: Implementación
+
+**Módulo**: infra
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/004-2026-06-28-infra-e2e-seed-azure-design.md` y plan `docs/superpowers/plans/013-2026-06-28-bloque0-dockerfiles.md` ya aprobados; sesión dedicada a la ejecución.
+- **Task 1 (PR #105)**: `infra/docker/backend.Dockerfile` multi-stage `sdk:8.0 → aspnet:8.0`. Restore cacheado copiando primero los `.csproj` + `Directory.Build.props`. Stage runtime instala `curl` (no incluido en `aspnet:8.0`) para el `HEALTHCHECK`. Escucha en `8081` (`ASPNETCORE_URLS`). Smoke test verificado: `/health` → `Healthy`. También: `src/backend/.dockerignore`.
+- **Task 2 (PR #106)**: `output: 'standalone'` en `src/frontend-web/next.config.mjs`. Build local verificado: `pnpm build` OK y `.next/standalone/server.js` presente. Incidencia: requiere **Developer Mode de Windows** (crea symlinks de pnpm sin permisos de admin).
+- **Task 3 (PR #107)**: `infra/docker/frontend-web.Dockerfile` (4 stages: base → deps → build → runner) + `src/frontend-web/.dockerignore`. pnpm@11.5.2 fijado via corepack. Smoke test verificado: landing → HTTP 200.
+
+**Decisiones / Problemas encontrados:**
+- **pnpm 11 + build scripts**: pnpm 11 bloquea por defecto todos los `postinstall` scripts; lanza `ERR_PNPM_IGNORED_BUILDS`. La solución es copiar `pnpm-workspace.yaml` (que ya tenía `allowBuilds: sharp: true`) y `.npmrc` al stage `deps` del Dockerfile. Ni `--ignore-scripts` (rompe el binario de Turbopack) ni `neverBuiltDependencies` (el error persiste) funcionan solos.
+- **Turbopack en Docker/Linux**: Next.js 16 usa Turbopack por defecto en `next build`. El lockfile generado en Windows no incluye el binario de Turbopack para Linux; en Docker la resolución de `@vercel/turbopack-next/internal/font/google/font` falla. Fix: `pnpm exec next build --webpack` en el Dockerfile.
+- **Google Fonts + proxy SSL corporativo**: con webpack, `next/font/google` descarga Geist de Google Fonts durante el build; el proxy corporativo presenta un certificado auto-firmado → `SELF_SIGNED_CERT_IN_CHAIN`. Fix: `ENV NODE_TLS_REJECT_UNAUTHORIZED=0` solo en el stage `build` (no llega al `runner`). En CI (Azure/GitHub sin proxy) esto no es necesario pero es inofensivo.
+- **Directorio `public/` ausente**: el proyecto no tiene carpeta `public/`; el stage `runner` intentaba `COPY --from=build /app/public` y fallaba. Fix: `mkdir -p /app/public` antes del build.
+- **smoke test del backend**: `--retry-connrefused` de curl no reintenta en `Empty reply` (la app cierra la conexión los ~100 ms de inicialización). Con `sleep 3` previo es consistente.
+
+**Resultado / Estado:**
+- Plan 013 completado (3/3 tareas, PRs #105-#107 pendientes de revisión).
+- Imágenes verificadas localmente: `bigschool-backend:dev` (→ `Healthy` en `:8081/health`) y `bigschool-frontend:dev` (→ `200` en `:3001`).
+- Base reutilizable para Bloque 1 (compose E2E), Bloque 3 (compose completo) y Bloques 4/5 (CI/deploy Azure).
+
+**Siguiente paso:**
+- [ ] Merge PRs #105, #106, #107.
+- [ ] Bloque 1: `docker-compose.e2e.yml` (backend + frontend + MySQL, smoke test E2E).
+
+---
+
+## 2026-06-29 — Bloque 1: E2E dockerizado y aislado (Plan 014, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: infra / frontend-web (tests)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/004-2026-06-28-infra-e2e-seed-azure-design.md` (Bloque 1) y plan `docs/superpowers/plans/014-2026-06-29-bloque1-e2e-dockerizado.md`; sesión dedicada a la ejecución tarea a tarea.
+- **Task 1 (PR #109)**: `infra/docker-compose.e2e.yml` — compose efímero que levanta solo `backend` (`:8081`) y `frontend-web` (`:3001`); el MySQL dev (`bigschool-mysql`) se alcanza desde el backend por `host.docker.internal:3306` + `extra_hosts: host-gateway`. La BD de target es `bigschool_e2e` (no toca `bigschool` ni `bigschool_test`).
+- **Task 2 (PR #110)**: `global-setup.ts` y `global-teardown.ts` de Playwright. El setup: verifica que `bigschool-mysql` corre, DROP+CREATE `bigschool_e2e` con `init.sql` reescrito (`USE \`bigschool\`` → `USE \`bigschool_e2e\``), levanta el compose, polling hasta salud. El teardown: `compose down`, `DROP DATABASE bigschool_e2e`.
+- **Task 3 (PR #111)**: dos configs de Playwright — `playwright.config.ts` reescrito como config dockerizada por defecto (sin `webServer`, `globalSetup`/`globalTeardown`, `baseURL: http://localhost:3001`); `playwright.local.config.ts` creado como config de debug local (`webServer: pnpm dev`, `baseURL: http://localhost:3000`). Script `test:e2e:local` añadido a `package.json`.
+- **Task 4 (PR #112)**: verificación integral (`pnpm test:e2e`) + 2 bugs encontrados y corregidos en `global-setup.ts` / `global-teardown.ts` (ver abajo). **11/11 tests PASS**.
+
+**Decisiones / Problemas encontrados:**
+- **Bug: `--remove-orphans` eliminaba `bigschool-mysql`**. Causa raíz: ambos compose files (`docker-compose.yml` y `docker-compose.e2e.yml`) están en `infra/`; Docker Compose deriva el proyecto del directorio → ambos usan proyecto `infra`. El teardown con `down --remove-orphans` ve a `bigschool-mysql` como huérfano del mismo proyecto y lo elimina, borrando también la red `infra_default`. Fix: `-p bigschool-e2e` en todos los comandos compose e2e → proyecto aislado, red `bigschool-e2e_default`, MySQL del proyecto `infra` completamente invisible para el teardown.
+- **Bug: `create-expense` (test 1/11) timeout por cold-start del pool de BD**. El backend reporta `/health` como OK sin comprobar MySQL (conexión lazy de EF Core). El primer `POST /api/v1/auth/register` abría el pool de conexiones en frío; con 10 s de `waitForURL` en el test fallaba. Los tests 9 y 10 de login sí pasaban porque por entonces el backend llevaba ~8 minutos en marcha. Fix: `waitForApiReady` en el setup — hace `POST /api/v1/auth/login` con credenciales dummy y espera una respuesta 4xx (la BD respondió, el pool está caliente) antes de ceder el turno a los tests.
+- **Instrucción MySQL corregida en el plan**: el comando original (`docker compose -f infra/docker-compose.yml up -d mysql`, sin el override) recrea el contenedor sin port binding `3306:3306`. Corregido en las 4 ocurrencias del plan a `cd infra && docker compose --env-file .env up -d mysql && cd -`.
+- **`pnpm typecheck` en vez de `npx tsc --noEmit <ficheros>`**: pasar ficheros explícitos a `tsc` ignora el `tsconfig.json` del proyecto (sin `esModuleInterop`) y produce falsos errores TS1259 en imports `node:path`. Corrección documentada en el plan (Step 3 de Task 2).
+
+**Resultado / Estado:**
+- Plan 014 completado (4/4 tareas, PRs #109-#112).
+- `pnpm test:e2e`: 11/11 PASS incluyendo `create-expense` como test 1/11 (cold-start resuelto).
+- Teardown limpio: solo baja `bigschool-e2e-backend` y `bigschool-e2e-frontend`; `bigschool-mysql` permanece vivo; `bigschool_e2e` eliminada; `bigschool` y `bigschool_test` intactas.
+
+**Siguiente paso:**
+- [ ] Bloque 2 (seed), Bloque 3 (compose completo) y Bloques 4/5 (CI/deploy Azure) según spec 004.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:

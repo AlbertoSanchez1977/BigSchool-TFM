@@ -39,28 +39,28 @@ services:
     networks:
       - bigschool-network
 
-  # backend:
-  #   restart: unless-stopped
-  #   environment:
-  #     ASPNETCORE_ENVIRONMENT: Development
-  #     ConnectionStrings__MySQL: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
-  #     Jwt__Secret: ${JWT_SECRET}
-  #     Jwt__Issuer: ${JWT_ISSUER}
-  #     Jwt__Audience: ${JWT_AUDIENCE}
-  #     Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
-  #     RagService__Url: ${RAG_SERVICE_URL}
-  #   ports:
-  #     - "5000:8080"
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   networks:
-  #     - bigschool-network
+  backend:
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
+    ports:
+      - "8082:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bigschool-network
 
   # rag-service:
   #   restart: unless-stopped
@@ -85,16 +85,15 @@ services:
   #   networks:
   #     - bigschool-network
 
-  # frontend-web:
-  #   restart: unless-stopped
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: http://localhost:5000
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - bigschool-network
+  frontend-web:
+    restart: unless-stopped
+    ports:
+      - "3002:3001"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bigschool-network
 
   # mcp-server:
   #   restart: unless-stopped

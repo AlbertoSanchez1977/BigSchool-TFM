@@ -1,0 +1,33 @@
+# Entorno EFÍMERO para los E2E de Playwright (Bloque 1).
+# Levanta SOLO frontend + backend dockerizados; el MySQL es el contenedor dev
+# existente (bigschool-mysql), alcanzado por host.docker.internal:3306.
+# Lo orquestan global-setup.ts / global-teardown.ts de Playwright.
+services:
+  backend:
+    build:
+      context: ../src/backend
+      dockerfile: ../../infra/docker/backend.Dockerfile
+    container_name: bigschool-e2e-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=host.docker.internal;Port=3306;Database=bigschool_e2e;User=root;Password=${MYSQL_ROOT_PASSWORD};"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
+    ports:
+      - "8081:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend-web:
+    build:
+      context: ../src/frontend-web
+      dockerfile: ../../infra/docker/frontend-web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:8081/api/v1"
+    container_name: bigschool-e2e-frontend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend

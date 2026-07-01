@@ -38,7 +38,7 @@ venv/
 *.egg-info/
 .eggs/
 
-# ---- React Native / Expo ----
+# ---- React Native / Expo / Playwright ----
 .expo/
 *.jks
 *.p8
@@ -47,6 +47,8 @@ venv/
 *.mobileprovision
 *.orig.*
 web-build/
+playwright-report/
+test-results/
 
 # ---- Docker ----
 # No ignorar docker-compose ni Dockerfiles
@@ -91,3 +93,6 @@ coverage/
 *.bak
 *.tmp
 *.temp
+
+# Bloque 4/5 — scripts de despliegue / CI con credenciales (local-only, NO commitear)
+/deploy/azure/
