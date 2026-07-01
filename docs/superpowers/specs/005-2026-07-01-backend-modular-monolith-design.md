@@ -78,17 +78,31 @@ Notas:
 
 ## 5. Layout objetivo (de → a)
 
-Namespace: **`BigSchool.{Capa}.{Módulo}`** (p. ej. `BigSchool.Domain.Finanzas`,
-`BigSchool.Application.Notifications`). SharedKernel: `BigSchool.{Capa}.SharedKernel`.
+**Convención: el namespace refleja exactamente la carpeta** (regla estándar de C#/.NET, sin
+excepciones). La carpeta raíz de un módulo da `BigSchool.{Capa}.{Módulo}` y **cada subcarpeta
+añade su segmento** al namespace. Ejemplos:
+
+- `BigSchool.Domain/SharedKernel/ValueObjects/Money.cs` → `namespace BigSchool.Domain.SharedKernel.ValueObjects`
+- `BigSchool.Domain/SharedKernel/Enums/Currency.cs` → `namespace BigSchool.Domain.SharedKernel.Enums`
+- `BigSchool.Domain/Finanzas/Enums/TransactionType.cs` → `namespace BigSchool.Domain.Finanzas.Enums`
+- `BigSchool.Application/Notifications/Commands/…` → `namespace BigSchool.Application.Notifications.Commands…`
+- Tipos en la **raíz** de la carpeta de módulo → `BigSchool.{Capa}.{Módulo}` a secas (p. ej.
+  `Auth/User.cs` → `namespace BigSchool.Domain.Auth`). SharedKernel: `BigSchool.{Capa}.SharedKernel[.Subcarpeta]`.
+
+> Se **descarta** la variante de "namespace plano por módulo" (meter todos los tipos de un módulo en
+> `BigSchool.{Capa}.{Módulo}` ignorando sus subcarpetas): mantener **carpeta = namespace** es lo que
+> esperan el IDE, las plantillas `dotnet new` y los revisores, y no encarece el refactor porque el
+> churn de `using` lo va dictando el compilador paso a paso. Cada carpeta del árbol de abajo es, por
+> tanto, un segmento de namespace.
 
 ```
 BigSchool.Domain/
-  SharedKernel/     BaseEntity, IAggregateRoot, IDomainEvent, IUnitOfWork, ValueObjects/{Money,MoneyConversion}, Enums/{Currency,EntityStatus}
-  Auth/             User
-  Finanzas/         Transaction, SubCategory, Enums/{TransactionType,MainCategory}
-  Investments/      Company, Valuation, Portfolio, Holding, Disposal
+  SharedKernel/     Entities/{BaseEntity,IAggregateRoot,ExchangeRate}, Events/{IDomainEvent}, Interfaces/{IUnitOfWork}, ValueObjects/{Money,MoneyConversion}, Enums/{Currency,EntityStatus}, Exceptions/{DomainException,ConflictException,NotFoundException}
+  Auth/             Entities/{User}, Exceptions/{EmailAlreadyExists…,InvalidCredentials…}
+  Finanzas/         Entities/{Transaction,SubCategory}, Enums/{TransactionType,MainCategory,RecurrencePeriod}, Events/{TransactionCreatedEvent}, Exceptions/{DuplicateSubCategory…}
+  Investments/      Entities/{Company,Valuation,Portfolio,Holding,Disposal}, Enums/{Market,Sector}, Exceptions/{DuplicateTicker…,DuplicateValuation…,InsufficientShares…}
   Notifications/    (Contact, EmailLog → Spec 007)
-  Rag/ (futuro)     RagDocument, ExchangeRate→SharedKernel
+  Rag/ (futuro)     Entities/{RagDocument}
 
 BigSchool.Application/
   SharedKernel/     Interfaces (IRepository, IDbConnectionFactory), Events (DomainEventNotification),
