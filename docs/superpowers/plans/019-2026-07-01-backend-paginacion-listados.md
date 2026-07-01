@@ -37,7 +37,7 @@ Namespaces relevantes tras el plan 018 (regla: namespace = carpeta):
 
 ### Ramas y PRs
 
-Cada tarea = una rama `feature/019-paginacion-taskN` (desde `feature/005-006-backend-fundacional` o la tarea previa) = un PR pequeño con checkpoint humano.
+Cada tarea = una rama `feature/019-paginacion-taskN` (desde `develop` actualizado o la tarea previa) = un PR pequeño con checkpoint humano.
 
 ---
 
