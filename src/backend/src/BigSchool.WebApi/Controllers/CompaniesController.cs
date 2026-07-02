@@ -6,6 +6,7 @@ using BigSchool.Application.Queries.Investments.GetCompanies;
 using BigSchool.Application.Queries.Investments.GetCompanyById;
 using BigSchool.Application.Queries.Investments.GetCompanyValuations;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

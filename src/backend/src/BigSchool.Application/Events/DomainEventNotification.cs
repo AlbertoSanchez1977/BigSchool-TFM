@@ -1,4 +1,4 @@
-using BigSchool.Domain.Events;
+using BigSchool.Domain.SharedKernel.Events;
 using MediatR;
 
 namespace BigSchool.Application.Events;

@@ -1,6 +1,6 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 
-namespace BigSchool.Domain.ValueObjects;
+namespace BigSchool.Domain.SharedKernel.ValueObjects;
 
 /// <summary>
 /// Value Object de importe monetario. Inmutable, igualdad por valor.

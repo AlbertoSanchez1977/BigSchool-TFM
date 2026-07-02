@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Interfaces;
+namespace BigSchool.Domain.SharedKernel.Interfaces;
 
 public interface IUnitOfWork
 {

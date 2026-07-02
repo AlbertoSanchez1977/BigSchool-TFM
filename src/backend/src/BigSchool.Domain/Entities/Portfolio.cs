@@ -1,6 +1,8 @@
-using BigSchool.Domain.Enums;
 using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.ValueObjects;
+using BigSchool.Domain.SharedKernel.Entities;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Domain.SharedKernel.Exceptions;
+using BigSchool.Domain.SharedKernel.ValueObjects;
 
 namespace BigSchool.Domain.Entities;
 

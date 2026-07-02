@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.SharedKernel.Exceptions;
 
 public abstract class DomainException : Exception
 {

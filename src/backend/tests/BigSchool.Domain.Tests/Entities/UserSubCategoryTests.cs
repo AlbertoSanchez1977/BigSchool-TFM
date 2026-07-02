@@ -1,5 +1,6 @@
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.Exceptions;
 using FluentAssertions;
 using Xunit;

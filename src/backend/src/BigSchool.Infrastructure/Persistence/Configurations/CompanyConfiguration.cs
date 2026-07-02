@@ -1,5 +1,6 @@
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

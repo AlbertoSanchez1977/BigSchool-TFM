@@ -45,7 +45,7 @@ public class CreateCompanyTests : CompanyEndpointTestBase
         ((string)row.Name).Should().Be("Nvidia Corp.");
         ((string)row.Ticker).Should().Be(ticker);
         ((string)row.Currency).Should().Be("USD");
-        ((short)row.IdStatus).Should().Be((short)BigSchool.Domain.Enums.EntityStatus.Active);
+        ((short)row.IdStatus).Should().Be((short)BigSchool.Domain.SharedKernel.Enums.EntityStatus.Active);
     }
 
     [Fact]

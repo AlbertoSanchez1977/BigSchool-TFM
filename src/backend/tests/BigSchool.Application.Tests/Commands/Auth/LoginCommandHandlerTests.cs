@@ -3,7 +3,7 @@ using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
 using BigSchool.Domain.Entities;
 using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.Interfaces;
+using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;

@@ -1,5 +1,5 @@
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Events;
+using BigSchool.Domain.SharedKernel.Entities;
+using BigSchool.Domain.SharedKernel.Events;
 using FluentAssertions;
 using Xunit;
 

@@ -1,5 +1,5 @@
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Interfaces;
+using BigSchool.Domain.SharedKernel.Entities;
+using BigSchool.Domain.SharedKernel.Interfaces;
 
 namespace BigSchool.Application.Interfaces;
 

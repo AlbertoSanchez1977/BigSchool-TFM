@@ -1,7 +1,8 @@
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.ValueObjects;
+using BigSchool.Domain.SharedKernel.Exceptions;
+using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Xunit;
 

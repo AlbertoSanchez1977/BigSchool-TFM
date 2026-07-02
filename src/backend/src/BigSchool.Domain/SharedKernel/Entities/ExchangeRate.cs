@@ -1,6 +1,6 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.SharedKernel.Entities;
 
 /// <summary>
 /// Tipo de cambio cacheado (reference data). NO es Aggregate Root ni BaseEntity: sin DomainEvents,

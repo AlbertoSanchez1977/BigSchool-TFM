@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Integration.Tests.Fixtures;
 using FluentAssertions;
 using Xunit;

@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.SharedKernel.Exceptions;
 
 /// <summary>
 /// Excepción lanzada cuando hay un conflicto de negocio (ej: email duplicado, estado inválido).

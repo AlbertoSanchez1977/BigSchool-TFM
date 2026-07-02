@@ -1,4 +1,4 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

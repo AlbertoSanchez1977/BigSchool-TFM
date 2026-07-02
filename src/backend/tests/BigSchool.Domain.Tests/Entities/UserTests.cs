@@ -1,5 +1,5 @@
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using FluentAssertions;
 using Xunit;
 

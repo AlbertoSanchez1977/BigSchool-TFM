@@ -1,6 +1,6 @@
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.SharedKernel.Exceptions;
 using MediatR;
 
 namespace BigSchool.Application.Commands.Investments.DeleteHolding;

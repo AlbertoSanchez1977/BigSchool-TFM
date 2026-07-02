@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Enums;
+namespace BigSchool.Domain.SharedKernel.Enums;
 
 /// <summary>
 /// Monedas soportadas. El NOMBRE del enum es el código ISO 4217 alpha-3 (se persiste como CHAR(3)).

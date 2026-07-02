@@ -1,7 +1,7 @@
 using System.Text.Json;
 using BigSchool.Application.Configuration;
 using BigSchool.Application.Interfaces;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Persistence;
 using BigSchool.Infrastructure.Services;
 using BigSchool.Integration.Tests.Fixtures;

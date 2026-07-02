@@ -1,5 +1,6 @@
 using BigSchool.Application.Interfaces;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 

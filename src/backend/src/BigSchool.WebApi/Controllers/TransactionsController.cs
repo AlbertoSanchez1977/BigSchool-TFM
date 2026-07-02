@@ -9,6 +9,7 @@ using BigSchool.Application.Queries.Transactions.GetTransactionById;
 using BigSchool.Application.Queries.Transactions.GetTransactions;
 using BigSchool.Application.Queries.Transactions.GetTransactionSummary;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

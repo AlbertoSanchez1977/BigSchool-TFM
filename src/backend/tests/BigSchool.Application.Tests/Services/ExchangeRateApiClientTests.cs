@@ -1,6 +1,6 @@
 using BigSchool.Application.Configuration;
 using BigSchool.Application.Interfaces;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Options;

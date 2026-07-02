@@ -1,10 +1,10 @@
 using BigSchool.Application.Commands.Investments.UpdateHolding;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
-using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.Interfaces;
-using BigSchool.Domain.ValueObjects;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Domain.SharedKernel.Exceptions;
+using BigSchool.Domain.SharedKernel.Interfaces;
+using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Xunit;

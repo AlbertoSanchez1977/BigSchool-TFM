@@ -1,4 +1,5 @@
 using BigSchool.Domain.Entities;
+using BigSchool.Domain.SharedKernel.Events;
 
 namespace BigSchool.Domain.Events;
 

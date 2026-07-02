@@ -1,4 +1,4 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BigSchool.Infrastructure.Persistence.Converters;

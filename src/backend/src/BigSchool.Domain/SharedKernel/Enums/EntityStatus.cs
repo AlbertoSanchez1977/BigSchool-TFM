@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Enums;
+namespace BigSchool.Domain.SharedKernel.Enums;
 
 public enum EntityStatus : short
 {

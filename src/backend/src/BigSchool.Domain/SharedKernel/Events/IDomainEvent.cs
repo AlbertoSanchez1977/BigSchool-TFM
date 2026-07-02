@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Events;
+namespace BigSchool.Domain.SharedKernel.Events;
 
 public interface IDomainEvent
 {
