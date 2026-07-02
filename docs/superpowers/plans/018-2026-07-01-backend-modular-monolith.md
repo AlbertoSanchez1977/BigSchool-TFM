@@ -420,7 +420,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - `TransactionsController.cs`, `CategoriesController.cs` → `Controllers/Finanzas/`
 - `CompaniesController.cs`, `PortfoliosController.cs` → `Controllers/Investments/`
 
-- [ ] **Step 1: Mover ficheros**
+- [x] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.WebApi/Controllers`):
 ```bash
@@ -430,7 +430,7 @@ git mv TransactionsController.cs CategoriesController.cs Finanzas/
 git mv CompaniesController.cs PortfoliosController.cs Investments/
 ```
 
-- [ ] **Step 2: Ajustar `namespace` = carpeta destino**
+- [x] **Step 2: Ajustar `namespace` = carpeta destino**
 
 - `Controllers/Auth/AuthController.cs` → `namespace BigSchool.WebApi.Controllers.Auth;`
 - `Controllers/Finanzas/*` → `namespace BigSchool.WebApi.Controllers.Finanzas;`
@@ -438,15 +438,15 @@ git mv CompaniesController.cs PortfoliosController.cs Investments/
 
 > Las rutas son por atributo (`[Route("api/v1/...")]`): cambiar namespace/carpeta **no altera ningún endpoint**. Ajusta los `using` de cada controller hacia los namespaces de módulo de Application que necesite.
 
-- [ ] **Step 3: Compilar y resolver usings**
+- [x] **Step 3: Compilar y resolver usings**
 
 Run: BUILD. Ajusta `using`s de los controllers a los namespaces de Application (Commands/Queries/DTOs de módulo). Repite hasta 0 errores.
 
-- [ ] **Step 4: Verificar (smoke de rutas vía E2E)**
+- [x] **Step 4: Verificar (smoke de rutas vía E2E)**
 
 Run: FULL. *Expected:* verde. Los E2E ejercitan los endpoints con las mismas rutas → si pasan, no hubo regresión de contrato.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

@@ -11,7 +11,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BigSchool.WebApi.Controllers;
+namespace BigSchool.WebApi.Controllers.Investments;
 
 [ApiController]
 [Authorize]

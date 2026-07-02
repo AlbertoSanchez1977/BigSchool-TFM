@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BigSchool.Application.Auth.Interfaces.Services;
 
-namespace BigSchool.WebApi.Controllers;
+namespace BigSchool.WebApi.Controllers.Finanzas;
 
 [ApiController]
 [Authorize]

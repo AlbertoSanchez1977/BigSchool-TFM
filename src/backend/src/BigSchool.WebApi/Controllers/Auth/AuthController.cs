@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BigSchool.WebApi.Controllers;
+namespace BigSchool.WebApi.Controllers.Auth;
 
 [ApiController]
 [Route("api/v1/auth")]
