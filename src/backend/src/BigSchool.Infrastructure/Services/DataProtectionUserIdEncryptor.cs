@@ -1,5 +1,5 @@
-using BigSchool.Application.Interfaces.Services;
 using Microsoft.AspNetCore.DataProtection;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Infrastructure.Services;
 

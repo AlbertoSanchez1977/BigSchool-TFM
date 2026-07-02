@@ -1,4 +1,4 @@
-using BigSchool.Application.Queries.Transactions.GetTransactions;
+using BigSchool.Application.Finanzas.Queries.Transactions.GetTransactions;
 using FluentAssertions;
 using Xunit;
 

@@ -1,11 +1,11 @@
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Interfaces;
+using BigSchool.Application.SharedKernel.Configuration;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using BigSchool.Application.SharedKernel.Interfaces;
 
 namespace BigSchool.Application.Tests.Services;
 

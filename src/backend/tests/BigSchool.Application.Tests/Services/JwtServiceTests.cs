@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using BigSchool.Application.Configuration;
+using BigSchool.Application.SharedKernel.Configuration;
 using BigSchool.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.DataProtection;

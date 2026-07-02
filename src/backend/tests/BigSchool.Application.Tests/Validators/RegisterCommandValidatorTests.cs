@@ -1,4 +1,4 @@
-using BigSchool.Application.Commands.Auth.Register;
+using BigSchool.Application.Auth.Commands.Register;
 using FluentValidation.TestHelper;
 using Xunit;
 

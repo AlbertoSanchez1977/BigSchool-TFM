@@ -1,6 +1,6 @@
-using BigSchool.Application.Interfaces;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Interfaces;
+using BigSchool.Application.SharedKernel.Interfaces;
 
 namespace BigSchool.Infrastructure.Persistence.Repositories;
 

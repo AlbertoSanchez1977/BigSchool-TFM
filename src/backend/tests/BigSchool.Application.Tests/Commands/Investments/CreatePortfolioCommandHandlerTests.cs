@@ -1,5 +1,4 @@
-using BigSchool.Application.Commands.Investments.CreatePortfolio;
-using BigSchool.Application.Interfaces.Repositories;
+using BigSchool.Application.Investments.Commands.CreatePortfolio;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
@@ -8,6 +7,8 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Application.Investments.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
 

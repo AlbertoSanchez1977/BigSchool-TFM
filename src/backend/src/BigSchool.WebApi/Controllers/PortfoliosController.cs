@@ -1,18 +1,18 @@
-using BigSchool.Application.Commands.Investments.AddHolding;
-using BigSchool.Application.Commands.Investments.CreatePortfolio;
-using BigSchool.Application.Commands.Investments.DeleteHolding;
-using BigSchool.Application.Commands.Investments.SellShares;
-using BigSchool.Application.Commands.Investments.UpdateHolding;
-using BigSchool.Application.Common;
-using BigSchool.Application.DTOs.Investments;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Application.Queries.Investments.GetPortfolioById;
-using BigSchool.Application.Queries.Investments.GetPortfolioPerformance;
-using BigSchool.Application.Queries.Investments.GetPortfolios;
+using BigSchool.Application.Investments.Commands.AddHolding;
+using BigSchool.Application.Investments.Commands.CreatePortfolio;
+using BigSchool.Application.Investments.Commands.DeleteHolding;
+using BigSchool.Application.Investments.Commands.SellShares;
+using BigSchool.Application.Investments.Commands.UpdateHolding;
+using BigSchool.Application.SharedKernel.Common;
+using BigSchool.Application.Investments.DTOs;
+using BigSchool.Application.Investments.Queries.GetPortfolioById;
+using BigSchool.Application.Investments.Queries.GetPortfolioPerformance;
+using BigSchool.Application.Investments.Queries.GetPortfolios;
 using BigSchool.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.WebApi.Controllers;
 

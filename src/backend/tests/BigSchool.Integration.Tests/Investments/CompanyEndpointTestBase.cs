@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using BigSchool.Application.Interfaces.Services;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
@@ -10,6 +9,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Integration.Tests.Investments;
 

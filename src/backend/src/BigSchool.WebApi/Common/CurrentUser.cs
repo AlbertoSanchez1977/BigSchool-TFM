@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using BigSchool.Application.Interfaces.Services;
 using Microsoft.IdentityModel.JsonWebTokens;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.WebApi.Common;
 

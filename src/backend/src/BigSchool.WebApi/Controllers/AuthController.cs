@@ -1,8 +1,8 @@
-using BigSchool.Application.Commands.Auth.Login;
-using BigSchool.Application.Commands.Auth.Refresh;
-using BigSchool.Application.Commands.Auth.Register;
-using BigSchool.Application.Common;
-using BigSchool.Application.DTOs.Auth;
+using BigSchool.Application.Auth.Commands.Login;
+using BigSchool.Application.Auth.Commands.Refresh;
+using BigSchool.Application.Auth.Commands.Register;
+using BigSchool.Application.SharedKernel.Common;
+using BigSchool.Application.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

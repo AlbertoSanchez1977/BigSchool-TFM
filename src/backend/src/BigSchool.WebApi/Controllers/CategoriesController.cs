@@ -1,10 +1,10 @@
-using BigSchool.Application.Common;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Application.Queries.Categories.GetCategories;
+using BigSchool.Application.SharedKernel.Common;
+using BigSchool.Application.Finanzas.Queries.Categories.GetCategories;
 using BigSchool.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.WebApi.Controllers;
 

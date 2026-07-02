@@ -1,6 +1,4 @@
-using BigSchool.Application.Commands.Investments.AddHolding;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Application.Interfaces.Services;
+using BigSchool.Application.Investments.Commands.AddHolding;
 using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
@@ -9,6 +7,8 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Investments.Interfaces.Repositories;
+using BigSchool.Application.SharedKernel.Interfaces.Services;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
 

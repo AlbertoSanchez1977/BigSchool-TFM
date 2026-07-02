@@ -1,10 +1,10 @@
 using System.Net.Http.Json;
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Interfaces;
-using BigSchool.Application.Interfaces.Services;
+using BigSchool.Application.SharedKernel.Configuration;
 using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using Microsoft.Extensions.Options;
+using BigSchool.Application.SharedKernel.Interfaces;
+using BigSchool.Application.SharedKernel.Interfaces.Services;
 
 namespace BigSchool.Infrastructure.Services;
 

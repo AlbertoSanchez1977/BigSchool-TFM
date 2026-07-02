@@ -1,4 +1,4 @@
-using BigSchool.Application.Behaviors;
+using BigSchool.Application.SharedKernel.Behaviors;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
