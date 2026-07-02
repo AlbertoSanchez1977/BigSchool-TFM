@@ -1,4 +1,4 @@
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using Dapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

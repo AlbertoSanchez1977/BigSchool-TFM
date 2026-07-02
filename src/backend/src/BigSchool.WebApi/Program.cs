@@ -2,10 +2,11 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using BigSchool.Application.SharedKernel.Configuration;
 using BigSchool.Application.SharedKernel.Infrastructure;
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using BigSchool.Infrastructure.SharedKernel.Services;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -117,7 +118,7 @@ try
     builder.Services.AddHttpClient();
 
     // Dapper: DateOnly no tiene soporte nativo en Dapper; MySQL DATE → DateTime, necesita handler
-    Dapper.SqlMapper.AddTypeHandler(new BigSchool.Infrastructure.Persistence.DateOnlyTypeHandler());
+    Dapper.SqlMapper.AddTypeHandler(new BigSchool.Infrastructure.SharedKernel.Persistence.DateOnlyTypeHandler());
 
     // Controllers — JsonStringEnumConverter: acepta nombres string ("USD") e ints (840) para enums
     builder.Services.AddControllers()

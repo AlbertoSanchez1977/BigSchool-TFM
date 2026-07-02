@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using BigSchool.Integration.Tests.Fixtures;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
