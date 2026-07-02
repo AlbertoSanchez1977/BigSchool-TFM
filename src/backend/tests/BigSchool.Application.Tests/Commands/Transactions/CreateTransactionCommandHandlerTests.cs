@@ -1,7 +1,5 @@
 using BigSchool.Application.Finanzas.Commands.Create;
-using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Finanzas.Entities;
-using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
@@ -9,7 +7,6 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
-using BigSchool.Application.Auth.Interfaces.Repositories;
 using BigSchool.Application.Finanzas.Interfaces.Repositories;
 using BigSchool.Application.SharedKernel.Interfaces.Services;
 
@@ -18,7 +15,7 @@ namespace BigSchool.Application.Tests.Commands.Transactions;
 public class CreateTransactionCommandHandlerTests
 {
     private readonly Mock<ITransactionRepository> _txRepo = new();
-    private readonly Mock<IUserRepository> _userRepo = new();
+    private readonly Mock<IUserBaseCurrencyProvider> _userBaseCurrency = new();
     private readonly Mock<IExchangeRateProvider> _rates = new();
     private readonly CreateTransactionCommandHandler _handler;
 
@@ -28,17 +25,14 @@ public class CreateTransactionCommandHandlerTests
         uow.Setup(u => u.SaveChangesAsync(It.IsAny<bool>())).ReturnsAsync(1);
         _txRepo.Setup(r => r.UnitOfWork).Returns(uow.Object);
 
-        _handler = new CreateTransactionCommandHandler(_txRepo.Object, _userRepo.Object, _rates.Object);
+        _handler = new CreateTransactionCommandHandler(_txRepo.Object, _userBaseCurrency.Object, _rates.Object);
     }
-
-    private static User UserWithBase(Currency baseCurrency)
-        => User.Create("u@test.com", "h", "s", "User", baseCurrency);
 
     [Fact]
     public async Task Handle_ForeignCurrency_ResolvesRateAndConverts()
     {
-        _userRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UserWithBase(Currency.EUR));
+        _userBaseCurrency.Setup(p => p.GetBaseCurrencyAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Currency.EUR);
         _rates.Setup(r => r.GetRateAsync(Currency.USD, Currency.EUR, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(0.92m);
 
@@ -58,8 +52,8 @@ public class CreateTransactionCommandHandlerTests
     [Fact]
     public async Task Handle_NoCurrency_DefaultsToUserBaseCurrency_RateOne()
     {
-        _userRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UserWithBase(Currency.EUR));
+        _userBaseCurrency.Setup(p => p.GetBaseCurrencyAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Currency.EUR);
 
         var command = new CreateTransactionCommand(
             IdUser: 1, Type: TransactionType.Income, IdMainCategory: MainCategory.Salary,
@@ -78,7 +72,8 @@ public class CreateTransactionCommandHandlerTests
     [Fact]
     public async Task Handle_UnknownUser_ThrowsNotFound()
     {
-        _userRepo.Setup(r => r.GetByIdAsync(99, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userBaseCurrency.Setup(p => p.GetBaseCurrencyAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Currency?)null);
 
         var command = new CreateTransactionCommand(
             IdUser: 99, Type: TransactionType.Expense, IdMainCategory: MainCategory.Luxuries,

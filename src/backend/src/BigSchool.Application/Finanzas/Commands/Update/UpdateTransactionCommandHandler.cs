@@ -1,10 +1,8 @@
 using BigSchool.Application.Finanzas.DTOs;
-using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 using MediatR;
-using BigSchool.Application.Auth.Interfaces.Repositories;
 using BigSchool.Application.Finanzas.Interfaces.Repositories;
 using BigSchool.Application.SharedKernel.Interfaces.Services;
 
@@ -13,16 +11,16 @@ namespace BigSchool.Application.Finanzas.Commands.Update;
 public class UpdateTransactionCommandHandler : IRequestHandler<UpdateTransactionCommand, TransactionDto>
 {
     private readonly ITransactionRepository _transactionRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IUserBaseCurrencyProvider _userBaseCurrencyProvider;
     private readonly IExchangeRateProvider _exchangeRateProvider;
 
     public UpdateTransactionCommandHandler(
         ITransactionRepository transactionRepository,
-        IUserRepository userRepository,
+        IUserBaseCurrencyProvider userBaseCurrencyProvider,
         IExchangeRateProvider exchangeRateProvider)
     {
         _transactionRepository = transactionRepository;
-        _userRepository = userRepository;
+        _userBaseCurrencyProvider = userBaseCurrencyProvider;
         _exchangeRateProvider = exchangeRateProvider;
     }
 
@@ -32,17 +30,17 @@ public class UpdateTransactionCommandHandler : IRequestHandler<UpdateTransaction
         if (transaction is null || transaction.IdUser != request.IdUser)
             throw new NotFoundException(nameof(Transaction), request.IdTransaction);
 
-        var user = await _userRepository.GetByIdAsync(request.IdUser, cancellationToken)
-            ?? throw new NotFoundException(nameof(User), request.IdUser);
+        var userBaseCurrency = await _userBaseCurrencyProvider.GetBaseCurrencyAsync(request.IdUser, cancellationToken)
+            ?? throw new NotFoundException("User", request.IdUser);
 
-        var currency = request.Currency ?? user.BaseCurrency;
-        var rate = currency == user.BaseCurrency
+        var currency = request.Currency ?? userBaseCurrency;
+        var rate = currency == userBaseCurrency
             ? 1m
-            : await _exchangeRateProvider.GetRateAsync(currency, user.BaseCurrency, request.TransactionDate, cancellationToken);
+            : await _exchangeRateProvider.GetRateAsync(currency, userBaseCurrency, request.TransactionDate, cancellationToken);
 
         transaction.Update(
             request.Type, request.IdMainCategory, request.IdSubCategory, request.Description,
-            Money.Create(request.Amount, currency), user.BaseCurrency, rate,
+            Money.Create(request.Amount, currency), userBaseCurrency, rate,
             request.TransactionDate, request.TransactionDate);
 
         await _transactionRepository.UnitOfWork.SaveChangesAsync();

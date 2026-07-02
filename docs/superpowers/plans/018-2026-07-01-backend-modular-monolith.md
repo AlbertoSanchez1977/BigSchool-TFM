@@ -1145,7 +1145,7 @@ Nuevo proyecto de tests que falla si las fronteras entre módulos se erosionan. 
 - Create: `tests/BigSchool.Architecture.Tests/LayerDependencyTests.cs`
 - Modify: `Backend.slnx`
 
-- [ ] **Step 1: Crear el proyecto**
+- [x] **Step 1: Crear el proyecto**
 
 Run (cwd `src/backend`):
 ```bash
@@ -1157,7 +1157,7 @@ dotnet sln Backend.slnx add tests/BigSchool.Architecture.Tests
 ```
 *(Si `dotnet sln … add` no soporta `.slnx` en tu SDK, añade a mano en `Backend.slnx` una entrada `<Project Path="tests/BigSchool.Architecture.Tests/BigSchool.Architecture.Tests.csproj" />`.)*
 
-- [ ] **Step 2: Test de fronteras entre módulos**
+- [x] **Step 2: Test de fronteras entre módulos**
 
 `ModuleBoundaryTests.cs`:
 ```csharp
@@ -1208,7 +1208,7 @@ public class ModuleBoundaryTests
 }
 ```
 
-- [ ] **Step 3: Test de dependencias de capa**
+- [x] **Step 3: Test de dependencias de capa**
 
 `LayerDependencyTests.cs`:
 ```csharp
@@ -1248,17 +1248,17 @@ public class LayerDependencyTests
 }
 ```
 
-- [ ] **Step 4: Ejecutar los guard tests**
+- [x] **Step 4: Ejecutar los guard tests**
 
 Run: `dotnet test tests/BigSchool.Architecture.Tests` → *Expected:* PASS. Si alguno **falla**, hay una fuga de frontera real (p. ej. un tipo de Finanzas usa uno de Investments): **arréglala** (mueve el tipo o pásalo por SharedKernel), no relajes el test.
 
 > El test "el publisher no referencia el módulo consumidor" (spec §12) y las reglas sobre `Notifications` se **añaden en Spec 007**, cuando ese módulo y el primer IntegrationEvent existan.
 
-- [ ] **Step 5: Verificar suite completa (con ARCH)**
+- [x] **Step 5: Verificar suite completa (con ARCH)**
 
 Run: BUILD + UNIT + ARCH + INTEGRATION. *Expected:* todo verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -1271,13 +1271,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (Definition of Done — spec 005 §12)
 
-- [ ] `dotnet build` limpio y **toda la suite existente en verde** (unit + integración E2E) → sin cambio de comportamiento.
-- [ ] `BigSchool.Architecture.Tests` en verde (fronteras respetadas).
-- [ ] Test del `InMemoryIntegrationEventBus` (publica→invoca handler; sin handler→no-op) — Tarea 6.
-- [ ] Tests de outbox: fila persistida atómicamente; dispatcher drena, marca `ProcessedOn`, publica exactamente una vez; no reprocesa — Tarea 7.
-- [ ] Smoke E2E: `/health` 200 y endpoints existentes responden igual (mismos contratos/códigos) — lo cubren los E2E existentes.
-- [ ] Sin regresión de contrato: los tipos del frontend no cambian (esta spec no toca la API pública).
-- [ ] `dotnet ef migrations has-pending-model-changes` sin pendientes salvo `AddOutboxMessage` (ya aplicada).
+- [x] `dotnet build` limpio y **toda la suite existente en verde** (unit + integración E2E) → sin cambio de comportamiento.
+- [x] `BigSchool.Architecture.Tests` en verde (fronteras respetadas).
+- [x] Test del `InMemoryIntegrationEventBus` (publica→invoca handler; sin handler→no-op) — Tarea 6.
+- [x] Tests de outbox: fila persistida atómicamente; dispatcher drena, marca `ProcessedOn`, publica exactamente una vez; no reprocesa — Tarea 7.
+- [x] Smoke E2E: `/health` 200 y endpoints existentes responden igual (mismos contratos/códigos) — lo cubren los E2E existentes.
+- [x] Sin regresión de contrato: los tipos del frontend no cambian (esta spec no toca la API pública).
+- [x] `dotnet ef migrations has-pending-model-changes` sin pendientes salvo `AddOutboxMessage` (ya aplicada).
 
 **Nota de secuencia (spec §7):** aquí `SubCategory` solo se **reubica** a `BigSchool.Domain.Finanzas.Entities`. Su **re-modelación como AR independiente** y su CRUD (#8/C) se ejecutan en la **Spec 009**. No re-modeles `SubCategory` en este plan.
 

@@ -1,10 +1,10 @@
 using BigSchool.Application.Investments.DTOs;
 using BigSchool.Application.Investments.Queries;
+using BigSchool.Application.SharedKernel.Interfaces.Services;
 using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 using BigSchool.Application.SharedKernel.Interfaces;
-using BigSchool.Application.Auth.Interfaces.Repositories;
 
 namespace BigSchool.Application.Investments.Queries.GetPortfolioPerformance;
 
@@ -12,12 +12,12 @@ public class GetPortfolioPerformanceQueryHandler
     : IRequestHandler<GetPortfolioPerformanceQuery, PortfolioPerformanceDto?>
 {
     private readonly IDbConnectionFactory _dbFactory;
-    private readonly IUserRepository _userRepository;
+    private readonly IUserBaseCurrencyProvider _userBaseCurrencyProvider;
 
-    public GetPortfolioPerformanceQueryHandler(IDbConnectionFactory dbFactory, IUserRepository userRepository)
+    public GetPortfolioPerformanceQueryHandler(IDbConnectionFactory dbFactory, IUserBaseCurrencyProvider userBaseCurrencyProvider)
     {
         _dbFactory = dbFactory;
-        _userRepository = userRepository;
+        _userBaseCurrencyProvider = userBaseCurrencyProvider;
     }
 
     private const string HEADER_QUERY = @"SELECT IdPortfolio, Name, RealizedPnL, RealizedPnLCurrency
@@ -38,8 +38,8 @@ ORDER BY hv.BuyDate, hv.IdHolding;";
 
     public async Task<PortfolioPerformanceDto?> Handle(GetPortfolioPerformanceQuery request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByIdAsync(request.IdUser, cancellationToken);
-        var baseCurrency = (user?.BaseCurrency ?? Currency.EUR).ToString();
+        var userBaseCurrency = await _userBaseCurrencyProvider.GetBaseCurrencyAsync(request.IdUser, cancellationToken);
+        var baseCurrency = (userBaseCurrency ?? Currency.EUR).ToString();
 
         var parameters = new DynamicParameters();
         parameters.Add("@IdPortfolio", request.IdPortfolio);
