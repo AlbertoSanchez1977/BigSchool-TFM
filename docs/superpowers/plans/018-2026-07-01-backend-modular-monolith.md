@@ -979,7 +979,7 @@ Sustituye el registro por-ensamblado-de-capa de `Program.cs` por **un módulo Au
 - Create: `src/BigSchool.Infrastructure/Investments/DI/InvestmentsModule.cs`
 - Modify: `src/BigSchool.WebApi/Program.cs`
 
-- [ ] **Step 1: `SharedKernelModule`**
+- [x] **Step 1: `SharedKernelModule`**
 
 `SharedKernelModule.cs`:
 ```csharp
@@ -1026,7 +1026,7 @@ public sealed class SharedKernelModule : Module
 ```
 > `IUnitOfWork` vive en `BigSchool.Domain.SharedKernel.Interfaces` (Tarea 1).
 
-- [ ] **Step 2: `AuthModule`, `FinanzasModule`, `InvestmentsModule`**
+- [x] **Step 2: `AuthModule`, `FinanzasModule`, `InvestmentsModule`**
 
 `AuthModule.cs`:
 ```csharp
@@ -1101,7 +1101,7 @@ public sealed class InvestmentsModule : Module
 ```
 > Los "tipos ancla" (`typeof(X).Assembly`) solo localizan el ensamblado; ajusta a un tipo que exista realmente en cada módulo tras las Tareas 3–4.
 
-- [ ] **Step 3: Componer los módulos en `Program.cs`**
+- [x] **Step 3: Componer los módulos en `Program.cs`**
 
 Sustituye el bloque `ConfigureContainer<ContainerBuilder>` (los 4 `RegisterAssemblyTypes` por capa + el `Register` del DbContext) por:
 ```csharp
@@ -1120,11 +1120,11 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 
 Mantén intacto el resto de `Program.cs` (MediatR con `ValidationBehavior` + `OutboxDispatchBehavior`, Swagger, Dapper handler, JWT, CORS, DataProtection, etc.). Ajusta `using`s a los namespaces nuevos.
 
-- [ ] **Step 4: Verificar (la DI se prueba end-to-end)**
+- [x] **Step 4: Verificar (la DI se prueba end-to-end)**
 
 Run: FULL. *Expected:* verde. Los tests de integración E2E validan la DI real: register/login (Auth), POST/GET transactions (Finanzas), companies/portfolios (Investments) deben responder igual.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
