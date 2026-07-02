@@ -2,9 +2,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using BigSchool.Application.SharedKernel.Configuration;
 using BigSchool.Application.SharedKernel.Infrastructure;
-using BigSchool.Infrastructure.SharedKernel.Persistence;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using BigSchool.Infrastructure.SharedKernel.Services;
 
@@ -34,40 +32,17 @@ try
             ?? new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" };
     });
 
-    // Autofac como DI container (simplified: one RegisterAssemblyTypes per layer)
+    // Autofac como DI container: un módulo por módulo funcional (SharedKernel/Auth/Finanzas/Investments)
     builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
-        // Domain layer (excluir entidades — solo servicios de dominio)
-        containerBuilder.RegisterAssemblyTypes(typeof(BigSchool.Domain.SharedKernel.Entities.BaseEntity).Assembly)
-            .Where(t => !t.Namespace!.Contains("Entities") && !t.Namespace!.Contains("Enums") && !t.Namespace!.Contains("Exceptions"))
-            .AsImplementedInterfaces();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.SharedKernel.DI.SharedKernelModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Auth.DI.AuthModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Finanzas.DI.FinanzasModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Investments.DI.InvestmentsModule>();
 
-        // Application layer
-        containerBuilder.RegisterAssemblyTypes(typeof(AppSettings).Assembly)
-            .AsImplementedInterfaces();
-
-        // Infrastructure layer
-        containerBuilder.RegisterAssemblyTypes(typeof(BigSchoolDbContext).Assembly)
-            .AsImplementedInterfaces();
-
-        // WebApi layer
-        containerBuilder.RegisterAssemblyTypes(typeof(Program).Assembly)
-            .AsImplementedInterfaces();
-
-        // DbContext
-        containerBuilder.Register(ctx =>
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<BigSchoolDbContext>();
-            var configuration = ctx.Resolve<Microsoft.Extensions.Configuration.IConfiguration>();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString!));
-            var mediator = ctx.Resolve<IMediator>();
-            return new BigSchoolDbContext(optionsBuilder.Options, mediator);
-        })
-        .AsSelf()
-        .As<BigSchool.Domain.SharedKernel.Interfaces.IUnitOfWork>()
-        .InstancePerLifetimeScope();
+        // WebApi layer (filtros/servicios propios de la capa web; los controllers los descubre MVC)
+        containerBuilder.RegisterAssemblyTypes(typeof(Program).Assembly).AsImplementedInterfaces();
     });
 
     // MediatR con CustomMediatR (dispatch secuencial por defecto: SyncContinueOnException)
