@@ -75,6 +75,7 @@ try
     {
         cfg.RegisterServicesFromAssembly(typeof(AppSettings).Assembly);
         cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.ValidationBehavior<,>));
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.OutboxDispatchBehavior<,>));
     });
     builder.Services.AddTransient<IMediator, CustomMediatR>();
 

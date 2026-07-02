@@ -59,6 +59,7 @@ public sealed class MySqlDatabaseFixture : IAsyncLifetime
         await using var conn = new MySqlConnection(ConnectionString);
         await conn.OpenAsync();
         await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 0;");
+        await conn.ExecuteAsync("DELETE FROM OutboxMessages;");
         await conn.ExecuteAsync("DELETE FROM Disposals;");
         await conn.ExecuteAsync("DELETE FROM Holdings;");
         await conn.ExecuteAsync("DELETE FROM Portfolios;");

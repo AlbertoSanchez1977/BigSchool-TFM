@@ -634,7 +634,7 @@ Persistencia atómica de eventos de integración (tabla `OutboxMessage` en la mi
 - Migration: `AddOutboxMessage`
 - Test: `tests/BigSchool.Integration.Tests/SharedKernel/OutboxTests.cs`
 
-- [ ] **Step 1: Entidad `OutboxMessage` (infraestructura, no AR)**
+- [x] **Step 1: Entidad `OutboxMessage` (infraestructura, no AR)**
 
 `OutboxMessage.cs`:
 ```csharp
@@ -676,7 +676,7 @@ public class OutboxMessage
 }
 ```
 
-- [ ] **Step 2: Configuración EF de la tabla**
+- [x] **Step 2: Configuración EF de la tabla**
 
 `OutboxMessageConfiguration.cs`:
 ```csharp
@@ -704,14 +704,14 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
 }
 ```
 
-- [ ] **Step 3: Registrar el DbSet en el DbContext**
+- [x] **Step 3: Registrar el DbSet en el DbContext**
 
 En `BigSchoolDbContext.cs`, junto a los demás `DbSet` (con `using BigSchool.Infrastructure.SharedKernel.IntegrationEvents;`):
 ```csharp
 public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 ```
 
-- [ ] **Step 4: Abstracciones en Application (los handlers no dependen de EF)**
+- [x] **Step 4: Abstracciones en Application (los handlers no dependen de EF)**
 
 `IIntegrationEventOutbox.cs`:
 ```csharp
@@ -738,7 +738,7 @@ public interface IOutboxDispatcher
 }
 ```
 
-- [ ] **Step 5: Implementaciones en Infrastructure**
+- [x] **Step 5: Implementaciones en Infrastructure**
 
 `IntegrationEventOutbox.cs`:
 ```csharp
@@ -816,7 +816,7 @@ public sealed class OutboxDispatcher : IOutboxDispatcher
 }
 ```
 
-- [ ] **Step 6: Behavior que dispara el drenado post-commit**
+- [x] **Step 6: Behavior que dispara el drenado post-commit**
 
 `OutboxDispatchBehavior.cs` (carpeta `Application/SharedKernel/Behaviors/`):
 ```csharp
@@ -850,21 +850,21 @@ cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.OutboxDi
 ```
 > El registro por-ensamblado de Autofac (vigente hasta la Tarea 8) resuelve `IIntegrationEventOutbox`, `IOutboxDispatcher`, `IIntegrationEventBus` por `AsImplementedInterfaces`. Verifica que las 3 implementaciones quedan registradas.
 
-- [ ] **Step 7: Crear la migración EF**
+- [x] **Step 7: Crear la migración EF**
 
 Run (cwd `src/backend`): `dotnet ef migrations add AddOutboxMessage --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi`
 *Expected:* migración nueva en `src/BigSchool.Infrastructure/SharedKernel/Persistence/Migrations/`. Revisa el `Up()`: crea `OutboxMessages` con índice único en `EventId` e índice en `ProcessedOn`.
 
 > EF genera la migración con el namespace `BigSchool.Infrastructure.Persistence.Migrations` heredado del historial → **déjalo así** (coherente con la excepción de Migrations en la Tarea 4).
 
-- [ ] **Step 8: Aislar los tests — limpiar `OutboxMessages` en `ResetAsync`**
+- [x] **Step 8: Aislar los tests — limpiar `OutboxMessages` en `ResetAsync`**
 
 En `MySqlDatabaseFixture.ResetAsync`, dentro del bloque `FOREIGN_KEY_CHECKS = 0`, añade:
 ```csharp
 await conn.ExecuteAsync("DELETE FROM OutboxMessages;");
 ```
 
-- [ ] **Step 9: Test de integración (atomicidad + drenado + idempotencia)**
+- [x] **Step 9: Test de integración (atomicidad + drenado + idempotencia)**
 
 `OutboxTests.cs`:
 ```csharp
@@ -953,11 +953,11 @@ public class OutboxTests
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter OutboxTests` → *Expected:* PASS (3 tests). El fixture recrea `bigschool_test` aplicando **todas** las migraciones (incluida `AddOutboxMessage`), así que la tabla existe.
 
-- [ ] **Step 10: Verificar suite completa**
+- [x] **Step 10: Verificar suite completa**
 
 Run: FULL. *Expected:* verde. Los E2E existentes siguen pasando: `OutboxDispatchBehavior` drena 0 filas cuando no hay eventos → sin efecto observable.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add -A
