@@ -59,40 +59,47 @@ SharedKernel/Common/          → BigSchool.Application.SharedKernel.Common     
 SharedKernel/Events/          → .SharedKernel.Events                             (DomainEventNotification)
 SharedKernel/Infrastructure/  → .SharedKernel.Infrastructure                     (CustomMediatR, PublishStrategy)
 SharedKernel/Behaviors/       → .SharedKernel.Behaviors                          (ValidationBehavior, NotificationExceptionBehavior, +OutboxDispatchBehavior en T7)
-SharedKernel/Interfaces/      → .SharedKernel.Interfaces                         (IRepository, IDbConnectionFactory, IExchangeRateProvider)
+SharedKernel/Interfaces/      → .SharedKernel.Interfaces                         (IRepository, IDbConnectionFactory)
+SharedKernel/Interfaces/Services/ → .SharedKernel.Interfaces.Services            (IExchangeRateProvider)
 SharedKernel/Configuration/   → .SharedKernel.Configuration                      (AppSettings + settings anidados)
 SharedKernel/IntegrationEvents/     → .SharedKernel.IntegrationEvents            (T6/T7)
 SharedKernel/IntegrationEvents/Contracts/ → .SharedKernel.IntegrationEvents.Contracts  (.gitkeep; contratos en Spec 007)
 Auth/Commands/{Login,Refresh,Register}/ → BigSchool.Application.Auth.Commands.{…}
 Auth/DTOs/                    → .Auth.DTOs                                       (AuthResponseDto)
-Auth/Interfaces/              → .Auth.Interfaces                                 (IUserRepository, IJwtService, IPasswordHasher, IUserIdEncryptor)
+Auth/Interfaces/Repositories/ → .Auth.Interfaces.Repositories                    (IUserRepository)
+Auth/Interfaces/Services/     → .Auth.Interfaces.Services                        (IJwtService, IPasswordHasher, IUserIdEncryptor)
 Finanzas/Commands/{Create,Update,Delete}/ → .Finanzas.Commands.{…}
 Finanzas/Queries/Transactions/{…}/  → .Finanzas.Queries.Transactions.{…}
 Finanzas/Queries/Categories/{…}/    → .Finanzas.Queries.Categories.{…}
 Finanzas/DTOs/                → .Finanzas.DTOs                                   (TransactionDto, TransactionListItemDto)
-Finanzas/Interfaces/          → .Finanzas.Interfaces                             (ITransactionRepository)
+Finanzas/Interfaces/Repositories/ → .Finanzas.Interfaces.Repositories            (ITransactionRepository)
 Investments/Commands/{…}/     → .Investments.Commands.{…}
 Investments/Queries/{…}/      → .Investments.Queries.{…}
 Investments/DTOs/             → .Investments.DTOs
-Investments/Interfaces/       → .Investments.Interfaces                          (ICompanyRepository, IPortfolioRepository)
-Rag/Interfaces/               → .Rag.Interfaces                                  (IRagServiceClient)  [futuro]
+Investments/Interfaces/Repositories/ → .Investments.Interfaces.Repositories      (ICompanyRepository, IPortfolioRepository)
+Rag/Interfaces/Services/      → .Rag.Interfaces.Services                         (IRagServiceClient)  [futuro]
 ```
 
 **`src/BigSchool.Infrastructure/`**
 ```
-SharedKernel/Persistence/     → BigSchool.Infrastructure.SharedKernel.Persistence (BigSchoolDbContext, DbConnectionMySqlFactory, DateOnlyTypeHandler, EFRepository, ExchangeRateConfiguration, +Outbox en T7)
+SharedKernel/Persistence/     → BigSchool.Infrastructure.SharedKernel.Persistence (BigSchoolDbContext, DbConnectionMySqlFactory, DateOnlyTypeHandler, +Outbox en T7)
 SharedKernel/Persistence/Converters/ → .SharedKernel.Persistence.Converters
 SharedKernel/Persistence/Extensions/ → .SharedKernel.Persistence.Extensions      (SeedDataExtensions)
 SharedKernel/Persistence/Migrations/ → **NO CAMBIAR namespace** (ver T4 Step 2)
+SharedKernel/Persistence/Configurations/ → .SharedKernel.Persistence.Configurations (ExchangeRateConfiguration)
+SharedKernel/Persistence/Repositories/  → .SharedKernel.Persistence.Repositories (EFRepository)
 SharedKernel/Services/        → .SharedKernel.Services                            (ExchangeRateApiClient, FrankfurterResponse)
 SharedKernel/IntegrationEvents/ → .SharedKernel.IntegrationEvents                 (T6/T7)
 SharedKernel/DI/              → .SharedKernel.DI                                  (SharedKernelModule, T8)
-Auth/Persistence/             → BigSchool.Infrastructure.Auth.Persistence         (UserConfiguration, UserRepository)
+Auth/Persistence/Configurations/ → BigSchool.Infrastructure.Auth.Persistence.Configurations (UserConfiguration)
+Auth/Persistence/Repositories/   → .Auth.Persistence.Repositories                (UserRepository)
 Auth/Services/                → .Auth.Services                                    (Argon2PasswordHasher, JwtService, DataProtectionUserIdEncryptor)
 Auth/DI/                      → .Auth.DI                                          (AuthModule, T8)
-Finanzas/Persistence/         → BigSchool.Infrastructure.Finanzas.Persistence     (Transaction/SubCategory Configuration, TransactionRepository)
+Finanzas/Persistence/Configurations/ → BigSchool.Infrastructure.Finanzas.Persistence.Configurations (Transaction/SubCategory Configuration)
+Finanzas/Persistence/Repositories/   → .Finanzas.Persistence.Repositories        (TransactionRepository)
 Finanzas/DI/                  → .Finanzas.DI                                      (FinanzasModule, T8)
-Investments/Persistence/      → BigSchool.Infrastructure.Investments.Persistence  (5 Configurations, Company/Portfolio Repository)
+Investments/Persistence/Configurations/ → BigSchool.Infrastructure.Investments.Persistence.Configurations (5 Configurations)
+Investments/Persistence/Repositories/   → .Investments.Persistence.Repositories  (Company/Portfolio Repository)
 Investments/DI/               → .Investments.DI                                   (InvestmentsModule, T8)
 ```
 
@@ -250,74 +257,76 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 Reubica Commands/Queries/DTOs/Interfaces por módulo y los building blocks transversales a `Application/SharedKernel`.
 
-**Files (origen → carpeta destino):**
-- SharedKernel: `Common/*` → `SharedKernel/Common/`; `Events/DomainEventNotification.cs` → `SharedKernel/Events/`; `Infrastructure/CustomMediatR.cs` → `SharedKernel/Infrastructure/`; `Behaviors/*` → `SharedKernel/Behaviors/`; `Interfaces/IRepository.cs` + `Interfaces/IDbConnectionFactory.cs` + `Interfaces/Services/IExchangeRateProvider.cs` → `SharedKernel/Interfaces/`; `Configuration/AppSettings.cs` → `SharedKernel/Configuration/`
-- Auth: `Commands/Auth/*` → `Auth/Commands/`; `DTOs/Auth/*` → `Auth/DTOs/`; `Interfaces/Repositories/IUserRepository.cs` + `Interfaces/Services/{IJwtService,IPasswordHasher,IUserIdEncryptor}.cs` → `Auth/Interfaces/`
-- Finanzas: `Commands/Transactions/*` → `Finanzas/Commands/`; `Queries/Transactions/*` → `Finanzas/Queries/Transactions/`; `Queries/Categories/*` → `Finanzas/Queries/Categories/`; `DTOs/Transactions/*` → `Finanzas/DTOs/`; `Interfaces/Repositories/ITransactionRepository.cs` → `Finanzas/Interfaces/`
-- Investments: `Commands/Investments/*` → `Investments/Commands/`; `Queries/Investments/*` → `Investments/Queries/`; `DTOs/Investments/*` → `Investments/DTOs/`; `Interfaces/Repositories/{ICompanyRepository,IPortfolioRepository}.cs` → `Investments/Interfaces/`
-- Rag: `Interfaces/Services/IRagServiceClient.cs` → `Rag/Interfaces/`
+**Files (origen → carpeta destino):** el movimiento es **1:1 por subcarpeta** — `Repositories/` y `Services/` nunca se fusionan en un único `Interfaces/` plano.
+- SharedKernel: `Common/*` → `SharedKernel/Common/`; `Events/DomainEventNotification.cs` → `SharedKernel/Events/`; `Infrastructure/CustomMediatR.cs` → `SharedKernel/Infrastructure/`; `Behaviors/*` → `SharedKernel/Behaviors/`; `Interfaces/IRepository.cs` + `Interfaces/IDbConnectionFactory.cs` → `SharedKernel/Interfaces/`; `Interfaces/Services/IExchangeRateProvider.cs` → `SharedKernel/Interfaces/Services/`; `Configuration/AppSettings.cs` → `SharedKernel/Configuration/`
+- Auth: `Commands/Auth/*` → `Auth/Commands/`; `DTOs/Auth/*` → `Auth/DTOs/`; `Interfaces/Repositories/IUserRepository.cs` → `Auth/Interfaces/Repositories/`; `Interfaces/Services/{IJwtService,IPasswordHasher,IUserIdEncryptor}.cs` → `Auth/Interfaces/Services/`
+- Finanzas: `Commands/Transactions/*` → `Finanzas/Commands/`; `Queries/Transactions/*` → `Finanzas/Queries/Transactions/`; `Queries/Categories/*` → `Finanzas/Queries/Categories/`; `DTOs/Transactions/*` → `Finanzas/DTOs/`; `Interfaces/Repositories/ITransactionRepository.cs` → `Finanzas/Interfaces/Repositories/`
+- Investments: `Commands/Investments/*` → `Investments/Commands/`; `Queries/Investments/*` → `Investments/Queries/`; `DTOs/Investments/*` → `Investments/DTOs/`; `Interfaces/Repositories/{ICompanyRepository,IPortfolioRepository}.cs` → `Investments/Interfaces/Repositories/`
+- Rag: `Interfaces/Services/IRagServiceClient.cs` → `Rag/Interfaces/Services/`
 
-- [ ] **Step 1: Mover ficheros**
+- [x] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.Application`):
 ```bash
-mkdir -p SharedKernel/Common SharedKernel/Events SharedKernel/Infrastructure SharedKernel/Behaviors SharedKernel/Interfaces SharedKernel/Configuration
-mkdir -p Auth/Interfaces Finanzas/Interfaces Investments/Interfaces Rag/Interfaces
+mkdir -p SharedKernel/Common SharedKernel/Events SharedKernel/Infrastructure SharedKernel/Behaviors SharedKernel/Interfaces/Services SharedKernel/Configuration
+mkdir -p Auth/Interfaces/Repositories Auth/Interfaces/Services Finanzas/Interfaces/Repositories Investments/Interfaces/Repositories Rag/Interfaces/Services
 # SharedKernel
 git mv Common/ApiError.cs Common/ApiResponse.cs Common/PagedResult.cs SharedKernel/Common/
 git mv Events/DomainEventNotification.cs SharedKernel/Events/
 git mv Infrastructure/CustomMediatR.cs SharedKernel/Infrastructure/
 git mv Behaviors/ValidationBehavior.cs Behaviors/NotificationExceptionBehavior.cs SharedKernel/Behaviors/
-git mv Interfaces/IRepository.cs Interfaces/IDbConnectionFactory.cs Interfaces/Services/IExchangeRateProvider.cs SharedKernel/Interfaces/
+git mv Interfaces/IRepository.cs Interfaces/IDbConnectionFactory.cs SharedKernel/Interfaces/
+git mv Interfaces/Services/IExchangeRateProvider.cs SharedKernel/Interfaces/Services/
 git mv Configuration/AppSettings.cs SharedKernel/Configuration/
 # Auth
 git mv Commands/Auth Auth/Commands
 git mv DTOs/Auth Auth/DTOs
-git mv Interfaces/Repositories/IUserRepository.cs Interfaces/Services/IJwtService.cs Interfaces/Services/IPasswordHasher.cs Interfaces/Services/IUserIdEncryptor.cs Auth/Interfaces/
+git mv Interfaces/Repositories/IUserRepository.cs Auth/Interfaces/Repositories/
+git mv Interfaces/Services/IJwtService.cs Interfaces/Services/IPasswordHasher.cs Interfaces/Services/IUserIdEncryptor.cs Auth/Interfaces/Services/
 # Finanzas
 git mv Commands/Transactions Finanzas/Commands
 mkdir -p Finanzas/Queries && git mv Queries/Transactions Finanzas/Queries/Transactions && git mv Queries/Categories Finanzas/Queries/Categories
 git mv DTOs/Transactions Finanzas/DTOs
-git mv Interfaces/Repositories/ITransactionRepository.cs Finanzas/Interfaces/
+git mv Interfaces/Repositories/ITransactionRepository.cs Finanzas/Interfaces/Repositories/
 # Investments
 git mv Commands/Investments Investments/Commands
 git mv Queries/Investments Investments/Queries
 git mv DTOs/Investments Investments/DTOs
-git mv Interfaces/Repositories/ICompanyRepository.cs Interfaces/Repositories/IPortfolioRepository.cs Investments/Interfaces/
+git mv Interfaces/Repositories/ICompanyRepository.cs Interfaces/Repositories/IPortfolioRepository.cs Investments/Interfaces/Repositories/
 # Rag
-git mv Interfaces/Services/IRagServiceClient.cs Rag/Interfaces/
+git mv Interfaces/Services/IRagServiceClient.cs Rag/Interfaces/Services/
 # limpiar vacías
 rmdir Commands DTOs Events Behaviors Infrastructure Configuration Queries Interfaces/Repositories Interfaces/Services Interfaces 2>/dev/null || true
 ```
 *(Revisa manualmente cualquier carpeta que `rmdir` no borre: puede quedar un fichero no listado.)*
 
-- [ ] **Step 2: Ajustar `namespace` = carpeta destino**
+- [x] **Step 2: Ajustar `namespace` = carpeta destino**
 
-Recuerda: la carpeta completa es el namespace. Ejemplos:
+Recuerda: la carpeta completa es el namespace, incluida la subcarpeta `Repositories`/`Services`. Ejemplos:
 - `SharedKernel/Common/*` → `namespace BigSchool.Application.SharedKernel.Common;`
 - `SharedKernel/Infrastructure/CustomMediatR.cs` → `namespace BigSchool.Application.SharedKernel.Infrastructure;` (aquí viven `CustomMediatR` **y** `PublishStrategy`)
-- `SharedKernel/Behaviors/*` → `.SharedKernel.Behaviors;` · `SharedKernel/Interfaces/*` → `.SharedKernel.Interfaces;` · `SharedKernel/Configuration/AppSettings.cs` → `.SharedKernel.Configuration;` · `SharedKernel/Events/*` → `.SharedKernel.Events;`
-- `Auth/Commands/Register/*` → `.Auth.Commands.Register;` (idem Login/Refresh) · `Auth/DTOs/*` → `.Auth.DTOs;` · `Auth/Interfaces/*` → `.Auth.Interfaces;`
-- `Finanzas/Commands/{Create,Update,Delete}/*` → `.Finanzas.Commands.{…};` · `Finanzas/Queries/Transactions/{Sub}/*` → `.Finanzas.Queries.Transactions.{Sub};` · `Finanzas/Queries/Categories/{Sub}/*` → `.Finanzas.Queries.Categories.{Sub};` · `Finanzas/DTOs/*` → `.Finanzas.DTOs;` · `Finanzas/Interfaces/*` → `.Finanzas.Interfaces;`
-- `Investments/*` análogo (`.Investments.Commands.{Sub}`, `.Investments.Queries.{Sub}`, `.Investments.DTOs`, `.Investments.Interfaces`)
-- `Rag/Interfaces/IRagServiceClient.cs` → `.Rag.Interfaces;`
+- `SharedKernel/Behaviors/*` → `.SharedKernel.Behaviors;` · `SharedKernel/Interfaces/*` (raíz: `IRepository`, `IDbConnectionFactory`) → `.SharedKernel.Interfaces;` · `SharedKernel/Interfaces/Services/IExchangeRateProvider.cs` → `.SharedKernel.Interfaces.Services;` · `SharedKernel/Configuration/AppSettings.cs` → `.SharedKernel.Configuration;` · `SharedKernel/Events/*` → `.SharedKernel.Events;`
+- `Auth/Commands/Register/*` → `.Auth.Commands.Register;` (idem Login/Refresh) · `Auth/DTOs/*` → `.Auth.DTOs;` · `Auth/Interfaces/Repositories/IUserRepository.cs` → `.Auth.Interfaces.Repositories;` · `Auth/Interfaces/Services/*` → `.Auth.Interfaces.Services;`
+- `Finanzas/Commands/{Create,Update,Delete}/*` → `.Finanzas.Commands.{…};` · `Finanzas/Queries/Transactions/{Sub}/*` → `.Finanzas.Queries.Transactions.{Sub};` · `Finanzas/Queries/Categories/{Sub}/*` → `.Finanzas.Queries.Categories.{Sub};` · `Finanzas/DTOs/*` → `.Finanzas.DTOs;` · `Finanzas/Interfaces/Repositories/ITransactionRepository.cs` → `.Finanzas.Interfaces.Repositories;`
+- `Investments/*` análogo (`.Investments.Commands.{Sub}`, `.Investments.Queries.{Sub}`, `.Investments.DTOs`, `.Investments.Interfaces.Repositories`)
+- `Rag/Interfaces/Services/IRagServiceClient.cs` → `.Rag.Interfaces.Services;`
 
-- [ ] **Step 3: Compilar y resolver usings (puntos calientes)**
+- [x] **Step 3: Compilar y resolver usings (puntos calientes)**
 
 Run: BUILD. Reemplazos habituales + puntos que hay que verificar sí o sí:
 - `Program.cs`: `using BigSchool.Application.Configuration;` → `…SharedKernel.Configuration;`; `using BigSchool.Application.Infrastructure;` (CustomMediatR) → `…SharedKernel.Infrastructure;`; `using BigSchool.Application.Behaviors;` (ValidationBehavior) → `…SharedKernel.Behaviors;`. Los `typeof(AppSettings)`/`typeof(ValidationBehavior<,>)` siguen válidos.
 - `BigSchoolDbContext.cs`: `using BigSchool.Application.Events;` (`DomainEventNotification<>`) → `…SharedKernel.Events;`
 - `EFRepository.cs`: `using BigSchool.Application.Interfaces;` (`IRepository`) → `…SharedKernel.Interfaces;`
-- Handlers/validators/controllers: cada `using BigSchool.Application.Commands.X` / `.Queries.X` / `.DTOs.X` / `.Interfaces.*` → el namespace derivado de la nueva carpeta (regla universal).
+- Handlers/validators/controllers: cada `using BigSchool.Application.Commands.X` / `.Queries.X` / `.DTOs.X` / `.Interfaces.Repositories.*` / `.Interfaces.Services.*` → el namespace derivado de la nueva carpeta (regla universal, subcarpeta incluida).
 - Los handlers referencian **entidades de dominio** (`BigSchool.Domain.Entities` → ahora `BigSchool.Domain.{Módulo}.Entities`, ya arreglado en T1–T2; si algún handler quedó con el `using` viejo, corrígelo aquí).
 
 Repite hasta 0 errores (incluye los 3 proyectos de test).
 
-- [ ] **Step 4: Verificar**
+- [x] **Step 4: Verificar**
 
 Run: FULL. *Expected:* verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -332,39 +341,46 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 Reparte configuraciones EF, repositorios y servicios por módulo. El `BigSchoolDbContext` sigue siendo único (SharedKernel) y aplica configs con `ApplyConfigurationsFromAssembly` (mecanismo intacto).
 
-**Files (origen → carpeta destino):**
-- SharedKernel: `Persistence/{BigSchoolDbContext,DbConnectionMySqlFactory,DateOnlyTypeHandler}.cs` → `SharedKernel/Persistence/`; `Persistence/Converters/*` → `SharedKernel/Persistence/Converters/`; `Persistence/Extensions/*` → `SharedKernel/Persistence/Extensions/`; `Persistence/Migrations/*` → `SharedKernel/Persistence/Migrations/`; `Persistence/Configurations/ExchangeRateConfiguration.cs` → `SharedKernel/Persistence/`; `Persistence/Repositories/EFRepository.cs` → `SharedKernel/Persistence/`; `Services/{ExchangeRateApiClient,FrankfurterResponse}.cs` → `SharedKernel/Services/`
-- Auth: `Persistence/Configurations/UserConfiguration.cs` + `Persistence/Repositories/UserRepository.cs` → `Auth/Persistence/`; `Services/{Argon2PasswordHasher,JwtService,DataProtectionUserIdEncryptor}.cs` → `Auth/Services/`
-- Finanzas: `Persistence/Configurations/{TransactionConfiguration,SubCategoryConfiguration}.cs` + `Persistence/Repositories/TransactionRepository.cs` → `Finanzas/Persistence/`
-- Investments: `Persistence/Configurations/{Company,Portfolio,Holding,Disposal,Valuation}Configuration.cs` + `Persistence/Repositories/{CompanyRepository,PortfolioRepository}.cs` → `Investments/Persistence/`
+**Files (origen → carpeta destino):** movimiento **1:1 por subcarpeta** — `Configurations/` y `Repositories/` nunca se fusionan en un único `Persistence/` plano.
+- SharedKernel: `Persistence/{BigSchoolDbContext,DbConnectionMySqlFactory,DateOnlyTypeHandler}.cs` → `SharedKernel/Persistence/`; `Persistence/Converters/*` → `SharedKernel/Persistence/Converters/`; `Persistence/Extensions/*` → `SharedKernel/Persistence/Extensions/`; `Persistence/Migrations/*` → `SharedKernel/Persistence/Migrations/`; `Persistence/Configurations/ExchangeRateConfiguration.cs` → `SharedKernel/Persistence/Configurations/`; `Persistence/Repositories/EFRepository.cs` → `SharedKernel/Persistence/Repositories/`; `Services/{ExchangeRateApiClient,FrankfurterResponse}.cs` → `SharedKernel/Services/`
+- Auth: `Persistence/Configurations/UserConfiguration.cs` → `Auth/Persistence/Configurations/`; `Persistence/Repositories/UserRepository.cs` → `Auth/Persistence/Repositories/`; `Services/{Argon2PasswordHasher,JwtService,DataProtectionUserIdEncryptor}.cs` → `Auth/Services/`
+- Finanzas: `Persistence/Configurations/{TransactionConfiguration,SubCategoryConfiguration}.cs` → `Finanzas/Persistence/Configurations/`; `Persistence/Repositories/TransactionRepository.cs` → `Finanzas/Persistence/Repositories/`
+- Investments: `Persistence/Configurations/{Company,Portfolio,Holding,Disposal,Valuation}Configuration.cs` → `Investments/Persistence/Configurations/`; `Persistence/Repositories/{CompanyRepository,PortfolioRepository}.cs` → `Investments/Persistence/Repositories/`
 
 - [ ] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.Infrastructure`):
 ```bash
-mkdir -p SharedKernel/Persistence SharedKernel/Services Auth/Persistence Auth/Services Finanzas/Persistence Investments/Persistence
+mkdir -p SharedKernel/Persistence/Configurations SharedKernel/Persistence/Repositories SharedKernel/Services
+mkdir -p Auth/Persistence/Configurations Auth/Persistence/Repositories Auth/Services
+mkdir -p Finanzas/Persistence/Configurations Finanzas/Persistence/Repositories
+mkdir -p Investments/Persistence/Configurations Investments/Persistence/Repositories
 git mv Persistence/BigSchoolDbContext.cs Persistence/DbConnectionMySqlFactory.cs Persistence/DateOnlyTypeHandler.cs SharedKernel/Persistence/
 git mv Persistence/Converters SharedKernel/Persistence/Converters
 git mv Persistence/Extensions SharedKernel/Persistence/Extensions
 git mv Persistence/Migrations SharedKernel/Persistence/Migrations
-git mv Persistence/Configurations/ExchangeRateConfiguration.cs Persistence/Repositories/EFRepository.cs SharedKernel/Persistence/
+git mv Persistence/Configurations/ExchangeRateConfiguration.cs SharedKernel/Persistence/Configurations/
+git mv Persistence/Repositories/EFRepository.cs SharedKernel/Persistence/Repositories/
 git mv Services/ExchangeRateApiClient.cs Services/FrankfurterResponse.cs SharedKernel/Services/
-git mv Persistence/Configurations/UserConfiguration.cs Persistence/Repositories/UserRepository.cs Auth/Persistence/
+git mv Persistence/Configurations/UserConfiguration.cs Auth/Persistence/Configurations/
+git mv Persistence/Repositories/UserRepository.cs Auth/Persistence/Repositories/
 git mv Services/Argon2PasswordHasher.cs Services/JwtService.cs Services/DataProtectionUserIdEncryptor.cs Auth/Services/
-git mv Persistence/Configurations/TransactionConfiguration.cs Persistence/Configurations/SubCategoryConfiguration.cs Persistence/Repositories/TransactionRepository.cs Finanzas/Persistence/
-git mv Persistence/Configurations/CompanyConfiguration.cs Persistence/Configurations/PortfolioConfiguration.cs Persistence/Configurations/HoldingConfiguration.cs Persistence/Configurations/DisposalConfiguration.cs Persistence/Configurations/ValuationConfiguration.cs Investments/Persistence/
-git mv Persistence/Repositories/CompanyRepository.cs Persistence/Repositories/PortfolioRepository.cs Investments/Persistence/
+git mv Persistence/Configurations/TransactionConfiguration.cs Persistence/Configurations/SubCategoryConfiguration.cs Finanzas/Persistence/Configurations/
+git mv Persistence/Repositories/TransactionRepository.cs Finanzas/Persistence/Repositories/
+git mv Persistence/Configurations/CompanyConfiguration.cs Persistence/Configurations/PortfolioConfiguration.cs Persistence/Configurations/HoldingConfiguration.cs Persistence/Configurations/DisposalConfiguration.cs Persistence/Configurations/ValuationConfiguration.cs Investments/Persistence/Configurations/
+git mv Persistence/Repositories/CompanyRepository.cs Persistence/Repositories/PortfolioRepository.cs Investments/Persistence/Repositories/
 rmdir Persistence/Configurations Persistence/Repositories Persistence Services 2>/dev/null || true
 ```
 
 - [ ] **Step 2: Ajustar `namespace` = carpeta destino (⚠ excepción Migrations)**
 
-- `SharedKernel/Persistence/*.cs` (DbContext, factory, DateOnlyTypeHandler, EFRepository, ExchangeRateConfiguration) → `namespace BigSchool.Infrastructure.SharedKernel.Persistence;`
+- `SharedKernel/Persistence/*.cs` (raíz: DbContext, factory, DateOnlyTypeHandler) → `namespace BigSchool.Infrastructure.SharedKernel.Persistence;`
 - `SharedKernel/Persistence/Converters/*` → `…Persistence.Converters;` · `SharedKernel/Persistence/Extensions/*` → `…Persistence.Extensions;`
+- `SharedKernel/Persistence/Configurations/ExchangeRateConfiguration.cs` → `…Persistence.Configurations;` · `SharedKernel/Persistence/Repositories/EFRepository.cs` → `…Persistence.Repositories;`
 - `SharedKernel/Services/*` → `namespace BigSchool.Infrastructure.SharedKernel.Services;`
-- `Auth/Persistence/*` → `…Auth.Persistence;` · `Auth/Services/*` → `…Auth.Services;`
-- `Finanzas/Persistence/*` → `…Finanzas.Persistence;`
-- `Investments/Persistence/*` → `…Investments.Persistence;`
+- `Auth/Persistence/Configurations/UserConfiguration.cs` → `…Auth.Persistence.Configurations;` · `Auth/Persistence/Repositories/UserRepository.cs` → `…Auth.Persistence.Repositories;` · `Auth/Services/*` → `…Auth.Services;`
+- `Finanzas/Persistence/Configurations/*` → `…Finanzas.Persistence.Configurations;` · `Finanzas/Persistence/Repositories/TransactionRepository.cs` → `…Finanzas.Persistence.Repositories;`
+- `Investments/Persistence/Configurations/*` → `…Investments.Persistence.Configurations;` · `Investments/Persistence/Repositories/*` → `…Investments.Persistence.Repositories;`
 - **⚠ `SharedKernel/Persistence/Migrations/*.cs`: NO cambies el namespace.** Conservan `namespace BigSchool.Infrastructure.Persistence.Migrations` (cambiarlo puede romper el snapshot/`__EFMigrationsHistory` y provocar migraciones espurias). Solo se mueven de carpeta; el `[DbContext(typeof(BigSchoolDbContext))]` resuelve por tipo.
 
 > `BigSchoolDbContext` mantiene `ApplyConfigurationsFromAssembly(typeof(BigSchoolDbContext).Assembly)` **sin cambios**. Verifica que esa línea no se toca. Las configs referencian entidades de dominio (`using BigSchool.Domain.{Módulo}.Entities;`) — ajústalas.
@@ -373,11 +389,11 @@ rmdir Persistence/Configurations Persistence/Repositories Persistence Services 2
 
 Run: BUILD. Reemplazos habituales:
 - `using BigSchool.Infrastructure.Persistence;` (DbContext/factory/DateOnlyTypeHandler) → `…SharedKernel.Persistence;`
-- `using BigSchool.Infrastructure.Persistence.Repositories;` (EFRepository base) → `…SharedKernel.Persistence;`
+- `using BigSchool.Infrastructure.Persistence.Repositories;` (EFRepository base) → `…SharedKernel.Persistence.Repositories;`
 - `using BigSchool.Infrastructure.Services;` → exchange rate → `…SharedKernel.Services;`; hasher/jwt/encryptor → `…Auth.Services;`
 - Configs/repos que usan entidades → `using BigSchool.Domain.{Módulo}.Entities;`
 - `Program.cs`: `using BigSchool.Infrastructure.Persistence;` → `…SharedKernel.Persistence;`. `typeof(BigSchoolDbContext).Assembly` sigue válido.
-- Tests de integración que instancian `BigSchoolDbContext`/repos (`MySqlDatabaseFixture.cs`, etc.) → ajusta a `…SharedKernel.Persistence`.
+- Tests de integración que instancian `BigSchoolDbContext`/repos (`MySqlDatabaseFixture.cs`, etc.) → ajusta a `…SharedKernel.Persistence` (y `…SharedKernel.Persistence.Repositories` si referencian `EFRepository` directamente).
 
 Repite hasta 0 errores.
 
@@ -1015,8 +1031,8 @@ public sealed class SharedKernelModule : Module
 `AuthModule.cs`:
 ```csharp
 using Autofac;
-using BigSchool.Application.Auth.Interfaces;
-using BigSchool.Infrastructure.Auth.Persistence;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Infrastructure.Auth.Persistence.Repositories;
 using Module = Autofac.Module;
 
 namespace BigSchool.Infrastructure.Auth.DI;
@@ -1039,8 +1055,8 @@ public sealed class AuthModule : Module
 `FinanzasModule.cs`:
 ```csharp
 using Autofac;
-using BigSchool.Application.Finanzas.Interfaces;
-using BigSchool.Infrastructure.Finanzas.Persistence;
+using BigSchool.Application.Finanzas.Interfaces.Repositories;
+using BigSchool.Infrastructure.Finanzas.Persistence.Repositories;
 using Module = Autofac.Module;
 
 namespace BigSchool.Infrastructure.Finanzas.DI;
@@ -1063,8 +1079,8 @@ public sealed class FinanzasModule : Module
 `InvestmentsModule.cs`:
 ```csharp
 using Autofac;
-using BigSchool.Application.Investments.Interfaces;
-using BigSchool.Infrastructure.Investments.Persistence;
+using BigSchool.Application.Investments.Interfaces.Repositories;
+using BigSchool.Infrastructure.Investments.Persistence.Repositories;
 using Module = Autofac.Module;
 
 namespace BigSchool.Infrastructure.Investments.DI;

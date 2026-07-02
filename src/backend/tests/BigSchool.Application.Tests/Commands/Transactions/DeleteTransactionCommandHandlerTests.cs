@@ -1,5 +1,4 @@
-using BigSchool.Application.Commands.Transactions.Delete;
-using BigSchool.Application.Interfaces.Repositories;
+using BigSchool.Application.Finanzas.Commands.Delete;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
@@ -8,6 +7,7 @@ using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Finanzas.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Transactions;
 

@@ -1,4 +1,4 @@
-using BigSchool.Application.Events;
+using BigSchool.Application.SharedKernel.Events;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.Investments.Entities;

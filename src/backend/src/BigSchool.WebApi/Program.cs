@@ -1,7 +1,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Infrastructure;
+using BigSchool.Application.SharedKernel.Configuration;
+using BigSchool.Application.SharedKernel.Infrastructure;
 using BigSchool.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -73,7 +73,7 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(AppSettings).Assembly);
-        cfg.AddOpenBehavior(typeof(BigSchool.Application.Behaviors.ValidationBehavior<,>));
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.ValidationBehavior<,>));
     });
     builder.Services.AddTransient<IMediator, CustomMediatR>();
 

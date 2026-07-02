@@ -1,10 +1,10 @@
-using BigSchool.Application.Commands.Investments.AddValuation;
-using BigSchool.Application.Commands.Investments.CreateCompany;
-using BigSchool.Application.Common;
-using BigSchool.Application.DTOs.Investments;
-using BigSchool.Application.Queries.Investments.GetCompanies;
-using BigSchool.Application.Queries.Investments.GetCompanyById;
-using BigSchool.Application.Queries.Investments.GetCompanyValuations;
+using BigSchool.Application.Investments.Commands.AddValuation;
+using BigSchool.Application.Investments.Commands.CreateCompany;
+using BigSchool.Application.SharedKernel.Common;
+using BigSchool.Application.Investments.DTOs;
+using BigSchool.Application.Investments.Queries.GetCompanies;
+using BigSchool.Application.Investments.Queries.GetCompanyById;
+using BigSchool.Application.Investments.Queries.GetCompanyValuations;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using MediatR;

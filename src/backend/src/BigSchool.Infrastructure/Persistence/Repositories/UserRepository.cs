@@ -1,6 +1,6 @@
-using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Domain.Auth.Entities;
 using Microsoft.EntityFrameworkCore;
+using BigSchool.Application.Auth.Interfaces.Repositories;
 
 namespace BigSchool.Infrastructure.Persistence.Repositories;
 

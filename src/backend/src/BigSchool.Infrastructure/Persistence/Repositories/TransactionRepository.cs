@@ -1,5 +1,5 @@
-using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Domain.Finanzas.Entities;
+using BigSchool.Application.Finanzas.Interfaces.Repositories;
 
 namespace BigSchool.Infrastructure.Persistence.Repositories;
 

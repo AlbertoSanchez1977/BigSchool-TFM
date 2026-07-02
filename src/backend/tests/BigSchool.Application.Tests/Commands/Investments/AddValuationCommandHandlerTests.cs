@@ -1,5 +1,4 @@
-using BigSchool.Application.Commands.Investments.AddValuation;
-using BigSchool.Application.Interfaces.Repositories;
+using BigSchool.Application.Investments.Commands.AddValuation;
 using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
@@ -7,6 +6,7 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Investments.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
 

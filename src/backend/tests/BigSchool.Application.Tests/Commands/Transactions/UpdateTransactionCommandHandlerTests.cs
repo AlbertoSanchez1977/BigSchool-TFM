@@ -1,6 +1,4 @@
-using BigSchool.Application.Commands.Transactions.Update;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Application.Interfaces.Services;
+using BigSchool.Application.Finanzas.Commands.Update;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.Finanzas.Enums;
@@ -11,6 +9,9 @@ using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Application.Finanzas.Interfaces.Repositories;
+using BigSchool.Application.SharedKernel.Interfaces.Services;
 
 namespace BigSchool.Application.Tests.Commands.Transactions;
 

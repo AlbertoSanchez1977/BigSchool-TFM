@@ -1,8 +1,8 @@
 using System.Data;
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Interfaces;
+using BigSchool.Application.SharedKernel.Configuration;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
+using BigSchool.Application.SharedKernel.Interfaces;
 
 namespace BigSchool.Infrastructure.Persistence;
 

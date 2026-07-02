@@ -1,19 +1,19 @@
-using BigSchool.Application.Commands.Transactions.Create;
-using BigSchool.Application.Commands.Transactions.Delete;
-using BigSchool.Application.Commands.Transactions.Update;
-using BigSchool.Application.Common;
-using BigSchool.Application.DTOs.Transactions;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Application.Queries.Transactions.GetMonthlyChart;
-using BigSchool.Application.Queries.Transactions.GetTransactionById;
-using BigSchool.Application.Queries.Transactions.GetTransactions;
-using BigSchool.Application.Queries.Transactions.GetTransactionSummary;
+using BigSchool.Application.Finanzas.Commands.Create;
+using BigSchool.Application.Finanzas.Commands.Delete;
+using BigSchool.Application.Finanzas.Commands.Update;
+using BigSchool.Application.SharedKernel.Common;
+using BigSchool.Application.Finanzas.DTOs;
+using BigSchool.Application.Finanzas.Queries.Transactions.GetMonthlyChart;
+using BigSchool.Application.Finanzas.Queries.Transactions.GetTransactionById;
+using BigSchool.Application.Finanzas.Queries.Transactions.GetTransactions;
+using BigSchool.Application.Finanzas.Queries.Transactions.GetTransactionSummary;
 using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.WebApi.Controllers;
 

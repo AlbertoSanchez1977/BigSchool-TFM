@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using BigSchool.Application.Interfaces.Services;
 using Isopoh.Cryptography.Argon2;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Infrastructure.Services;
 

@@ -1,12 +1,12 @@
-using BigSchool.Application.Commands.Auth.Register;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Application.Interfaces.Services;
+using BigSchool.Application.Auth.Commands.Register;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Auth.Exceptions;
 using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Application.Tests.Commands.Auth;
 
