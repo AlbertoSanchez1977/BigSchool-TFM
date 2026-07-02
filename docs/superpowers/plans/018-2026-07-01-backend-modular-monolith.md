@@ -469,7 +469,7 @@ Introduce los contratos de eventos de integración y el bus in-memory. **No hay 
 - Create: `src/BigSchool.Infrastructure/SharedKernel/IntegrationEvents/InMemoryIntegrationEventBus.cs`
 - Test: `tests/BigSchool.Application.Tests/SharedKernel/InMemoryIntegrationEventBusTests.cs`
 
-- [ ] **Step 1: Escribir las abstracciones**
+- [x] **Step 1: Escribir las abstracciones**
 
 `IIntegrationEvent.cs`:
 ```csharp
@@ -505,7 +505,7 @@ public interface IIntegrationEventBus
 
 Run: `mkdir -p src/BigSchool.Application/SharedKernel/IntegrationEvents/Contracts && : > src/BigSchool.Application/SharedKernel/IntegrationEvents/Contracts/.gitkeep`
 
-- [ ] **Step 2: Escribir el test del bus (falla)**
+- [x] **Step 2: Escribir el test del bus (falla)**
 
 `InMemoryIntegrationEventBusTests.cs`:
 ```csharp
@@ -562,7 +562,7 @@ public class InMemoryIntegrationEventBusTests
 
 Run: `dotnet test tests/BigSchool.Application.Tests --filter InMemoryIntegrationEventBusTests` → *Expected:* FAIL (no existe `InMemoryIntegrationEventBus`).
 
-- [ ] **Step 3: Implementar el bus in-memory**
+- [x] **Step 3: Implementar el bus in-memory**
 
 `InMemoryIntegrationEventBus.cs`:
 ```csharp
@@ -597,15 +597,15 @@ public sealed class InMemoryIntegrationEventBus : IIntegrationEventBus
 ```
 > `IServiceProvider.GetServices(Type)` funciona con el adaptador de Autofac. Si no compila por falta de `GetServices`, añade el paquete `Microsoft.Extensions.DependencyInjection.Abstractions` a `BigSchool.Infrastructure.csproj` (suele venir transitivo vía `Autofac.Extensions.DependencyInjection`).
 
-- [ ] **Step 4: Verificar el test**
+- [x] **Step 4: Verificar el test**
 
 Run: `dotnet test tests/BigSchool.Application.Tests --filter InMemoryIntegrationEventBusTests` → *Expected:* PASS (2 tests).
 
-- [ ] **Step 5: Verificar suite**
+- [x] **Step 5: Verificar suite**
 
 Run: BUILD + UNIT. *Expected:* verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
