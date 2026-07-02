@@ -1,6 +1,7 @@
 using BigSchool.Application.Events;
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Interfaces;
+using BigSchool.Domain.SharedKernel.Entities;
+using BigSchool.Domain.SharedKernel.Interfaces;
 using BigSchool.Infrastructure.Persistence.Extensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

@@ -132,7 +132,7 @@ Mueve los building blocks compartidos + `ExchangeRate` al módulo `SharedKernel`
 - `Enums/{Currency,EntityStatus}.cs` → `SharedKernel/Enums/`
 - `Exceptions/{DomainException,ConflictException,NotFoundException}.cs` → `SharedKernel/Exceptions/`
 
-- [ ] **Step 1: Mover ficheros**
+- [x] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.Domain`):
 ```bash
@@ -145,7 +145,7 @@ git mv Enums/Currency.cs Enums/EntityStatus.cs SharedKernel/Enums/
 git mv Exceptions/DomainException.cs Exceptions/ConflictException.cs Exceptions/NotFoundException.cs SharedKernel/Exceptions/
 ```
 
-- [ ] **Step 2: Ajustar `namespace` = carpeta destino**
+- [x] **Step 2: Ajustar `namespace` = carpeta destino**
 
 - `SharedKernel/Entities/*.cs` → `namespace BigSchool.Domain.SharedKernel.Entities;`
 - `SharedKernel/Events/IDomainEvent.cs` → `namespace BigSchool.Domain.SharedKernel.Events;`
@@ -156,7 +156,7 @@ git mv Exceptions/DomainException.cs Exceptions/ConflictException.cs Exceptions/
 
 > Corrige los `using` internos entre ficheros movidos: `MoneyConversion` (usa `Currency`) → `using BigSchool.Domain.SharedKernel.Enums;`; `BaseEntity` (usa `IDomainEvent`) → `using BigSchool.Domain.SharedKernel.Events;`; excepciones derivadas de `DomainException` comparten `.Exceptions` → elimina el `using` redundante.
 
-- [ ] **Step 3: Compilar y resolver usings (regla universal)**
+- [x] **Step 3: Compilar y resolver usings (regla universal)**
 
 Run: BUILD. Mapa de reemplazos (namespace viejo → nuevo, según el tipo usado):
 - `using BigSchool.Domain.Entities;` → si el tipo era `BaseEntity`/`IAggregateRoot`/`ExchangeRate`, `using BigSchool.Domain.SharedKernel.Entities;` (conserva `.Entities` si además usaba entidades aún no movidas).
@@ -168,11 +168,11 @@ Run: BUILD. Mapa de reemplazos (namespace viejo → nuevo, según el tipo usado)
 
 Repite hasta `0 Error(s)`. Incluye ficheros de test.
 
-- [ ] **Step 4: Verificar suite completa**
+- [x] **Step 4: Verificar suite completa**
 
 Run: FULL. *Expected:* verde (sin cambio de comportamiento).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

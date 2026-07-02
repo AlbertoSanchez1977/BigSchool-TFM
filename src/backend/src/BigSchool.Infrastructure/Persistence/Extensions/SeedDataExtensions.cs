@@ -1,4 +1,5 @@
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BigSchool.Infrastructure.Persistence.Extensions;
@@ -57,7 +58,7 @@ public static class SeedDataExtensions
     public static ModelBuilder SeedExchangeRates(this ModelBuilder modelBuilder)
     {
         // Tipos fijos para demo determinista (sin red). RateDate = 2026-01-01. Source = "seed".
-        modelBuilder.Entity<Domain.Entities.ExchangeRate>().HasData(
+        modelBuilder.Entity<Domain.SharedKernel.Entities.ExchangeRate>().HasData(
             new { IdExchangeRate = 1, FromCurrency = Currency.USD, ToCurrency = Currency.EUR, Rate = 0.920000m, RateDate = new DateOnly(2026, 1, 1), Source = (string?)"seed", FetchedAt = SeedDate },
             new { IdExchangeRate = 2, FromCurrency = Currency.GBP, ToCurrency = Currency.EUR, Rate = 1.170000m, RateDate = new DateOnly(2026, 1, 1), Source = (string?)"seed", FetchedAt = SeedDate },
             new { IdExchangeRate = 3, FromCurrency = Currency.CHF, ToCurrency = Currency.EUR, Rate = 1.060000m, RateDate = new DateOnly(2026, 1, 1), Source = (string?)"seed", FetchedAt = SeedDate },

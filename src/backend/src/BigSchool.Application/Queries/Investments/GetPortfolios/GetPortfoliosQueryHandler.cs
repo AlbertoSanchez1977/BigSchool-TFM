@@ -1,7 +1,7 @@
 using BigSchool.Application.DTOs.Investments;
 using BigSchool.Application.Interfaces;
 using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 

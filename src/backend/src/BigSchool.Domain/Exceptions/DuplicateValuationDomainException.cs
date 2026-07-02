@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BigSchool.Domain.SharedKernel.Exceptions;
 
 namespace BigSchool.Domain.Exceptions;
 public class DuplicateValuationDomainException : ConflictException

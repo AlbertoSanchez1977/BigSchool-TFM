@@ -1,6 +1,6 @@
-using BigSchool.Domain.Events;
+using BigSchool.Domain.SharedKernel.Events;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.SharedKernel.Entities;
 
 public abstract class BaseEntity
 {

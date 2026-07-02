@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.SharedKernel.Entities;
 
 /// <summary>
 /// Marcador para Aggregate Roots. Solo las entidades que implementen esta interfaz

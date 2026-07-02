@@ -2,8 +2,8 @@ using BigSchool.Application.DTOs.Transactions;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
 using BigSchool.Domain.Entities;
-using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.ValueObjects;
+using BigSchool.Domain.SharedKernel.Exceptions;
+using BigSchool.Domain.SharedKernel.ValueObjects;
 using MediatR;
 
 namespace BigSchool.Application.Commands.Transactions.Create;

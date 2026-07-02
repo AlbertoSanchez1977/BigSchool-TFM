@@ -38,7 +38,7 @@ try
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
         // Domain layer (excluir entidades — solo servicios de dominio)
-        containerBuilder.RegisterAssemblyTypes(typeof(BigSchool.Domain.Entities.BaseEntity).Assembly)
+        containerBuilder.RegisterAssemblyTypes(typeof(BigSchool.Domain.SharedKernel.Entities.BaseEntity).Assembly)
             .Where(t => !t.Namespace!.Contains("Entities") && !t.Namespace!.Contains("Enums") && !t.Namespace!.Contains("Exceptions"))
             .AsImplementedInterfaces();
 
@@ -65,7 +65,7 @@ try
             return new BigSchoolDbContext(optionsBuilder.Options, mediator);
         })
         .AsSelf()
-        .As<BigSchool.Domain.Interfaces.IUnitOfWork>()
+        .As<BigSchool.Domain.SharedKernel.Interfaces.IUnitOfWork>()
         .InstancePerLifetimeScope();
     });
 

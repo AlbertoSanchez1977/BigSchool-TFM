@@ -1,6 +1,6 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 
-namespace BigSchool.Domain.ValueObjects;
+namespace BigSchool.Domain.SharedKernel.ValueObjects;
 
 /// <summary>
 /// Snapshot de conversión monetaria: importe original, tipo aplicado, importe convertido a la moneda

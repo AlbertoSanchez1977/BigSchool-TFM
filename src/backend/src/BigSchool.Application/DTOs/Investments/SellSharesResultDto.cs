@@ -1,4 +1,4 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 
 namespace BigSchool.Application.DTOs.Investments;
 

@@ -1,3 +1,5 @@
+using BigSchool.Domain.SharedKernel.Exceptions;
+
 namespace BigSchool.Domain.Exceptions;
 
 /// <summary>

@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.SharedKernel.Exceptions;
 
 /// <summary>
 /// Excepción lanzada cuando no se encuentra una entidad en el dominio.

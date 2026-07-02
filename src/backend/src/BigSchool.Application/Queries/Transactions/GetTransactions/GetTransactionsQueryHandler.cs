@@ -1,7 +1,7 @@
 using BigSchool.Application.Common;
 using BigSchool.Application.DTOs.Transactions;
 using BigSchool.Application.Interfaces;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 

@@ -1,5 +1,6 @@
 using BigSchool.Application.DTOs.Transactions;
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
 using MediatR;
 
 namespace BigSchool.Application.Commands.Transactions.Update;

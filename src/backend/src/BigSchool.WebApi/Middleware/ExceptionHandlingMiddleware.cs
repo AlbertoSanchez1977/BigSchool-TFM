@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using BigSchool.Application.Common;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.SharedKernel.Exceptions;
 using FluentValidation;
 
 namespace BigSchool.WebApi.Middleware;

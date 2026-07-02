@@ -1,4 +1,6 @@
 using BigSchool.Domain.Enums;
+using BigSchool.Domain.SharedKernel.Entities;
+using BigSchool.Domain.SharedKernel.Enums;
 
 namespace BigSchool.Domain.Entities;
 
