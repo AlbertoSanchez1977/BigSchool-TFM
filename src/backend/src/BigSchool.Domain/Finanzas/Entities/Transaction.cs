@@ -1,10 +1,10 @@
-using BigSchool.Domain.Enums;
-using BigSchool.Domain.Events;
+using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finanzas.Events;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Finanzas.Entities;
 
 public class Transaction : BaseEntity, IAggregateRoot
 {

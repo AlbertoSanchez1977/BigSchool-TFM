@@ -1,4 +1,4 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Investments.Entities;
 
 namespace BigSchool.Application.Interfaces.Repositories;
 public interface ICompanyRepository : IRepository<Company, int>

@@ -1,5 +1,5 @@
 using System.Net;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Integration.Tests.Fixtures;
 using FluentAssertions;

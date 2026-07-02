@@ -1,7 +1,7 @@
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Entities;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
-using BigSchool.Domain.Events;
+using BigSchool.Domain.Finanzas.Events;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Xunit;

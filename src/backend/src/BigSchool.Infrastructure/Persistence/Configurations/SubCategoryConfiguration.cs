@@ -1,4 +1,4 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

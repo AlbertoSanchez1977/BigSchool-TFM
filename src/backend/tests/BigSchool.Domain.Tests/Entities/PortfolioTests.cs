@@ -1,6 +1,6 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Investments.Exceptions;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;

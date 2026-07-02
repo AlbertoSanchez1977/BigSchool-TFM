@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Persistence;
 using BigSchool.Integration.Tests.Fixtures;

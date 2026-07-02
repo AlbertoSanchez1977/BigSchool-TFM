@@ -1,7 +1,7 @@
 using BigSchool.Application.Commands.Auth.Refresh;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
 using FluentAssertions;
 using Moq;
 using Xunit;

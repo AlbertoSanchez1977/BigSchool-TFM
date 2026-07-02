@@ -1,10 +1,10 @@
 using BigSchool.Application.Commands.Investments.SellShares;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Investments.Exceptions;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using BigSchool.Domain.SharedKernel.Interfaces;
 using BigSchool.Domain.SharedKernel.ValueObjects;

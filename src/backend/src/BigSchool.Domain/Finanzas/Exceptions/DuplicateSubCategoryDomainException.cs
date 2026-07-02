@@ -1,7 +1,7 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
 
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.Finanzas.Exceptions;
 
 public class DuplicateSubCategoryDomainException : DomainException
 {

@@ -1,7 +1,7 @@
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Finanzas.Exceptions;
 using FluentAssertions;
 using Xunit;
 

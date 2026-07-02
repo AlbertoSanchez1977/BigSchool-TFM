@@ -2,7 +2,7 @@ using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Investments.Entities;
 
 /// <summary>
 /// Lote de compra (tranche) de una Company dentro de un Portfolio. Entidad hija del agregado.

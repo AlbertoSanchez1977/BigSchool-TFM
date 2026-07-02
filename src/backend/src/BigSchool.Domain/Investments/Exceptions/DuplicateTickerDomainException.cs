@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BigSchool.Domain.SharedKernel.Exceptions;
 
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.Investments.Exceptions;
 public class DuplicateTickerDomainException : ConflictException
 {
     public DuplicateTickerDomainException(string ticker)

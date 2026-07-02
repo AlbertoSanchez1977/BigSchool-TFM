@@ -1,5 +1,5 @@
 using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using MediatR;
 

@@ -1,5 +1,5 @@
 using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Investments.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BigSchool.Infrastructure.Persistence.Repositories;

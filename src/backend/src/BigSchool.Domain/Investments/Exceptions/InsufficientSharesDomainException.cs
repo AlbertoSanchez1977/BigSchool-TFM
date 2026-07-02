@@ -1,6 +1,6 @@
 using BigSchool.Domain.SharedKernel.Exceptions;
 
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.Investments.Exceptions;
 
 /// <summary>
 /// Se intentó vender más shares de las disponibles (abiertas) de una Company en la cartera. → HTTP 400.

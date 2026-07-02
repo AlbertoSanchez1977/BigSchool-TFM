@@ -193,7 +193,7 @@ Reubica entidades de negocio, enums, eventos y excepciones específicas a sus m�
 - Investments: `Entities/{Company,Valuation,Portfolio,Holding,Disposal}.cs` → `Investments/Entities/`; `Enums/{Market,Sector}.cs` → `Investments/Enums/`; `Exceptions/{DuplicateTickerDomainException,DuplicateValuationDomainException,InsufficientSharesDomainException}.cs` → `Investments/Exceptions/`
 - Rag: `Entities/RagDocument.cs` → `Rag/Entities/`
 
-- [ ] **Step 1: Mover ficheros**
+- [x] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.Domain`):
 ```bash
@@ -212,7 +212,7 @@ rmdir Entities Enums Events Exceptions
 ```
 *(Si `rmdir` falla, quedó algún fichero sin mover: revísalo contra la lista de arriba.)*
 
-- [ ] **Step 2: Ajustar `namespace` = carpeta destino**
+- [x] **Step 2: Ajustar `namespace` = carpeta destino**
 
 - `Auth/Entities/User.cs` → `namespace BigSchool.Domain.Auth.Entities;` · `Auth/Exceptions/*` → `namespace BigSchool.Domain.Auth.Exceptions;`
 - `Finanzas/Entities/*` → `.Finanzas.Entities;` · `Finanzas/Enums/*` → `.Finanzas.Enums;` · `Finanzas/Events/*` → `.Finanzas.Events;` · `Finanzas/Exceptions/*` → `.Finanzas.Exceptions;`
@@ -221,7 +221,7 @@ rmdir Entities Enums Events Exceptions
 
 > Corrige `using`s internos entre subcarpetas del mismo módulo: p. ej. `Transaction.cs` (en `.Finanzas.Entities`) que usa `TransactionType` necesita `using BigSchool.Domain.Finanzas.Enums;`; entidades que lanzan sus excepciones de dominio → `using BigSchool.Domain.{Módulo}.Exceptions;`.
 
-- [ ] **Step 3: Compilar y resolver usings**
+- [x] **Step 3: Compilar y resolver usings**
 
 Run: BUILD. Namespaces destino frecuentes:
 - `User` → `BigSchool.Domain.Auth.Entities`
@@ -231,11 +231,11 @@ Run: BUILD. Namespaces destino frecuentes:
 
 Repite hasta 0 errores (incluye tests).
 
-- [ ] **Step 4: Verificar**
+- [x] **Step 4: Verificar**
 
 Run: FULL. *Expected:* verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

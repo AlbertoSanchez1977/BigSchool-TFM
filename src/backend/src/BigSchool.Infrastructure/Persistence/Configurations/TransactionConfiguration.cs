@@ -1,4 +1,5 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Persistence.Converters;

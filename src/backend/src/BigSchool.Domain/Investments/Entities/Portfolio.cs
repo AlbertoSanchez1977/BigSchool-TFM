@@ -1,10 +1,10 @@
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Investments.Exceptions;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Investments.Entities;
 
 /// <summary>
 /// Cartera de inversión de un usuario (Aggregate Root). Posee Holding (lotes de compra) y, a través de
