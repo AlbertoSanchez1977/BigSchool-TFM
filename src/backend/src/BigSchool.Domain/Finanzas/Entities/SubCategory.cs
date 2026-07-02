@@ -1,8 +1,8 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Finanzas.Entities;
 
 public class SubCategory : BaseEntity
 {

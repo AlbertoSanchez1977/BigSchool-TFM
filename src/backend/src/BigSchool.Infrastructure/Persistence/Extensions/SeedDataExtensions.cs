@@ -1,4 +1,5 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,7 @@ public static class SeedDataExtensions
 
     public static ModelBuilder SeedSubCategories(this ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Domain.Entities.SubCategory>().HasData(
+        modelBuilder.Entity<Domain.Finanzas.Entities.SubCategory>().HasData(
             // Gastos Necesarios
             new { IdSubCategory = 1, IdMainCategory = MainCategory.EssentialExpenses, Name = "Supermercado", IdUser = (int?)null, IsDefault = true, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdSubCategory = 2, IdMainCategory = MainCategory.EssentialExpenses, Name = "Farmacia", IdUser = (int?)null, IsDefault = true, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
@@ -72,7 +73,7 @@ public static class SeedDataExtensions
     {
         // Catálogo global de demo (4 empresas en 3 monedas). IDs fijos 1-4 → el fixture de tests
         // los preserva y limpia solo las creadas por tests (IdCompany > 4).
-        modelBuilder.Entity<Domain.Entities.Company>().HasData(
+        modelBuilder.Entity<Domain.Investments.Entities.Company>().HasData(
             new { IdCompany = 1, Name = "Apple Inc.", Ticker = "AAPL", Sector = (Sector?)Sector.Technology, Market = (Market?)Market.NASDAQ, Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdCompany = 2, Name = "Microsoft Corp.", Ticker = "MSFT", Sector = (Sector?)Sector.Technology, Market = (Market?)Market.NASDAQ, Currency = Currency.USD, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdCompany = 3, Name = "Banco Santander", Ticker = "SAN", Sector = (Sector?)Sector.Financials, Market = (Market?)Market.BME, Currency = Currency.EUR, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
@@ -80,7 +81,7 @@ public static class SeedDataExtensions
         );
 
         // Valuations: fila base (FK shadow IdCompany incluida en el objeto anónimo).
-        modelBuilder.Entity<Domain.Entities.Valuation>().HasData(
+        modelBuilder.Entity<Domain.Investments.Entities.Valuation>().HasData(
             new { IdValuation = 1, IdCompany = 1, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdValuation = 2, IdCompany = 1, Date = new DateOnly(2026, 3, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdValuation = 3, IdCompany = 2, Date = new DateOnly(2026, 1, 2), Source = (string?)"seed", IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
@@ -92,7 +93,7 @@ public static class SeedDataExtensions
         );
 
         // Owned type Price (Money): FK shadow del owned = "{Owner}{OwnerPk}" = "ValuationIdValuation".
-        modelBuilder.Entity<Domain.Entities.Valuation>().OwnsOne(v => v.Price).HasData(
+        modelBuilder.Entity<Domain.Investments.Entities.Valuation>().OwnsOne(v => v.Price).HasData(
             new { ValuationIdValuation = 1, Amount = 195.0000m, Currency = Currency.USD },
             new { ValuationIdValuation = 2, Amount = 210.0000m, Currency = Currency.USD },
             new { ValuationIdValuation = 3, Amount = 420.0000m, Currency = Currency.USD },

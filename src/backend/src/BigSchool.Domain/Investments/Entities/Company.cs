@@ -1,10 +1,10 @@
-using BigSchool.Domain.Enums;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Investments.Enums;
+using BigSchool.Domain.Investments.Exceptions;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Investments.Entities;
 
 /// <summary>
 /// Empresa cotizada (Aggregate Root global, sin IdUser). Posee Valuation como entidad hija.

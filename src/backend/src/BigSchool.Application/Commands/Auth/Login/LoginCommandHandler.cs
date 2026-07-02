@@ -1,7 +1,7 @@
 using BigSchool.Application.DTOs.Auth;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Auth.Exceptions;
 using MediatR;
 
 namespace BigSchool.Application.Commands.Auth.Login;

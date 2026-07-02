@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Enums;
+namespace BigSchool.Domain.Finanzas.Enums;
 
 public enum RecurrencePeriod
 {

@@ -1,6 +1,7 @@
 using BigSchool.Application.DTOs.Investments;
 using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using MediatR;
 

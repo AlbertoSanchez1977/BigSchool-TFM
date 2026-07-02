@@ -1,8 +1,10 @@
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Entities;
+using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finanzas.Exceptions;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Auth.Entities;
 
 public class User : BaseEntity, IAggregateRoot
 {
@@ -73,7 +75,7 @@ public class User : BaseEntity, IAggregateRoot
             && s.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)
             && s.IdStatus != EntityStatus.Deleted))
         {
-            throw new Exceptions.DuplicateSubCategoryDomainException(trimmedName, mainCategory);
+            throw new DuplicateSubCategoryDomainException(trimmedName, mainCategory);
         }
 
         var subCategory = SubCategory.Create(mainCategory, trimmedName);

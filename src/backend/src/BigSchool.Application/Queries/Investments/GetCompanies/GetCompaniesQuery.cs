@@ -1,5 +1,5 @@
 using BigSchool.Application.DTOs.Investments;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Investments.Enums;
 using MediatR;
 
 namespace BigSchool.Application.Queries.Investments.GetCompanies;

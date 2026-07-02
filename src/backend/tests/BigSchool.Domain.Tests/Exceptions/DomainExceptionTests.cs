@@ -1,4 +1,4 @@
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Auth.Exceptions;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using FluentAssertions;
 using Xunit;

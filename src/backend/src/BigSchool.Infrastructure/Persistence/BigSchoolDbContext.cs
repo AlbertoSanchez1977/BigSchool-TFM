@@ -1,5 +1,8 @@
 using BigSchool.Application.Events;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Finanzas.Entities;
+using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.Rag.Entities;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Interfaces;
 using BigSchool.Infrastructure.Persistence.Extensions;

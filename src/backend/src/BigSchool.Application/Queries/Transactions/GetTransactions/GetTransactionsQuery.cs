@@ -1,6 +1,6 @@
 using BigSchool.Application.Common;
 using BigSchool.Application.DTOs.Transactions;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
 using MediatR;
 
 namespace BigSchool.Application.Queries.Transactions.GetTransactions;

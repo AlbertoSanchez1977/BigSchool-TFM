@@ -1,9 +1,10 @@
 using BigSchool.Application.Commands.Transactions.Create;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using BigSchool.Domain.SharedKernel.Interfaces;

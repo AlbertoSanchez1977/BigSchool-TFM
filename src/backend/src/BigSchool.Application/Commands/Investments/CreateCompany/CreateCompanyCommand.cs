@@ -1,5 +1,5 @@
 using BigSchool.Application.DTOs.Investments;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using MediatR;
 

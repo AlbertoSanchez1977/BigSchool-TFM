@@ -1,8 +1,8 @@
 using BigSchool.Application.Commands.Auth.Register;
 using BigSchool.Application.Interfaces.Repositories;
 using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Exceptions;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Auth.Exceptions;
 using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;

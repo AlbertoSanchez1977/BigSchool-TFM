@@ -1,4 +1,4 @@
-namespace BigSchool.Domain.Enums;
+namespace BigSchool.Domain.Investments.Enums;
 
 public enum Sector
 {

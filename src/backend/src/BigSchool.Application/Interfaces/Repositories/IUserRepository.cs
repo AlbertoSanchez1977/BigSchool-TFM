@@ -1,4 +1,4 @@
-using BigSchool.Domain.Entities;
+using BigSchool.Domain.Auth.Entities;
 
 namespace BigSchool.Application.Interfaces.Repositories;
 

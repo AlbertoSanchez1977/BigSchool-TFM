@@ -1,5 +1,5 @@
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
+using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;

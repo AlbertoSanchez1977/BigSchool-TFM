@@ -1,6 +1,6 @@
 using BigSchool.Domain.SharedKernel.Exceptions;
 
-namespace BigSchool.Domain.Exceptions;
+namespace BigSchool.Domain.Auth.Exceptions;
 
 /// <summary>
 /// Excepción lanzada cuando las credenciales de login son inválidas.

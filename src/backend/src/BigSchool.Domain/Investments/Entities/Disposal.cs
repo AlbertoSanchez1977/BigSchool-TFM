@@ -2,7 +2,7 @@ using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.ValueObjects;
 
-namespace BigSchool.Domain.Entities;
+namespace BigSchool.Domain.Investments.Entities;
 
 /// <summary>
 /// Venta (disposición) de shares de un lote (Holding). Entidad nieta del agregado Portfolio.
