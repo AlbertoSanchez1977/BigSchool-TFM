@@ -5,6 +5,7 @@ using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.Rag.Entities;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Interfaces;
+using BigSchool.Infrastructure.SharedKernel.IntegrationEvents;
 using BigSchool.Infrastructure.SharedKernel.Persistence.Extensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,8 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     public DbSet<Disposal> Disposals => Set<Disposal>();
 
     // public DbSet<RagDocument> RagDocuments => Set<RagDocument>();
+
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
     {
