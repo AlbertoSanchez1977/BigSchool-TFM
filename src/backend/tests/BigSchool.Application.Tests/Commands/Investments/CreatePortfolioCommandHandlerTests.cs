@@ -1,5 +1,5 @@
 using BigSchool.Application.Investments.Commands.CreatePortfolio;
-using BigSchool.Domain.Auth.Entities;
+using BigSchool.Application.SharedKernel.Interfaces.Services;
 using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Domain.SharedKernel.Exceptions;
@@ -7,7 +7,6 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
-using BigSchool.Application.Auth.Interfaces.Repositories;
 using BigSchool.Application.Investments.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
@@ -15,7 +14,7 @@ namespace BigSchool.Application.Tests.Commands.Investments;
 public class CreatePortfolioCommandHandlerTests
 {
     private readonly Mock<IPortfolioRepository> _portfolios = new();
-    private readonly Mock<IUserRepository> _users = new();
+    private readonly Mock<IUserBaseCurrencyProvider> _userBaseCurrency = new();
     private readonly CreatePortfolioCommandHandler _handler;
 
     public CreatePortfolioCommandHandlerTests()
@@ -23,14 +22,14 @@ public class CreatePortfolioCommandHandlerTests
         var uow = new Mock<IUnitOfWork>();
         uow.Setup(u => u.SaveChangesAsync(It.IsAny<bool>())).ReturnsAsync(1);
         _portfolios.Setup(r => r.UnitOfWork).Returns(uow.Object);
-        _handler = new CreatePortfolioCommandHandler(_portfolios.Object, _users.Object);
+        _handler = new CreatePortfolioCommandHandler(_portfolios.Object, _userBaseCurrency.Object);
     }
 
     [Fact]
     public async Task Handle_CreatesPortfolio_WithRealizedPnLZeroInUserBase()
     {
-        var user = User.Create("e2e@test.com", "h", "s", "User", Currency.USD);
-        _users.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _userBaseCurrency.Setup(p => p.GetBaseCurrencyAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Currency.USD);
 
         var result = await _handler.Handle(new CreatePortfolioCommand(7, "Growth"), CancellationToken.None);
 
@@ -43,7 +42,8 @@ public class CreatePortfolioCommandHandlerTests
     [Fact]
     public async Task Handle_UnknownUser_ThrowsNotFound()
     {
-        _users.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userBaseCurrency.Setup(p => p.GetBaseCurrencyAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Currency?)null);
 
         var act = () => _handler.Handle(new CreatePortfolioCommand(99, "X"), CancellationToken.None);
 

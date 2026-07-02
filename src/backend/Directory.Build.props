@@ -27,11 +27,14 @@
     <SerilogSinksFileVersion>6.0.0</SerilogSinksFileVersion>
     <SerilogAspNetCoreVersion>8.0.3</SerilogAspNetCoreVersion>
     <!-- Test packages -->
+    <TestSdkVersion>17.11.1</TestSdkVersion>
     <xUnitVersion>2.9.2</xUnitVersion>
+    <XunitRunnerVisualStudioVersion>2.8.2</XunitRunnerVisualStudioVersion>
     <FluentAssertionsVersion>6.12.2</FluentAssertionsVersion>
     <MoqVersion>4.20.72</MoqVersion>
     <TestcontainersVersion>3.10.0</TestcontainersVersion>
     <MvcTestingVersion>8.0.11</MvcTestingVersion>
+    <NetArchTestVersion>1.3.2</NetArchTestVersion>
     <!-- Infrastructure -->
     <OptionsVersion>9.0.0</OptionsVersion>
     <HttpExtensionsVersion>8.0.1</HttpExtensionsVersion>
