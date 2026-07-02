@@ -347,7 +347,7 @@ Reparte configuraciones EF, repositorios y servicios por módulo. El `BigSchoolD
 - Finanzas: `Persistence/Configurations/{TransactionConfiguration,SubCategoryConfiguration}.cs` → `Finanzas/Persistence/Configurations/`; `Persistence/Repositories/TransactionRepository.cs` → `Finanzas/Persistence/Repositories/`
 - Investments: `Persistence/Configurations/{Company,Portfolio,Holding,Disposal,Valuation}Configuration.cs` → `Investments/Persistence/Configurations/`; `Persistence/Repositories/{CompanyRepository,PortfolioRepository}.cs` → `Investments/Persistence/Repositories/`
 
-- [ ] **Step 1: Mover ficheros**
+- [x] **Step 1: Mover ficheros**
 
 Run (cwd `src/backend/src/BigSchool.Infrastructure`):
 ```bash
@@ -372,7 +372,7 @@ git mv Persistence/Repositories/CompanyRepository.cs Persistence/Repositories/Po
 rmdir Persistence/Configurations Persistence/Repositories Persistence Services 2>/dev/null || true
 ```
 
-- [ ] **Step 2: Ajustar `namespace` = carpeta destino (⚠ excepción Migrations)**
+- [x] **Step 2: Ajustar `namespace` = carpeta destino (⚠ excepción Migrations)**
 
 - `SharedKernel/Persistence/*.cs` (raíz: DbContext, factory, DateOnlyTypeHandler) → `namespace BigSchool.Infrastructure.SharedKernel.Persistence;`
 - `SharedKernel/Persistence/Converters/*` → `…Persistence.Converters;` · `SharedKernel/Persistence/Extensions/*` → `…Persistence.Extensions;`
@@ -385,7 +385,7 @@ rmdir Persistence/Configurations Persistence/Repositories Persistence Services 2
 
 > `BigSchoolDbContext` mantiene `ApplyConfigurationsFromAssembly(typeof(BigSchoolDbContext).Assembly)` **sin cambios**. Verifica que esa línea no se toca. Las configs referencian entidades de dominio (`using BigSchool.Domain.{Módulo}.Entities;`) — ajústalas.
 
-- [ ] **Step 3: Compilar y resolver usings**
+- [x] **Step 3: Compilar y resolver usings**
 
 Run: BUILD. Reemplazos habituales:
 - `using BigSchool.Infrastructure.Persistence;` (DbContext/factory/DateOnlyTypeHandler) → `…SharedKernel.Persistence;`
@@ -397,12 +397,12 @@ Run: BUILD. Reemplazos habituales:
 
 Repite hasta 0 errores.
 
-- [ ] **Step 4: Verificar (+ sanidad de migraciones)**
+- [x] **Step 4: Verificar (+ sanidad de migraciones)**
 
 Run: FULL. *Expected:* verde. Además:
 Run (cwd `src/backend`): `dotnet ef migrations has-pending-model-changes --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi` → *Expected:* sin cambios pendientes (el refactor NO debe generar migraciones nuevas).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

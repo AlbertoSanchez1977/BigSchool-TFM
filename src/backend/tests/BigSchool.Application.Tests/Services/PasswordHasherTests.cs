@@ -1,6 +1,6 @@
-using BigSchool.Infrastructure.Services;
 using FluentAssertions;
 using Xunit;
+using BigSchool.Infrastructure.Auth.Services;
 
 namespace BigSchool.Application.Tests.Services;
 
