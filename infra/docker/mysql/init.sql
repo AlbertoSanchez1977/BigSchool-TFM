@@ -25,7 +25,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260620085001_CreateTransactions',         '8.0.11'),
     ('20260621101518_CreateCompanies',            '8.0.11'),
     ('20260621173448_AddSectorMarketEnums',       '8.0.11'),
-    ('20260621184811_CreatePortfolios',           '8.0.11');
+    ('20260621184811_CreatePortfolios',           '8.0.11'),
+    ('20260702164337_AddOutboxMessage',           '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -296,6 +297,26 @@ CREATE TABLE IF NOT EXISTS `Disposals` (
     KEY `IX_Disposals_IdHolding` (`IdHolding`),
     CONSTRAINT `FK_Disposals_Holdings_IdHolding`
         FOREIGN KEY (`IdHolding`) REFERENCES `Holdings` (`IdHolding`) ON DELETE CASCADE
+) CHARACTER SET utf8mb4;
+
+-- ============================================================
+-- Tabla: OutboxMessages
+-- EF Core: AddOutboxMessage (Spec 0 / Plan 018 Tarea 7) — espejo exacto de migración
+-- 20260702164337. Infraestructura pura (SharedKernel): outbox transaccional de
+-- IntegrationEvents, drenado post-commit por OutboxDispatcher. Sin consumidores todavía
+-- (se estrenan en Spec 007).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `OutboxMessages` (
+    `IdOutboxMessage` BIGINT        NOT NULL AUTO_INCREMENT,
+    `EventId`         CHAR(36)      CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+    `Type`            VARCHAR(512)  CHARACTER SET utf8mb4 NOT NULL,
+    `Payload`         JSON          NOT NULL,
+    `OccurredOn`      DATETIME(6)   NOT NULL,
+    `ProcessedOn`     DATETIME(6)   NULL,
+    `Error`           VARCHAR(2048) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_OutboxMessages` PRIMARY KEY (`IdOutboxMessage`),
+    UNIQUE KEY `IX_OutboxMessages_EventId` (`EventId`),
+    KEY `IX_OutboxMessages_ProcessedOn` (`ProcessedOn`)
 ) CHARACTER SET utf8mb4;
 
 -- ============================================================
