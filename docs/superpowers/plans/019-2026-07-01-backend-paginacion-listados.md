@@ -166,7 +166,7 @@ El `COUNT(*)` va sobre `Companies` con los filtros `Sector/Market`+status (sin e
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/CompaniesController.cs` (método `Get`)
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetCompaniesTests.cs` (añadir casos de paginación)
 
-- [ ] **Step 1: Query record → `PagedResult` + page/pageSize**
+- [x] **Step 1: Query record → `PagedResult` + page/pageSize**
 
 `GetCompaniesQuery.cs`:
 ```csharp
@@ -181,7 +181,7 @@ public record GetCompaniesQuery(Sector? Sector, Market? Market, int Page, int Pa
     : IRequest<PagedResult<CompanyListItemDto>>;
 ```
 
-- [ ] **Step 2: Handler → COUNT + página en un `QueryMultipleAsync`**
+- [x] **Step 2: Handler → COUNT + página en un `QueryMultipleAsync`**
 
 `GetCompaniesQueryHandler.cs`:
 ```csharp
@@ -238,7 +238,7 @@ public class GetCompaniesQueryHandler : IRequestHandler<GetCompaniesQuery, Paged
 }
 ```
 
-- [ ] **Step 3: Controller — añadir page/pageSize + meta**
+- [x] **Step 3: Controller — añadir page/pageSize + meta**
 
 En `CompaniesController.cs`, reemplaza el método `Get` por:
 ```csharp
@@ -255,7 +255,7 @@ En `CompaniesController.cs`, reemplaza el método `Get` por:
 ```
 > `MetaData` está en `BigSchool.Application.SharedKernel.Common` (ya en los `using` del controller vía `ApiResponse`). El `GetById` y `GetValuations` (la valuations se pagina en la Tarea 4) no se tocan aquí.
 
-- [ ] **Step 4: E2E — añadir casos de paginación a `GetCompaniesTests`**
+- [x] **Step 4: E2E — añadir casos de paginación a `GetCompaniesTests`**
 
 Añade estos métodos a `GetCompaniesTests` (usa los helpers de `CompanyEndpointTestBase`; `SeededCompaniesCount = 4`):
 ```csharp
@@ -299,11 +299,11 @@ Añade estos métodos a `GetCompaniesTests` (usa los helpers de `CompanyEndpoint
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetCompaniesTests` → *Expected:* PASS.
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: FULL. *Expected:* verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
