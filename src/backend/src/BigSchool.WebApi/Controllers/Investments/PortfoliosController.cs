@@ -39,10 +39,11 @@ public class PortfoliosController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PortfolioListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _mediator.Send(new GetPortfoliosQuery(UserId));
-        return Ok(ApiResponse<IReadOnlyList<PortfolioListItemDto>>.Success(result));
+        var result = await _mediator.Send(new GetPortfoliosQuery(UserId, page, pageSize));
+        var meta = new MetaData { Page = result.Page, PageSize = result.PageSize, TotalCount = result.TotalCount };
+        return Ok(ApiResponse<IReadOnlyList<PortfolioListItemDto>>.Success(result.Items, meta));
     }
 
     [HttpPost]

@@ -272,9 +272,11 @@ Authorization: Bearer {{token}}
 #                NVDA=5(USD) ITX=6(EUR)  IBE=7(EUR) AMZN=8(USD) TSLA=9(USD)
 # ═════════════════════════════════════════════════════════════════════════════
 
-### 23 Listar carteras — MarketValue consolidado en EUR (Dapper + última cotización)
-# Respuesta: [{ idPortfolio, name, baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL }]
-GET {{baseUrl}}/api/v1/portfolios
+### 23 Listar carteras — paginado (page/pageSize, defaults 1/20); MarketValue consolidado en EUR (Dapper + última cotización)
+# Respuesta: { data: [{ idPortfolio, name, baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+# totalCount cuenta carteras, no holdings.
+GET {{baseUrl}}/api/v1/portfolios?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###

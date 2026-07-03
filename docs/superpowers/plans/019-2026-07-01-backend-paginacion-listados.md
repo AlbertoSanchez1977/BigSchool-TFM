@@ -324,7 +324,7 @@ El `COUNT(*)` cuenta **carteras** (`Portfolios` con `IdUser`+status), **no** fil
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/PortfoliosController.cs` (método `Get`)
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetPortfoliosTests.cs`
 
-- [ ] **Step 1: Query record → `PagedResult` + page/pageSize**
+- [x] **Step 1: Query record → `PagedResult` + page/pageSize**
 
 `GetPortfoliosQuery.cs`:
 ```csharp
@@ -338,7 +338,7 @@ public record GetPortfoliosQuery(int IdUser, int Page, int PageSize)
     : IRequest<PagedResult<PortfolioListItemDto>>;
 ```
 
-- [ ] **Step 2: Handler → COUNT de carteras + página agrupada**
+- [x] **Step 2: Handler → COUNT de carteras + página agrupada**
 
 `GetPortfoliosQueryHandler.cs`:
 ```csharp
@@ -403,7 +403,7 @@ LIMIT @PageSize OFFSET @Offset;";
 ```
 > `PortfolioSqlFragments` está en el namespace **padre** `BigSchool.Application.Investments.Queries` → visible sin `using` extra desde `…Queries.GetPortfolios`. Si el compilador no lo resuelve, añade `using BigSchool.Application.Investments.Queries;`.
 
-- [ ] **Step 3: Controller — añadir page/pageSize + meta**
+- [x] **Step 3: Controller — añadir page/pageSize + meta**
 
 En `PortfoliosController.cs`, reemplaza el método `Get`:
 ```csharp
@@ -417,7 +417,7 @@ En `PortfoliosController.cs`, reemplaza el método `Get`:
     }
 ```
 
-- [ ] **Step 4: E2E — paginación + `totalCount` cuenta carteras (no holdings)**
+- [x] **Step 4: E2E — paginación + `totalCount` cuenta carteras (no holdings)**
 
 Añade a `GetPortfoliosTests` (usa `PortfolioEndpointTestBase`):
 ```csharp
@@ -464,11 +464,11 @@ Añade a `GetPortfoliosTests` (usa `PortfolioEndpointTestBase`):
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetPortfoliosTests` → *Expected:* PASS.
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: FULL. *Expected:* verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A

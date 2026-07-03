@@ -44,4 +44,43 @@ public class GetPortfoliosTests : PortfolioEndpointTestBase
         var response = await client.GetAsync("/api/v1/portfolios");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task Get_Paginado_TotalCountCuentaCarteras_NoHoldings()
+    {
+        var (userId, email) = await SeedUserAsync(Currency.EUR);
+        var client = AuthenticatedClient(userId, email);
+        await SeedExchangeRateAsync(Currency.USD, Currency.EUR, 0.90m, new DateOnly(2026, 1, 5));
+
+        // Cartera con 2 holdings + 2 carteras vacías → 3 carteras en total.
+        var withHoldings = await CreatePortfolioViaApiAsync(client, "Con Holdings");
+        await AddHoldingViaApiAsync(client, withHoldings, CompanyAaplUsd, 10m, 195m, "2026-01-05");
+        await AddHoldingViaApiAsync(client, withHoldings, CompanyMsftUsd, 5m, 300m, "2026-01-05");
+        await CreatePortfolioViaApiAsync(client, "Vacia 1");
+        await CreatePortfolioViaApiAsync(client, "Vacia 2");
+
+        var r1 = await client.GetAsync("/api/v1/portfolios?page=1&pageSize=2");
+        var e1 = await r1.Content.ReadFromJsonAsync<ApiEnvelope<List<PortfolioListItemResponse>>>();
+        e1!.Data!.Should().HaveCount(2);
+        e1.Meta!.TotalCount.Should().Be(3);   // 3 carteras, NO 4 (no cuenta los holdings)
+        e1.Meta.TotalPages.Should().Be(2);
+
+        var r2 = await client.GetAsync("/api/v1/portfolios?page=2&pageSize=2");
+        var e2 = await r2.Content.ReadFromJsonAsync<ApiEnvelope<List<PortfolioListItemResponse>>>();
+        e2!.Data!.Should().HaveCount(1);
+        e1.Data!.Select(p => p.IdPortfolio).Should().NotIntersectWith(e2.Data!.Select(p => p.IdPortfolio));
+    }
+
+    [Fact]
+    public async Task Get_SinCarteras_DevuelveListaVacia_TotalCount0()
+    {
+        var (userId, email) = await SeedUserAsync(Currency.EUR);
+        var client = AuthenticatedClient(userId, email);
+
+        var resp = await client.GetAsync("/api/v1/portfolios?page=1&pageSize=20");
+
+        var env = await resp.Content.ReadFromJsonAsync<ApiEnvelope<List<PortfolioListItemResponse>>>();
+        env!.Data!.Should().BeEmpty();
+        env.Meta!.TotalCount.Should().Be(0);
+    }
 }
