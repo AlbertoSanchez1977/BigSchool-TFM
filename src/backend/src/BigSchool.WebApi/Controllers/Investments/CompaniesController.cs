@@ -60,10 +60,11 @@ public class CompaniesController : ControllerBase
 
     [HttpGet("{id:int}/valuations")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ValuationListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetValuations(int id)
+    public async Task<IActionResult> GetValuations(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _mediator.Send(new GetCompanyValuationsQuery(id));
-        return Ok(ApiResponse<IReadOnlyList<ValuationListItemDto>>.Success(result));
+        var result = await _mediator.Send(new GetCompanyValuationsQuery(id, page, pageSize));
+        var meta = new MetaData { Page = result.Page, PageSize = result.PageSize, TotalCount = result.TotalCount };
+        return Ok(ApiResponse<IReadOnlyList<ValuationListItemDto>>.Success(result.Items, meta));
     }
 
     [HttpPost("{id:int}/valuations")]

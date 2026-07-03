@@ -489,7 +489,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/CompaniesController.cs` (método `GetValuations`)
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetCompanyValuationsTests.cs`
 
-- [ ] **Step 1: Query record → `PagedResult` + page/pageSize**
+- [x] **Step 1: Query record → `PagedResult` + page/pageSize**
 
 `GetCompanyValuationsQuery.cs`:
 ```csharp
@@ -503,7 +503,7 @@ public record GetCompanyValuationsQuery(int IdCompany, int Page, int PageSize)
     : IRequest<PagedResult<ValuationListItemDto>>;
 ```
 
-- [ ] **Step 2: Handler → COUNT + página**
+- [x] **Step 2: Handler → COUNT + página**
 
 `GetCompanyValuationsQueryHandler.cs`:
 ```csharp
@@ -551,7 +551,7 @@ public class GetCompanyValuationsQueryHandler : IRequestHandler<GetCompanyValuat
 }
 ```
 
-- [ ] **Step 3: Controller — añadir page/pageSize + meta**
+- [x] **Step 3: Controller — añadir page/pageSize + meta**
 
 En `CompaniesController.cs`, reemplaza el método `GetValuations`:
 ```csharp
@@ -565,7 +565,7 @@ En `CompaniesController.cs`, reemplaza el método `GetValuations`:
     }
 ```
 
-- [ ] **Step 4: E2E — añadir casos de paginación a `GetCompanyValuationsTests`**
+- [x] **Step 4: E2E — añadir casos de paginación a `GetCompanyValuationsTests`**
 
 Añade a `GetCompanyValuationsTests` (usa `CompanyEndpointTestBase`):
 ```csharp
@@ -598,11 +598,11 @@ Añade a `GetCompanyValuationsTests` (usa `CompanyEndpointTestBase`):
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetCompanyValuationsTests` → *Expected:* PASS.
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: FULL. *Expected:* verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -615,12 +615,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (Definition of Done — spec 006 §10)
 
-- [ ] `Companies`, `Portfolios`, `Valuations` exponen `?page&pageSize` y `meta { page, pageSize, totalCount, totalPages }`, contrato idéntico a Transactions.
-- [ ] `Pagination.NormalizePage/NormalizePageSize` en SharedKernel (unit test verde); `GetTransactionsQuery` ya no duplica la lógica.
-- [ ] E2E por listado: primera página con `pageSize` ítems, `totalCount` correcto, segunda página sin solape (paginado determinista por `ORDER BY` con desempate); `pageSize` fuera de rango capado a 100; listado vacío → `data: []`, `totalCount: 0`.
-- [ ] **Portfolios**: `totalCount` cuenta **carteras**, no filas del `GROUP BY` (test dedicado con cartera con holdings).
-- [ ] `GET /transactions` y `GET /portfolios/{id}` (detalle con holdings) **no cambian**; holdings, series (`monthly-chart`) y summaries **no** se paginan.
-- [ ] Toda la suite existente (unit + E2E) sigue verde; los tests previos de estos listados pasan sin cambios (defaults 1/20).
+- [x] `Companies`, `Portfolios`, `Valuations` exponen `?page&pageSize` y `meta { page, pageSize, totalCount, totalPages }`, contrato idéntico a Transactions.
+- [x] `Pagination.NormalizePage/NormalizePageSize` en SharedKernel (unit test verde); `GetTransactionsQuery` ya no duplica la lógica.
+- [x] E2E por listado: primera página con `pageSize` ítems, `totalCount` correcto, segunda página sin solape (paginado determinista por `ORDER BY` con desempate); `pageSize` fuera de rango capado a 100; listado vacío → `data: []`, `totalCount: 0`.
+- [x] **Portfolios**: `totalCount` cuenta **carteras**, no filas del `GROUP BY` (test dedicado con cartera con holdings).
+- [x] `GET /transactions` y `GET /portfolios/{id}` (detalle con holdings) **no cambian**; holdings, series (`monthly-chart`) y summaries **no** se paginan.
+- [x] Toda la suite existente (unit + E2E) sigue verde; los tests previos de estos listados pasan sin cambios (defaults 1/20).
 
 ---
 
