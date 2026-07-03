@@ -589,6 +589,45 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-07-02 — Backend: monolito modular (Spec 0, Plan 018, Tasks 1-9)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/005-2026-07-01-backend-modular-monolith-design.md` (Spec 0, fundacional — precede a las specs de features 006-010) y plan `docs/superpowers/plans/018-2026-07-01-backend-modular-monolith.md`; ejecución tarea a tarea con gate humano (1 tarea = 1 rama = 1 PR).
+- Backend reorganizado de layer-first a **monolito modular**: 4 proyectos de capa intactos (`Domain/Application/Infrastructure/WebApi`), pero dentro de cada uno carpeta+namespace por módulo funcional (`Auth`, `Finanzas`, `Investments`, `Rag` esqueleto) + `SharedKernel` transversal. Convención estricta namespace = ruta de carpeta.
+- **Task 1 (PR #123)**: building blocks compartidos del dominio (`BaseEntity`, `IAggregateRoot`, `IDomainEvent`, `IUnitOfWork`, `Money`, `MoneyConversion`, `Currency`, `EntityStatus`, excepciones base, `ExchangeRate`) → `Domain/SharedKernel`.
+- **Task 2 (PR #124)**: entidades/enums/eventos/excepciones específicas de negocio reubicadas por módulo (`User`→Auth, `Transaction`/`SubCategory`→Finanzas, `Company`/`Portfolio`/`Holding`/`Disposal`→Investments, `RagDocument`→Rag).
+- **Task 3 (PR #125)**: Commands/Queries/DTOs/Interfaces de Application por módulo + `Application/SharedKernel`. Corrección de diseño aplicada **antes** de mover ficheros (feedback humano): el movimiento de `Interfaces/Repositories` y `Interfaces/Services` es 1:1 por subcarpeta, nunca se funden en un único `Interfaces/` plano — se retocó el plan (Tasks 3, 4 y el código de ejemplo de Task 8) para que quedara coherente de principio a fin.
+- **Task 4 (PR #126)**: configuraciones EF, repositorios y servicios de Infrastructure por módulo, con el mismo criterio 1:1 (`Persistence/Configurations/`, `Persistence/Repositories/`). Namespace de `Migrations/*.cs` preservado intacto por excepción explícita (evita romper `__EFMigrationsHistory`).
+- **Task 5 (PR #127)**: Controllers de WebApi por módulo. Rutas por atributo, sin regresión de contrato.
+- **Task 6 (PR #128)**: primera tarea con código nuevo (TDD) tras el bloque mecánico — `IIntegrationEvent`/`IIntegrationEventHandler`/`IIntegrationEventBus` (Application/SharedKernel) + `InMemoryIntegrationEventBus` (Infrastructure/SharedKernel), resuelve handlers por reflexión vía `IServiceProvider.GetServices`. Sin consumidores todavía (se estrenan en Spec 007).
+- **Task 7 (PR #129)**: patrón Outbox transaccional — `OutboxMessage` + `OutboxMessageConfiguration` + migración `AddOutboxMessage`, `IntegrationEventOutbox` (encola en la misma UoW que el agregado), `OutboxDispatcher` (drena, publica, marca `ProcessedOn`, idempotente), `OutboxDispatchBehavior` (pipeline MediatR post-commit). TDD: test de integración escrito antes de la implementación, verificado en rojo.
+- **Task 8 (PR #130)**: DI Autofac por módulo (`SharedKernelModule`, `AuthModule`, `FinanzasModule`, `InvestmentsModule`) sustituyendo el registro por-capa de `Program.cs`. Prueba de fuego: la suite E2E completa valida la resolución real del grafo de contenedores.
+- **Task 9 (PR #131)**: guard tests de arquitectura (`BigSchool.Architecture.Tests`, NetArchTest) — fronteras entre módulos + Domain no depende de Infrastructure/Application. Al ejecutarlos por primera vez aparecieron 3 fugas reales de frontera (ver abajo).
+- Documentación adicional (post-mergeo del plan): comentarios de evolución a microservicios en `IUserBaseCurrencyProvider`/`UserBaseCurrencyProvider` (rama `docs/018-modular-monolith-diario-and-notes`).
+
+**Decisiones / Problemas encontrados:**
+- **Fuga real de frontera (Task 9)**: 6 handlers de Finanzas/Investments (`CreateTransactionCommandHandler`, `UpdateTransactionCommandHandler`, `CreatePortfolioCommandHandler`, `GetPortfoliosQueryHandler`, `GetPortfolioPerformanceQueryHandler`, `GetPortfolioByIdQueryHandler`) dependían de `IUserRepository` (Auth) solo para leer `BaseCurrency`. Corregido introduciendo `IUserBaseCurrencyProvider` en `Application/SharedKernel`, implementado en `Infrastructure/Auth` — mismo patrón que `IExchangeRateProvider`: el módulo publica una capacidad estrecha vía SharedKernel en vez de exponer su repositorio completo.
+- **Excepción documentada, no corregida (Task 9)**: `Auth.Entities.User` → `Finanzas` (`SubCategory`/`MainCategory`/`DuplicateSubCategoryDomainException`) es la excepción cerrada en spec 005 §7 — `SubCategory` sigue siendo hija de `User` hasta que la **Spec 009** la re-modele como AR independiente de Finanzas; el plan 018 prohíbe explícitamente re-modelarla aquí. Documentado inline en `ModuleBoundaryTests`, no relajado sin más.
+- **Bug propio en scripts de refactor mecánico (Tasks 3/4)**: el script de PowerShell que reescribía `using`s confundía `using var conn = ...;` (declaración C#) con una directiva de importación y la insertaba en mitad de un método, rompiendo la compilación. Detectado por el propio build, corregido con lógica que restringe la búsqueda de "última línea `using`" a las líneas anteriores a la declaración `namespace`.
+- **`dotnet new xunit` fijaba `net10.0`** en el nuevo proyecto `BigSchool.Architecture.Tests`, sobrescribiendo el `net8.0` centralizado en `Directory.Build.props`. Corregido a mano; de paso se centralizaron `TestSdkVersion`/`XunitRunnerVisualStudioVersion`/`NetArchTestVersion` (los 3 proyectos de test existentes hardcodeaban las versiones) siguiendo la convención del repo de nunca hardcodear `PackageReference` nuevas.
+- **Reflexión sobre evolución a microservicios**: `IUserBaseCurrencyProvider` es válido tal cual mientras Auth viva en el mismo proceso/BD (monolito modular). Si Finanzas/Investments se extraen a microservicios reales, la interfaz sobrevive pero la implementación no se puede seguir inyectando por DI desde el código de otro servicio — dos caminos: (A) RPC síncrono a Auth (simple, acopla disponibilidad/latencia) o (B, recomendado) proyección local eventualmente consistente alimentada por el mismo `IIntegrationEventBus` + Outbox ya construidos en las Tasks 6-7, sin consumidores reales todavía pero con la infraestructura lista para este caso de uso exacto.
+
+**Resultado / Estado:**
+- Plan 018 completado (9/9 tareas, PRs #123-#131, todos mergeados).
+- Suite final: `dotnet build` 0 errores · **233/233 tests en verde** (73 Domain + 64 Application + 8 Architecture + 88 Integration) · `dotnet ef migrations has-pending-model-changes` sin pendientes.
+- Refactor sin cambio de comportamiento observable (mismas rutas, mismos contratos, misma API pública) salvo la corrección de frontera de Task 9 (invisible desde fuera: mismo resultado, distinta forma de resolver `BaseCurrency` internamente).
+
+**Siguiente paso:**
+- [ ] Spec 007 (Notifications): primer consumidor real del `IIntegrationEventBus` + Outbox — `UserRegisteredIntegrationEvent` → `EmailLog` de bienvenida.
+- [ ] Spec 009 (Finanzas): re-modelar `SubCategory` como AR independiente de Finanzas; al hacerlo, retirar la excepción documentada en `ModuleBoundaryTests` (Auth ya no debería depender de Finanzas).
+- [ ] Backlog de deuda técnica de backend (`docs/04-backend-tech-debt.md`) — specs 006-010 sobre la base modular ya cerrada.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
