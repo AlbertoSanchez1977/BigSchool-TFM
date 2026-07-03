@@ -224,10 +224,11 @@ Authorization: Bearer {{token}}
 
 ###
 
-### 21 Historial de cotizaciones de una empresa (orden fecha DESC)
-# Respuesta: [{ idValuation, idCompany, price, priceCurrency, date, source }]
-# Devuelve lista vacía si la empresa no existe o no tiene valoraciones.
-GET {{baseUrl}}/api/v1/companies/1/valuations
+### 21 Historial de cotizaciones de una empresa — paginado (page/pageSize, defaults 1/20), orden fecha DESC
+# Respuesta: { data: [{ idValuation, idCompany, price, priceCurrency, date, source }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+# Devuelve lista vacía (totalCount: 0) si la empresa no existe o no tiene valoraciones.
+GET {{baseUrl}}/api/v1/companies/1/valuations?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
