@@ -51,7 +51,7 @@ Consolida `NormalizePage`/`NormalizePageSize` (hoy dentro de `GetTransactionsQue
 - Modify: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetTransactions/GetTransactionsQueryHandler.cs` (usar `Pagination`)
 - Test: `tests/BigSchool.Application.Tests/SharedKernel/PaginationTests.cs`
 
-- [ ] **Step 1: Escribir el test del helper (falla)**
+- [x] **Step 1: Escribir el test del helper (falla)**
 
 `PaginationTests.cs`:
 ```csharp
@@ -85,7 +85,7 @@ public class PaginationTests
 
 Run: `dotnet test tests/BigSchool.Application.Tests --filter PaginationTests` → *Expected:* FAIL (no existe `Pagination`).
 
-- [ ] **Step 2: Implementar el helper**
+- [x] **Step 2: Implementar el helper**
 
 `Pagination.cs`:
 ```csharp
@@ -110,7 +110,7 @@ public static class Pagination
 
 Run: `dotnet test tests/BigSchool.Application.Tests --filter PaginationTests` → *Expected:* PASS.
 
-- [ ] **Step 3: Refactorizar `GetTransactionsQuery` (quitar la normalización local)**
+- [x] **Step 3: Refactorizar `GetTransactionsQuery` (quitar la normalización local)**
 
 Deja el record sin los métodos estáticos:
 ```csharp
@@ -132,7 +132,7 @@ public record GetTransactionsQuery(
 ```
 > Confirma los `using` reales del fichero tras el plan 018 (DTOs y enums de Finanzas). Lo esencial: **eliminar** `NormalizePage`/`NormalizePageSize` del record.
 
-- [ ] **Step 4: Actualizar `GetTransactionsQueryHandler` para usar `Pagination`**
+- [x] **Step 4: Actualizar `GetTransactionsQueryHandler` para usar `Pagination`**
 
 Sustituye las dos líneas de normalización:
 ```csharp
@@ -141,11 +141,11 @@ Sustituye las dos líneas de normalización:
 ```
 (antes eran `GetTransactionsQuery.NormalizePage(request.Page)` / `…NormalizePageSize(...)`). Añade `using BigSchool.Application.SharedKernel.Common;` si no está. El resto del handler no cambia.
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: FULL. *Expected:* verde. Los E2E de Transactions (`GetTransactionsTests`) siguen pasando sin cambios (contrato idéntico).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
