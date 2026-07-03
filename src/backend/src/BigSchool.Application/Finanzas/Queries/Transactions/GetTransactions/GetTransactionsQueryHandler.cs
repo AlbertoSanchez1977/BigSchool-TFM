@@ -29,8 +29,8 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
     public async Task<PagedResult<TransactionListItemDto>> Handle(
         GetTransactionsQuery request, CancellationToken cancellationToken)
     {
-        var page = GetTransactionsQuery.NormalizePage(request.Page);
-        var pageSize = GetTransactionsQuery.NormalizePageSize(request.PageSize);
+        var page = Pagination.NormalizePage(request.Page);
+        var pageSize = Pagination.NormalizePageSize(request.PageSize);
 
         var parameters = new DynamicParameters();
         parameters.Add("@IdUser", request.IdUser);
