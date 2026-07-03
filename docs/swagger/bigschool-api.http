@@ -180,21 +180,22 @@ Authorization: Bearer {{token}}
 # IDs 5-9 añadidos por seed.sql (NVDA, ITX, IBE, AMZN, TSLA).
 # ═════════════════════════════════════════════════════════════════════════════
 
-### 16 Listar todas las empresas (con última cotización por empresa)
-# Respuesta: [{ idCompany, name, ticker, sector, market, currency, lastPrice, lastValuationDate }]
-GET {{baseUrl}}/api/v1/companies
+### 16 Listar empresas — paginado (page/pageSize, defaults 1/20)
+# Respuesta: { data: [{ idCompany, name, ticker, sector, market, currency, lastPrice, lastValuationDate }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+GET {{baseUrl}}/api/v1/companies?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
 
-### 17 Listar empresas — filtro por sector
-GET {{baseUrl}}/api/v1/companies?sector=Technology
+### 17 Listar empresas — filtro por sector (+ paginación)
+GET {{baseUrl}}/api/v1/companies?sector=Technology&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
 
-### 18 Listar empresas — filtro por mercado
-GET {{baseUrl}}/api/v1/companies?market=NASDAQ
+### 18 Listar empresas — filtro por mercado (+ paginación)
+GET {{baseUrl}}/api/v1/companies?market=NASDAQ&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
