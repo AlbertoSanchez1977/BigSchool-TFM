@@ -628,6 +628,91 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-07-04 — Backend: paginación de listados (Spec 00, Plan 019, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/006-2026-07-01-backend-paginacion-listados-design.md` (Spec 00, segunda fundacional tras la Spec 0) y plan `docs/superpowers/plans/019-2026-07-01-backend-paginacion-listados.md`; ejecución tarea a tarea con gate humano (PRs #133-#138), ya sobre la estructura modular de la Spec 0.
+- Generalizado el contrato de paginación que **ya cumplía** `GET /transactions` (`?page&pageSize` + `meta.totalCount`) al resto de listados tabulares — **Companies, Portfolios, Valuations** — con contrato idéntico (`PagedResult<T>` + `MetaData`).
+- **Task 1 (#133)**: helper único `Pagination` en `Application/SharedKernel/Common` (`DEFAULT_PAGE_SIZE=20`, `MAX_PAGE_SIZE=100`) + dedup — se retiraron los `NormalizePage/NormalizePageSize` que vivían dentro de `GetTransactionsQuery`.
+- **Task 2 (#134/#135)**: paginar `GET /companies` — `COUNT(*)` con los filtros pero **sin** el `LEFT JOIN` de última valoración; página con `ORDER BY c.Name, c.IdCompany` (desempate único).
+- **Task 3 (#136)**: paginar `GET /portfolios` — el `COUNT(*)` cuenta **carteras**, no filas del `GROUP BY`; página conserva `GROUP BY` + `HOLDING_VALUATION` + `LIMIT/OFFSET`.
+- **Task 4 (#137/#138)**: paginar `GET /companies/{id}/valuations` (`ORDER BY Date DESC, IdValuation DESC`).
+- Patrón por listado: COUNT + página en un solo `QueryMultipleAsync` (espejo de `GetTransactionsQueryHandler`); E2E por endpoint (primera/segunda página sin solape, `totalCount`, cap de `pageSize` a 100, listado vacío). Adaptado `bigschool-api.http`.
+
+**Decisiones / Problemas encontrados:**
+- **Holdings: excepción consciente** (spec 006 §5) — colección hija acotada del AR `Portfolio`; se mantiene anidada en `GET /portfolios/{id}` y **no** se pagina. `PortfolioDetailDto` intacto → cero churn en frontend.
+- **Series y summaries no se paginan** (`monthly-chart`, `summary`, `performance`): se quiere el conjunto completo por diseño.
+- **`totalCount` de Portfolios cuenta carteras** (no holdings): test dedicado con cartera con 2 holdings + 2 vacías verificando `totalCount = 3`.
+
+**Resultado / Estado:**
+- Plan 019 completado (4/4 tareas, PRs #133-#138, mergeados). Build 0 errores + suite en verde (unit + E2E por listado).
+- Con esto la **fase fundacional (Specs 0 + 00) queda cerrada**: el backend es modular, con IntegrationEvents + Outbox listos y todos los listados paginados. Base preparada para especificar las features 1-4 (Specs 007-010) contra código real.
+
+**Siguiente paso:**
+- [ ] Especificar Specs 007-010 (features 1-4) en una única rama, empezando por la 007 (Notifications): primer consumidor real del `IIntegrationEventBus` + Outbox.
+- [ ] Al cerrar 1-4, nueva entrada de diario del bloque completo.
+
+---
+
+## 2026-07-04 — Backend: especificación de features 1-4 (Specs 007-010)
+
+### Fase: Diseño
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Sesión de **especificación pura** (Opus) de las cuatro features de deuda técnica del backlog
+  (`docs/04-backend-tech-debt.md`), redactadas en una única rama `feature/specs-007-010-backend-features`
+  y **verificadas contra el código real post-modular** (specs 0/00 ya mergeadas), no de memoria.
+- **Spec 007 — Notifications** (`007-…-notifications-emails-contactos`): módulo nuevo con AR `Contact`
+  + `EmailLog` (+ `EmailType`). Estrena los dos patrones de comunicación de la Spec 0: alta de contacto
+  → `EmailLog` por **DomainEvent intra-módulo (atómico)**; registro → `EmailLog` de bienvenida por
+  **IntegrationEvent + Outbox (post-commit)**. Endpoints `POST /contacts` (público) + `GET /contacts|
+  /emails|/emails/{id}` (privado, paginado; `IdUser = @user OR NULL`).
+- **Spec 008 — User/Registro** (`008-…-user-registro-moneda`): `BaseCurrency` obligatoria en el registro
+  (cambio de contrato); `GET/PUT /users/me` en `UsersController` nuevo; `User.UpdateProfile`/`ChangePassword`.
+  `email` y `baseCurrency` inmutables.
+- **Spec 009 — Finanzas** (`009-…-finanzas-agregaciones`): re-modela `SubCategory` de hija de `User` a
+  **AR independiente** de Finanzas (cierra la deuda de spec 005 §7 y **reactiva** el guard
+  `ModuleBoundaryTests` Auth ⊥ Finanzas); #8/C CRUD subcategorías; #6 `by-category`; #7 nuevo
+  `/transactions/monthly` con filtros; validación de rango (from≤to, span máx 4 años).
+- **Spec 010 — Inversiones** (`010-…-inversiones-summaries`): #10 campos `*Original` por holding en
+  performance; #9 serie de precio por periodo anclada a la última valoración + summary; #11/D
+  rename/delete de cartera; #11/E `GET /portfolios/summary` global.
+
+**Decisiones / Problemas encontrados:**
+- **Mejora de la UoW (A)** — decisión de diseño clave discutida a fondo: `BigSchoolDbContext.SaveChangesAsync`
+  pasa a envolver en **transacción** y persistir en la **misma** transacción los efectos intra-BD que los
+  domain-event handlers añaden (p. ej. la fila de `OutboxMessage`), con guard `CurrentTransaction is null`
+  para ser **componible** ante llamadas anidadas. Sin (A), el patrón hecho-de-dominio → publish-handler →
+  outbox no persistía la fila.
+- **Regla intra-BD vs desacoplado**: el criterio no es "toca BD o no", sino **¿atómico con el agregado
+  o efecto desacoplado?** Intra-módulo/mismo `DbContext` → DomainEvent dentro de (A) (atómico);
+  otro módulo/externo (email, Elastic) → **IntegrationEvent + Outbox** post-commit (I/O externo dentro
+  de la transacción = anti-patrón). Los **DomainEvents son hechos** (llevan la entidad) y los **handlers
+  acciones** (1 hecho : N handlers).
+- **`SubCategory.IdUser` como referencia suave** (sin FK dura), coherente con `EmailLog`; la migración
+  del re-modelado solo suelta la FK a `Users`.
+- **Regla fiscal en `Portfolio.Delete`** (feedback humano): no se borra una cartera con posiciones
+  abiertas; si está cerrada, tampoco dentro de los **5 años fiscales de gracia** (prescripción ES) desde
+  la última venta, con **excepción de dominio específica** (409 con `Code` propio) para que el frontend avise.
+- **Frontend fuera de alcance** en las cuatro: cada spec deja el frontend como apunte; son backend puro.
+
+**Resultado / Estado:**
+- 4 specs de features redactadas y commiteadas (007-010) + entradas de backlog/diario. Ningún código de
+  producción tocado todavía (sesión de diseño).
+
+**Siguiente paso:**
+- [ ] Planificar cada spec (planes 020+) y ejecutarla spec→plan→implementación con gate humano
+  (1 tarea = 1 rama = 1 PR), empezando por la 007 (Notifications), que incluye la mejora de la UoW (A).
+- [ ] Al implementar 007-010, nueva entrada de diario por bloque.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
