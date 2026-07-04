@@ -5,7 +5,7 @@ using BigSchool.Domain.Investments.Exceptions;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Entities;
+namespace BigSchool.Domain.Tests.Entities.Investments;
 public class CompanyTests
 {
     private static readonly DateOnly D1 = new(2026, 1, 2);
