@@ -93,6 +93,3 @@ coverage/
 *.bak
 *.tmp
 *.temp
-
-# Bloque 4/5 — scripts de despliegue / CI con credenciales (local-only, NO commitear)
-/deploy/azure/
