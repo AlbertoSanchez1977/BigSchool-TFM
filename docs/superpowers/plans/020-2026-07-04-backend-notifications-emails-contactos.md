@@ -365,7 +365,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `src/BigSchool.Infrastructure/SharedKernel/Persistence/BigSchoolDbContext.cs` (DbSets)
 - Migration: `AddNotificationsModule`
 
-- [ ] **Step 1: Interfaces de repositorio**
+- [x] **Step 1: Interfaces de repositorio**
 
 `IContactRepository.cs`:
 ```csharp
@@ -386,7 +386,7 @@ namespace BigSchool.Application.Notifications.Interfaces.Repositories;
 public interface IEmailLogRepository : IRepository<EmailLog, int> { }
 ```
 
-- [ ] **Step 2: Configuraciones EF**
+- [x] **Step 2: Configuraciones EF**
 
 `ContactConfiguration.cs`:
 ```csharp
@@ -446,7 +446,7 @@ public class EmailLogConfiguration : IEntityTypeConfiguration<EmailLog>
 }
 ```
 
-- [ ] **Step 3: Repositorios**
+- [x] **Step 3: Repositorios**
 
 `ContactRepository.cs`:
 ```csharp
@@ -477,7 +477,7 @@ public class EmailLogRepository : EFRepository<EmailLog, int>, IEmailLogReposito
 }
 ```
 
-- [ ] **Step 4: DbSets en el `DbContext`**
+- [x] **Step 4: DbSets en el `DbContext`**
 
 En `BigSchoolDbContext.cs` añade `using BigSchool.Domain.Notifications.Entities;` y, junto a los demás AR:
 ```csharp
@@ -485,16 +485,16 @@ En `BigSchoolDbContext.cs` añade `using BigSchool.Domain.Notifications.Entities
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
 ```
 
-- [ ] **Step 5: Migración**
+- [x] **Step 5: Migración**
 
 Run (cwd `src/backend`): `dotnet ef migrations add AddNotificationsModule --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi`
 *Expected:* migración en `SharedKernel/Persistence/Migrations/` creando `Contacts` y `EmailLogs`. Revisa el `Up()`: `EmailLogs.IdUser` nullable **sin** FK; índice en `IdUser`. (El namespace de la migración lo hereda EF; no lo cambies.)
 
-- [ ] **Step 6: Verde**
+- [x] **Step 6: Verde**
 
 Run: BUILD (compila aunque los repos aún no estén registrados en DI; se registran en la Tarea 4). Luego BUILD + UNIT.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add -A && git commit -m "feat(notifications): persistencia (configs, repos, DbSets) + migración AddNotificationsModule
 
