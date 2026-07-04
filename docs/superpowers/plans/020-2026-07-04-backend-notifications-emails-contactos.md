@@ -317,7 +317,7 @@ Hoy `SaveChangesAsync` guarda el agregado y **luego** despacha domain events sin
 **Files:**
 - Modify: `src/BigSchool.Infrastructure/SharedKernel/Persistence/BigSchoolDbContext.cs` (`SaveChangesAsync`)
 
-- [ ] **Step 1: Reescribir `SaveChangesAsync`**
+- [x] **Step 1: Reescribir `SaveChangesAsync`**
 
 Sustituye el método `SaveChangesAsync` por:
 ```csharp
@@ -343,11 +343,11 @@ Sustituye el método `SaveChangesAsync` por:
 ```
 > `CurrentTransaction is null` hace la UoW **componible**: un command disparado por un handler puede llamar `SaveChangesAsync()` con normalidad y participará en la transacción en curso (no abre una segunda). `IsRelational()` protege proveedores sin transacción. Una sola ronda de dispatch (consciente). El save-3 cubre la **excepción** del handler de Auth (encola outbox sin guardar). El resto del `DbContext` **no cambia**.
 
-- [ ] **Step 2: Verde (sin regresión)**
+- [x] **Step 2: Verde (sin regresión)**
 
 Run: FULL. *Expected:* verde. Ningún flujo actual deja cambios sin guardar en handlers → el save-3 no-opea; comportamiento idéntico. (La atomicidad se ejercita en las Tareas 4 y 5.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 ```bash
 git add -A && git commit -m "feat(sharedkernel): UoW transaccional componible (efectos de handlers atómicos con el agregado)
 

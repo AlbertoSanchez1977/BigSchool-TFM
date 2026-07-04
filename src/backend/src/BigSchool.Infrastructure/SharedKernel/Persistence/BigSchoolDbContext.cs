@@ -41,13 +41,21 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
 
     public async Task<int> SaveChangesAsync(bool dispatchEvents = true)
     {
-        var result = await base.SaveChangesAsync(CancellationToken.None);
+        if (!dispatchEvents)
+            return await base.SaveChangesAsync(CancellationToken.None);
 
-        if (dispatchEvents)
-        {
-            await DispatchDomainEvents();
-        }
+        // Componible: si ya hay transacción en curso (SaveChanges anidado desde un handler/command),
+        // la dueña es la más externa → un único COMMIT, sin BEGIN anidado (que MySQL rechaza).
+        var ownsTransaction = Database.CurrentTransaction is null && Database.IsRelational();
+        await using var tx = ownsTransaction ? await Database.BeginTransactionAsync() : null;
 
+        var result = await base.SaveChangesAsync(CancellationToken.None); // 1) agregado (Id ya asignado)
+        await DispatchDomainEvents();                                     // 2) handlers reaccionan (Send command / encolan outbox)
+
+        if (ChangeTracker.HasChanges())
+            await base.SaveChangesAsync(CancellationToken.None);          // 3) persiste lo que quedó sin guardar (p.ej. fila de outbox)
+
+        if (tx is not null) await tx.CommitAsync();
         return result;
     }
 
