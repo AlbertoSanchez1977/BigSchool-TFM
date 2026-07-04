@@ -3,7 +3,7 @@ using BigSchool.Domain.SharedKernel.Events;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Entities;
+namespace BigSchool.Domain.Tests.Entities.SharedKernel;
 
 public class BaseEntityTests
 {

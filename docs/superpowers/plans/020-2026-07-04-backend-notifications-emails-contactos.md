@@ -54,7 +54,7 @@ Entidades y eventos del módulo, más el hecho de dominio `UserRegisteredDomainE
 - Modify: `src/BigSchool.Domain/Auth/Entities/User.cs` (`Create` levanta el evento)
 - Test: `tests/BigSchool.Domain.Tests/Notifications/{ContactTests,EmailLogTests}.cs`, `tests/BigSchool.Domain.Tests/Auth/UserRegistrationEventTests.cs`
 
-- [ ] **Step 1: Escribir los tests de dominio (fallan)**
+- [x] **Step 1: Escribir los tests de dominio (fallan)**
 
 `ContactTests.cs`:
 ```csharp
@@ -142,7 +142,7 @@ public class UserRegistrationEventTests
 
 Run: `dotnet test tests/BigSchool.Domain.Tests --filter "Notifications|UserRegistration"` → *Expected:* FAIL (tipos no existen).
 
-- [ ] **Step 2: `EmailType`**
+- [x] **Step 2: `EmailType`**
 
 `EmailType.cs`:
 ```csharp
@@ -155,7 +155,7 @@ public enum EmailType : short
 }
 ```
 
-- [ ] **Step 3: `ContactSubmittedDomainEvent` y `UserRegisteredDomainEvent`**
+- [x] **Step 3: `ContactSubmittedDomainEvent` y `UserRegisteredDomainEvent`**
 
 `ContactSubmittedDomainEvent.cs`:
 ```csharp
@@ -177,7 +177,7 @@ namespace BigSchool.Domain.Auth.Events;
 public sealed record UserRegisteredDomainEvent(User User) : IDomainEvent;
 ```
 
-- [ ] **Step 4: `Contact` y `EmailLog`**
+- [x] **Step 4: `Contact` y `EmailLog`**
 
 `Contact.cs`:
 ```csharp
@@ -280,7 +280,7 @@ public class EmailLog : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 5: `User.Create` levanta el evento**
+- [x] **Step 5: `User.Create` levanta el evento**
 
 En `src/BigSchool.Domain/Auth/Entities/User.cs`, añade `using BigSchool.Domain.Auth.Events;` y sustituye el `return new User(...)` del método `Create` por:
 ```csharp
@@ -296,12 +296,12 @@ En `src/BigSchool.Domain/Auth/Entities/User.cs`, añade `using BigSchool.Domain.
         return user;
 ```
 
-- [ ] **Step 6: Verde**
+- [x] **Step 6: Verde**
 
 Run: `dotnet test tests/BigSchool.Domain.Tests --filter "Notifications|UserRegistration"` → PASS. Luego BUILD + UNIT completos.
 > Nota: los tests de Auth existentes que hacen `User.Create(...)` siguen verdes; si alguno asertaba `DomainEvents` vacío, actualízalo (ahora hay 1 evento).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add -A && git commit -m "feat(notifications): dominio Contact/EmailLog + eventos (User/Contact)
 

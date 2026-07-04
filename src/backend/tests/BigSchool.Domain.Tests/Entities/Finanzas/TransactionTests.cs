@@ -6,7 +6,7 @@ using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Entities;
+namespace BigSchool.Domain.Tests.Entities.Finanzas;
 
 public class TransactionTests
 {

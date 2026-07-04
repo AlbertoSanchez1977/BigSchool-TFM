@@ -5,7 +5,7 @@ using BigSchool.Domain.Finanzas.Exceptions;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Entities;
+namespace BigSchool.Domain.Tests.Entities.Auth;
 
 public class UserSubCategoryTests
 {

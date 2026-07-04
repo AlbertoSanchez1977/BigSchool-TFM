@@ -1,3 +1,4 @@
+using BigSchool.Domain.Auth.Events;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.Finanzas.Enums;
 using BigSchool.Domain.Finanzas.Exceptions;
@@ -48,7 +49,7 @@ public class User : BaseEntity, IAggregateRoot
         if (string.IsNullOrWhiteSpace(fullName))
             throw new ArgumentException("Full name is required.", nameof(fullName));
 
-        return new User(
+        var user = new User(
             email.Trim().ToLowerInvariant(),
             passwordHash,
             passwordSalt,
@@ -56,6 +57,8 @@ public class User : BaseEntity, IAggregateRoot
             baseCurrency,
             EntityStatus.Active,
             DateTime.UtcNow);
+        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user));
+        return user;
     }
 
     public void UpdateLastLogin()
