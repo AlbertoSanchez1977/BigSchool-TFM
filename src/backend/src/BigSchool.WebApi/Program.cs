@@ -40,6 +40,7 @@ try
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Auth.DI.AuthModule>();
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Finanzas.DI.FinanzasModule>();
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Investments.DI.InvestmentsModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Notifications.DI.NotificationsModule>();
 
         // WebApi layer (filtros/servicios propios de la capa web; los controllers los descubre MVC)
         containerBuilder.RegisterAssemblyTypes(typeof(Program).Assembly).AsImplementedInterfaces();
