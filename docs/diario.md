@@ -628,6 +628,36 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-07-04 — Backend: paginación de listados (Spec 00, Plan 019, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/006-2026-07-01-backend-paginacion-listados-design.md` (Spec 00, segunda fundacional tras la Spec 0) y plan `docs/superpowers/plans/019-2026-07-01-backend-paginacion-listados.md`; ejecución tarea a tarea con gate humano (PRs #133-#138), ya sobre la estructura modular de la Spec 0.
+- Generalizado el contrato de paginación que **ya cumplía** `GET /transactions` (`?page&pageSize` + `meta.totalCount`) al resto de listados tabulares — **Companies, Portfolios, Valuations** — con contrato idéntico (`PagedResult<T>` + `MetaData`).
+- **Task 1 (#133)**: helper único `Pagination` en `Application/SharedKernel/Common` (`DEFAULT_PAGE_SIZE=20`, `MAX_PAGE_SIZE=100`) + dedup — se retiraron los `NormalizePage/NormalizePageSize` que vivían dentro de `GetTransactionsQuery`.
+- **Task 2 (#134/#135)**: paginar `GET /companies` — `COUNT(*)` con los filtros pero **sin** el `LEFT JOIN` de última valoración; página con `ORDER BY c.Name, c.IdCompany` (desempate único).
+- **Task 3 (#136)**: paginar `GET /portfolios` — el `COUNT(*)` cuenta **carteras**, no filas del `GROUP BY`; página conserva `GROUP BY` + `HOLDING_VALUATION` + `LIMIT/OFFSET`.
+- **Task 4 (#137/#138)**: paginar `GET /companies/{id}/valuations` (`ORDER BY Date DESC, IdValuation DESC`).
+- Patrón por listado: COUNT + página en un solo `QueryMultipleAsync` (espejo de `GetTransactionsQueryHandler`); E2E por endpoint (primera/segunda página sin solape, `totalCount`, cap de `pageSize` a 100, listado vacío). Adaptado `bigschool-api.http`.
+
+**Decisiones / Problemas encontrados:**
+- **Holdings: excepción consciente** (spec 006 §5) — colección hija acotada del AR `Portfolio`; se mantiene anidada en `GET /portfolios/{id}` y **no** se pagina. `PortfolioDetailDto` intacto → cero churn en frontend.
+- **Series y summaries no se paginan** (`monthly-chart`, `summary`, `performance`): se quiere el conjunto completo por diseño.
+- **`totalCount` de Portfolios cuenta carteras** (no holdings): test dedicado con cartera con 2 holdings + 2 vacías verificando `totalCount = 3`.
+
+**Resultado / Estado:**
+- Plan 019 completado (4/4 tareas, PRs #133-#138, mergeados). Build 0 errores + suite en verde (unit + E2E por listado).
+- Con esto la **fase fundacional (Specs 0 + 00) queda cerrada**: el backend es modular, con IntegrationEvents + Outbox listos y todos los listados paginados. Base preparada para especificar las features 1-4 (Specs 007-010) contra código real.
+
+**Siguiente paso:**
+- [ ] Especificar Specs 007-010 (features 1-4) en una única rama, empezando por la 007 (Notifications): primer consumidor real del `IIntegrationEventBus` + Outbox.
+- [ ] Al cerrar 1-4, nueva entrada de diario del bloque completo.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
