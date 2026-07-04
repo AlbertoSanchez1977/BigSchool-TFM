@@ -2,6 +2,7 @@ using BigSchool.Application.SharedKernel.Events;
 using BigSchool.Domain.Auth.Entities;
 using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.Notifications.Entities;
 using BigSchool.Domain.Rag.Entities;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Interfaces;
@@ -26,6 +27,8 @@ public class BigSchoolDbContext : DbContext, IUnitOfWork
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+    public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
 
     // Entidades hijas — DbSet necesario para EF Core migrations/queries
     // El acceso de escritura se hace siempre a través del Aggregate Root
