@@ -149,7 +149,7 @@ Serie de precio de la empresa (moneda de la empresa) en una ventana anclada a la
 - Create: `src/BigSchool.Application/Investments/DTOs/ValuationSeriesDto.cs`
 - Create: `src/BigSchool.Application/Investments/Queries/GetCompanyValuationSeries/{GetCompanyValuationSeriesQuery,GetCompanyValuationSeriesQueryHandler,GetCompanyValuationSeriesQueryValidator}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/CompaniesController.cs`
-- Test: `tests/BigSchool.Application.Tests/Investments/ValuationSeriesPeriodValidatorTests.cs`
+- Test: `tests/BigSchool.Application.Tests/Validators/Investments/ValuationSeriesPeriodValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetValuationSeriesTests.cs`
 
 - [ ] **Step 1: Enum `ValuationPeriod` (valor = nº de meses) + DTOs**
@@ -290,7 +290,7 @@ using BigSchool.Domain.Investments.Enums;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Investments;
+namespace BigSchool.Application.Tests.Validators.Investments;
 
 public class ValuationSeriesPeriodValidatorTests
 {
@@ -367,8 +367,8 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Investments/Commands/RenamePortfolio/{RenamePortfolioCommand,RenamePortfolioCommandHandler,RenamePortfolioCommandValidator}.cs`
 - Create: `src/BigSchool.Application/Investments/Commands/DeletePortfolio/{DeletePortfolioCommand,DeletePortfolioCommandHandler}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/PortfoliosController.cs`
-- Test: `tests/BigSchool.Domain.Tests/Investments/PortfolioRenameDeleteTests.cs`
-- Test: `tests/BigSchool.Application.Tests/Investments/RenamePortfolioCommandValidatorTests.cs`
+- Test: `tests/BigSchool.Domain.Tests/Entities/Investments/PortfolioRenameDeleteTests.cs`
+- Test: `tests/BigSchool.Application.Tests/Validators/Investments/RenamePortfolioCommandValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Investments/PortfolioRenameDeleteTests.cs`
 
 - [ ] **Step 1: Excepciones de dominio (→ 409)**

@@ -40,7 +40,7 @@ Cambio estructural atómico: `SubCategory` deja de ser hija de `User`. Debe term
 - Modify: `src/BigSchool.Infrastructure/Auth/Persistence/Configurations/UserConfiguration.cs` (quitar relación)
 - Modify: `tests/BigSchool.Architecture.Tests/ModuleBoundaryTests.cs` (reactivar frontera)
 - Delete/adaptar: tests de dominio que usen `User.AddSubCategory`/`User.SubCategories`
-- Test: `tests/BigSchool.Domain.Tests/Finanzas/SubCategoryTests.cs`
+- Test: `tests/BigSchool.Domain.Tests/Entities/Finanzas/SubCategoryTests.cs`
 - Migration: `RemodelSubCategoryAggregate`
 
 - [ ] **Step 1: Test de dominio del nuevo AR (falla)**
@@ -53,7 +53,7 @@ using BigSchool.Domain.SharedKernel.Enums;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Finanzas;
+namespace BigSchool.Domain.Tests.Entities.Finanzas;
 
 public class SubCategoryTests
 {
@@ -213,7 +213,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Finanzas/Commands/CreateSubCategory/{CreateSubCategoryCommand,CreateSubCategoryCommandHandler,CreateSubCategoryCommandValidator}.cs`
 - Create: `src/BigSchool.Application/Finanzas/Commands/DeleteSubCategory/{DeleteSubCategoryCommand,DeleteSubCategoryCommandHandler}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Finanzas/CategoriesController.cs`
-- Test: `tests/BigSchool.Application.Tests/Finanzas/{CreateSubCategoryCommandHandlerTests,DeleteSubCategoryCommandHandlerTests,CreateSubCategoryCommandValidatorTests}.cs`
+- Test: `tests/BigSchool.Application.Tests/Commands/Finanzas/{CreateSubCategoryCommandHandlerTests,DeleteSubCategoryCommandHandlerTests}.cs`, `tests/BigSchool.Application.Tests/Validators/Finanzas/CreateSubCategoryCommandValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Finanzas/SubCategoriesCrudTests.cs`
 
 - [ ] **Step 1: Repositorio con guarda de unicidad**
@@ -404,7 +404,7 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Finanzas;
+namespace BigSchool.Application.Tests.Commands.Finanzas;
 
 public class CreateSubCategoryCommandHandlerTests
 {
@@ -446,7 +446,7 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Finanzas;
+namespace BigSchool.Application.Tests.Commands.Finanzas;
 
 public class DeleteSubCategoryCommandHandlerTests
 {
@@ -567,7 +567,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetByCategory/{GetTransactionsByCategoryQuery,GetTransactionsByCategoryQueryHandler,GetTransactionsByCategoryQueryValidator,CategoryTotalDto}.cs`
 - Create: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetMonthly/{GetMonthlyQuery,GetMonthlyQueryHandler,GetMonthlyQueryValidator}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Finanzas/TransactionsController.cs` (2 endpoints)
-- Test: `tests/BigSchool.Application.Tests/Finanzas/DateRangeValidationTests.cs`
+- Test: `tests/BigSchool.Application.Tests/Validators/Finanzas/DateRangeValidationTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Finanzas/{GetByCategoryTests,GetMonthlyTests}.cs`
 
 - [ ] **Step 1: Predicado de rango compartido**
@@ -773,7 +773,7 @@ using BigSchool.Application.SharedKernel.Common;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Finanzas;
+namespace BigSchool.Application.Tests.Validators.Finanzas;
 
 public class DateRangeValidationTests
 {

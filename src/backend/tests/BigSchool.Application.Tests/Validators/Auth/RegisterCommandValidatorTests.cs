@@ -2,7 +2,7 @@ using BigSchool.Application.Auth.Commands.Register;
 using FluentValidation.TestHelper;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Validators;
+namespace BigSchool.Application.Tests.Validators.Auth;
 
 public class RegisterCommandValidatorTests
 {

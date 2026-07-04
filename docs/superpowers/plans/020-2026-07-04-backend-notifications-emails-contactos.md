@@ -52,7 +52,7 @@ Entidades y eventos del módulo, más el hecho de dominio `UserRegisteredDomainE
 - Create: `src/BigSchool.Domain/Notifications/Events/ContactSubmittedDomainEvent.cs`
 - Create: `src/BigSchool.Domain/Auth/Events/UserRegisteredDomainEvent.cs`
 - Modify: `src/BigSchool.Domain/Auth/Entities/User.cs` (`Create` levanta el evento)
-- Test: `tests/BigSchool.Domain.Tests/Notifications/{ContactTests,EmailLogTests}.cs`, `tests/BigSchool.Domain.Tests/Auth/UserRegistrationEventTests.cs`
+- Test: `tests/BigSchool.Domain.Tests/Entities/Notifications/{ContactTests,EmailLogTests}.cs`, `tests/BigSchool.Domain.Tests/Entities/Auth/UserRegistrationEventTests.cs`
 
 - [x] **Step 1: Escribir los tests de dominio (fallan)**
 
@@ -63,7 +63,7 @@ using BigSchool.Domain.Notifications.Events;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Notifications;
+namespace BigSchool.Domain.Tests.Entities.Notifications;
 
 public class ContactTests
 {
@@ -93,7 +93,7 @@ using BigSchool.Domain.Notifications.Enums;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Notifications;
+namespace BigSchool.Domain.Tests.Entities.Notifications;
 
 public class EmailLogTests
 {
@@ -126,7 +126,7 @@ using BigSchool.Domain.Auth.Events;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Auth;
+namespace BigSchool.Domain.Tests.Entities.Auth;
 
 public class UserRegistrationEventTests
 {
@@ -516,10 +516,10 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Infrastructure/Notifications/DI/NotificationsModule.cs`
 - Modify: `src/BigSchool.WebApi/Program.cs` (registrar `NotificationsModule`)
 - Create: `src/BigSchool.WebApi/Controllers/Notifications/ContactsController.cs`
-- Test: `tests/BigSchool.Application.Tests/Notifications/{CreateContactCommandValidatorTests,CreateContactAckEmailCommandHandlerTests,SendContactAckEmailHandlerTests}.cs`
+- Test: `tests/BigSchool.Application.Tests/Validators/Notifications/CreateContactCommandValidatorTests.cs`, `tests/BigSchool.Application.Tests/Commands/Notifications/CreateContactAckEmailCommandHandlerTests.cs`, `tests/BigSchool.Application.Tests/EventHandlers/Notifications/SendContactAckEmailOnContactSubmittedHandlerTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Notifications/{NotificationEndpointTestBase,PostContactTests,GetContactsTests}.cs`
 
-- [ ] **Step 1: Command público de alta de contacto**
+- [x] **Step 1: Command público de alta de contacto**
 
 `CreateContactCommand.cs`:
 ```csharp
@@ -569,7 +569,7 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
 }
 ```
 
-- [ ] **Step 2: Command interno del EmailLog de acuse (la acción)**
+- [x] **Step 2: Command interno del EmailLog de acuse (la acción)**
 
 `CreateContactAckEmailCommand.cs`:
 ```csharp
@@ -601,7 +601,7 @@ public class CreateContactAckEmailCommandHandler : IRequestHandler<CreateContact
 }
 ```
 
-- [ ] **Step 3: EventHandler = disparador fino (norma)**
+- [x] **Step 3: EventHandler = disparador fino (norma)**
 
 `SendContactAckEmailOnContactSubmittedHandler.cs`:
 ```csharp
@@ -628,7 +628,7 @@ public sealed class SendContactAckEmailOnContactSubmittedHandler
 }
 ```
 
-- [ ] **Step 4: DTO + Query de listado (Dapper, paginada)**
+- [x] **Step 4: DTO + Query de listado (Dapper, paginada)**
 
 `ContactListItemDto.cs`:
 ```csharp
@@ -688,7 +688,7 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, PagedRe
 }
 ```
 
-- [ ] **Step 5: `NotificationsModule` (repos + escaneo con exclusión de INotificationHandler)**
+- [x] **Step 5: `NotificationsModule` (repos + escaneo con exclusión de INotificationHandler)**
 
 `NotificationsModule.cs`:
 ```csharp
@@ -730,7 +730,7 @@ Regístralo en `Program.cs` junto a los otros módulos:
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Notifications.DI.NotificationsModule>();
 ```
 
-- [ ] **Step 6: `ContactsController` (POST público, GET privado)**
+- [x] **Step 6: `ContactsController` (POST público, GET privado)**
 
 `ContactsController.cs`:
 ```csharp
@@ -776,7 +776,7 @@ public class ContactsController : ControllerBase
 }
 ```
 
-- [ ] **Step 7: Unit tests (validator + command de acuse + disparador)**
+- [x] **Step 7: Unit tests (validator + command de acuse + disparador)**
 
 `CreateContactCommandValidatorTests.cs`:
 ```csharp
@@ -784,7 +784,7 @@ using BigSchool.Application.Notifications.Commands.CreateContact;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Notifications;
+namespace BigSchool.Application.Tests.Validators.Notifications;
 
 public class CreateContactCommandValidatorTests
 {
@@ -812,7 +812,7 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Notifications;
+namespace BigSchool.Application.Tests.Commands.Notifications;
 
 public class CreateContactAckEmailCommandHandlerTests
 {
@@ -832,7 +832,7 @@ public class CreateContactAckEmailCommandHandlerTests
     }
 }
 ```
-`SendContactAckEmailHandlerTests.cs`:
+`SendContactAckEmailOnContactSubmittedHandlerTests.cs`:
 ```csharp
 using BigSchool.Application.Notifications.Commands.CreateContactAckEmail;
 using BigSchool.Application.Notifications.EventHandlers;
@@ -843,9 +843,9 @@ using MediatR;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Notifications;
+namespace BigSchool.Application.Tests.EventHandlers.Notifications;
 
-public class SendContactAckEmailHandlerTests
+public class SendContactAckEmailOnContactSubmittedHandlerTests
 {
     [Fact]
     public async Task Dispara_CreateContactAckEmailCommand_con_datos_del_contacto()
@@ -864,7 +864,7 @@ public class SendContactAckEmailHandlerTests
 }
 ```
 
-- [ ] **Step 8: E2E — POST crea Contact + EXACTAMENTE 1 EmailLog (atómico); GET 401/paginado**
+- [x] **Step 8: E2E — POST crea Contact + EXACTAMENTE 1 EmailLog (atómico); GET 401/paginado**
 
 Crea `NotificationEndpointTestBase.cs` (mirror de `CompanyEndpointTestBase`: `SeedUserAsync`, `AuthenticatedClient`, helper `CountAsync(sql)` con `MySqlConnection(Fixture.ConnectionString)` + `ExecuteScalarAsync<int>`; DTOs de respuesta `ContactListItemResponse(int IdContact, string FullName, string Email, string Message, string CreatedAt)`). Añade a `MySqlDatabaseFixture.ResetAsync` (dentro de `FOREIGN_KEY_CHECKS=0`):
 ```csharp
@@ -874,33 +874,41 @@ await conn.ExecuteAsync("DELETE FROM Contacts;");
 `PostContactTests.cs`:
 ```csharp
     [Fact]
-    public async Task PostContact_SinToken_PersisteContact_Y_UnicoEmailLog_Contact()
+    public async Task Post_ValidContact_PersistsContactAndSingleAckEmailLog()
     {
         var client = Factory.CreateClient(); // AllowAnonymous
         var resp = await client.PostAsJsonAsync("/api/v1/contacts",
             new { fullName = "Ada Lovelace", email = "ada@example.com", message = "Hola" });
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Atomicidad UoW componible: Contact + EmailLog persistidos en la misma transacción.
         (await CountAsync("SELECT COUNT(*) FROM Contacts WHERE Email='ada@example.com'")).Should().Be(1);
+        // EXACTAMENTE 1: si SendContactAckEmailOnContactSubmittedHandler (INotificationHandler) se
+        // registrara también en Autofac (además de en MediatR), Publish lo invocaría 2 veces vía
+        // GetServices → 2 EmailLogs. Este assert caza esa regresión de doble instanciación.
         (await CountAsync("SELECT COUNT(*) FROM EmailLogs WHERE Recipient='ada@example.com' AND Type=2 AND IdUser IS NULL")).Should().Be(1);
+        // Flujo A es DomainEvent intra-módulo (no Outbox): confirma que no se coló ninguna fila ahí.
+        (await CountAsync("SELECT COUNT(*) FROM OutboxMessages")).Should().Be(0);
     }
 
     [Fact]
-    public async Task PostContact_DatosInvalidos_400()
+    public async Task Post_InvalidData_Returns400_AndPersistsNothing()
     {
         var resp = await Factory.CreateClient().PostAsJsonAsync("/api/v1/contacts",
             new { fullName = "", email = "no-email", message = "" });
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await CountAsync("SELECT COUNT(*) FROM Contacts")).Should().Be(0);
+        (await CountAsync("SELECT COUNT(*) FROM EmailLogs")).Should().Be(0);
     }
 ```
 `GetContactsTests.cs`:
 ```csharp
     [Fact]
-    public async Task GetContacts_SinToken_401()
+    public async Task Get_WithoutToken_Returns401()
         => (await Factory.CreateClient().GetAsync("/api/v1/contacts")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
     [Fact]
-    public async Task GetContacts_Autenticado_BandejaGlobalPaginada()
+    public async Task Get_Authenticated_ReturnsGlobalInboxPaginated()
     {
         var (userId, email) = await SeedUserAsync();
         var pub = Factory.CreateClient();
@@ -916,7 +924,7 @@ await conn.ExecuteAsync("DELETE FROM Contacts;");
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter "PostContact|GetContacts"` → PASS.
 
-- [ ] **Step 9: Verde + Commit**
+- [x] **Step 9: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -938,7 +946,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Notifications/EventHandlers/CreateWelcomeEmailOnUserRegisteredHandler.cs`
 - Modify: `src/BigSchool.Infrastructure/Auth/DI/AuthModule.cs` (excluir INotificationHandler del escaneo)
 - Modify: `tests/BigSchool.Architecture.Tests/ModuleBoundaryTests.cs` (incluir Notifications)
-- Test: `tests/BigSchool.Application.Tests/Auth/PublishIntegrationEventHandlerTests.cs`; `tests/BigSchool.Application.Tests/Notifications/{CreateWelcomeEmailCommandHandlerTests,CreateWelcomeEmailTriggerTests}.cs`
+- Test: `tests/BigSchool.Application.Tests/EventHandlers/Auth/PublishIntegrationEventHandlerTests.cs`; `tests/BigSchool.Application.Tests/Commands/Notifications/CreateWelcomeEmailCommandHandlerTests.cs`; `tests/BigSchool.Application.Tests/EventHandlers/Notifications/CreateWelcomeEmailTriggerTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Notifications/RegisterWelcomeEmailTests.cs`
 
 - [ ] **Step 1: Contrato compartido**
@@ -1071,7 +1079,7 @@ using BigSchool.Domain.Auth.Events;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Auth;
+namespace BigSchool.Application.Tests.EventHandlers.Auth;
 
 public class PublishIntegrationEventHandlerTests
 {
@@ -1100,7 +1108,7 @@ using BigSchool.Domain.SharedKernel.Interfaces;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Notifications;
+namespace BigSchool.Application.Tests.Commands.Notifications;
 
 public class CreateWelcomeEmailCommandHandlerTests
 {
@@ -1129,7 +1137,7 @@ using MediatR;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Notifications;
+namespace BigSchool.Application.Tests.EventHandlers.Notifications;
 
 public class CreateWelcomeEmailTriggerTests
 {

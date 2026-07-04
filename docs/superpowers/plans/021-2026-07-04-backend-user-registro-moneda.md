@@ -33,7 +33,7 @@ Recetas: **BUILD** (`dotnet build`, cwd `src/backend`); **UNIT** (`dotnet test t
 - Modify: `src/BigSchool.Application/Auth/Commands/Register/RegisterCommand.cs`, `RegisterCommandValidator.cs`, `RegisterCommandHandler.cs`
 - Modify: `tests/BigSchool.Integration.Tests/Auth/AuthEndpointTestBase.cs` (helper con `baseCurrency`)
 - Modify: `tests/BigSchool.Integration.Tests/Auth/RegisterTests.cs` (nuevos casos + ajuste)
-- Test: `tests/BigSchool.Application.Tests/Validators/RegisterCommandValidatorTests.cs` (crear o extender)
+- Test: `tests/BigSchool.Application.Tests/Validators/Auth/RegisterCommandValidatorTests.cs` (crear o extender)
 
 - [ ] **Step 1: Test del validator (falla)**
 
@@ -44,7 +44,7 @@ using BigSchool.Domain.SharedKernel.Enums;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Validators;
+namespace BigSchool.Application.Tests.Validators.Auth;
 
 public class RegisterCommandValidatorTests
 {
@@ -286,8 +286,8 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `src/BigSchool.Domain/Auth/Entities/User.cs` (`UpdateProfile`, `ChangePassword`)
 - Create: `src/BigSchool.Application/Auth/Commands/UpdateUser/{UpdateUserCommand,UpdateUserCommandHandler,UpdateUserCommandValidator}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Auth/UsersController.cs` (PUT /users/me)
-- Test: `tests/BigSchool.Domain.Tests/Auth/UserProfileTests.cs`
-- Test: `tests/BigSchool.Application.Tests/Auth/UpdateUserCommandHandlerTests.cs`, `tests/BigSchool.Application.Tests/Validators/UpdateUserCommandValidatorTests.cs`
+- Test: `tests/BigSchool.Domain.Tests/Entities/Auth/UserProfileTests.cs`
+- Test: `tests/BigSchool.Application.Tests/Commands/Auth/UpdateUserCommandHandlerTests.cs`, `tests/BigSchool.Application.Tests/Validators/Auth/UpdateUserCommandValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Auth/PutMeTests.cs`
 
 - [ ] **Step 1: Tests de dominio (fallan)**
@@ -298,7 +298,7 @@ using BigSchool.Domain.Auth.Entities;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Domain.Tests.Auth;
+namespace BigSchool.Domain.Tests.Entities.Auth;
 
 public class UserProfileTests
 {
@@ -446,7 +446,7 @@ using BigSchool.Application.Auth.Commands.UpdateUser;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Validators;
+namespace BigSchool.Application.Tests.Validators.Auth;
 
 public class UpdateUserCommandValidatorTests
 {
@@ -470,7 +470,7 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Auth;
+namespace BigSchool.Application.Tests.Commands.Auth;
 
 public class UpdateUserCommandHandlerTests
 {
