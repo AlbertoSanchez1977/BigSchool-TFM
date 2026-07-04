@@ -658,6 +658,61 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-07-04 — Backend: especificación de features 1-4 (Specs 007-010)
+
+### Fase: Diseño
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Sesión de **especificación pura** (Opus) de las cuatro features de deuda técnica del backlog
+  (`docs/04-backend-tech-debt.md`), redactadas en una única rama `feature/specs-007-010-backend-features`
+  y **verificadas contra el código real post-modular** (specs 0/00 ya mergeadas), no de memoria.
+- **Spec 007 — Notifications** (`007-…-notifications-emails-contactos`): módulo nuevo con AR `Contact`
+  + `EmailLog` (+ `EmailType`). Estrena los dos patrones de comunicación de la Spec 0: alta de contacto
+  → `EmailLog` por **DomainEvent intra-módulo (atómico)**; registro → `EmailLog` de bienvenida por
+  **IntegrationEvent + Outbox (post-commit)**. Endpoints `POST /contacts` (público) + `GET /contacts|
+  /emails|/emails/{id}` (privado, paginado; `IdUser = @user OR NULL`).
+- **Spec 008 — User/Registro** (`008-…-user-registro-moneda`): `BaseCurrency` obligatoria en el registro
+  (cambio de contrato); `GET/PUT /users/me` en `UsersController` nuevo; `User.UpdateProfile`/`ChangePassword`.
+  `email` y `baseCurrency` inmutables.
+- **Spec 009 — Finanzas** (`009-…-finanzas-agregaciones`): re-modela `SubCategory` de hija de `User` a
+  **AR independiente** de Finanzas (cierra la deuda de spec 005 §7 y **reactiva** el guard
+  `ModuleBoundaryTests` Auth ⊥ Finanzas); #8/C CRUD subcategorías; #6 `by-category`; #7 nuevo
+  `/transactions/monthly` con filtros; validación de rango (from≤to, span máx 4 años).
+- **Spec 010 — Inversiones** (`010-…-inversiones-summaries`): #10 campos `*Original` por holding en
+  performance; #9 serie de precio por periodo anclada a la última valoración + summary; #11/D
+  rename/delete de cartera; #11/E `GET /portfolios/summary` global.
+
+**Decisiones / Problemas encontrados:**
+- **Mejora de la UoW (A)** — decisión de diseño clave discutida a fondo: `BigSchoolDbContext.SaveChangesAsync`
+  pasa a envolver en **transacción** y persistir en la **misma** transacción los efectos intra-BD que los
+  domain-event handlers añaden (p. ej. la fila de `OutboxMessage`), con guard `CurrentTransaction is null`
+  para ser **componible** ante llamadas anidadas. Sin (A), el patrón hecho-de-dominio → publish-handler →
+  outbox no persistía la fila.
+- **Regla intra-BD vs desacoplado**: el criterio no es "toca BD o no", sino **¿atómico con el agregado
+  o efecto desacoplado?** Intra-módulo/mismo `DbContext` → DomainEvent dentro de (A) (atómico);
+  otro módulo/externo (email, Elastic) → **IntegrationEvent + Outbox** post-commit (I/O externo dentro
+  de la transacción = anti-patrón). Los **DomainEvents son hechos** (llevan la entidad) y los **handlers
+  acciones** (1 hecho : N handlers).
+- **`SubCategory.IdUser` como referencia suave** (sin FK dura), coherente con `EmailLog`; la migración
+  del re-modelado solo suelta la FK a `Users`.
+- **Regla fiscal en `Portfolio.Delete`** (feedback humano): no se borra una cartera con posiciones
+  abiertas; si está cerrada, tampoco dentro de los **5 años fiscales de gracia** (prescripción ES) desde
+  la última venta, con **excepción de dominio específica** (409 con `Code` propio) para que el frontend avise.
+- **Frontend fuera de alcance** en las cuatro: cada spec deja el frontend como apunte; son backend puro.
+
+**Resultado / Estado:**
+- 4 specs de features redactadas y commiteadas (007-010) + entradas de backlog/diario. Ningún código de
+  producción tocado todavía (sesión de diseño).
+
+**Siguiente paso:**
+- [ ] Planificar cada spec (planes 020+) y ejecutarla spec→plan→implementación con gate humano
+  (1 tarea = 1 rama = 1 PR), empezando por la 007 (Notifications), que incluye la mejora de la UoW (A).
+- [ ] Al implementar 007-010, nueva entrada de diario por bloque.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
