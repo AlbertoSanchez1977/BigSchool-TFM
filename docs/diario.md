@@ -736,3 +736,30 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 **Siguiente paso:**
 - ...
 ```
+
+## 2026-07-04 — Planificación de features 1–4 (Planes 020–023)
+
+### Fase: Diseño
+
+**Módulo**: backend (Notifications, Auth, Finanzas, Investments)
+
+**Actividades realizadas:**
+- Redacción de los planes de implementación derivados de las Specs 007–010, sobre la estructura modular ya integrada (planes 018/019 en `develop`):
+  - **020** — Notifications (EmailLog + Contactos + Welcome): UoW transaccional componible, `Contact`/`EmailLog` (AR), flujo Contacto (DomainEvent atómico) y Welcome (IntegrationEvent + Outbox), lecturas paginadas. 6 tareas.
+  - **021** — User/Registro: moneda obligatoria en registro (contrato rompedor), `GET/PUT /users/me` (re-hash Argon2). 3 tareas.
+  - **022** — Finanzas: `SubCategory` re-modelada como AR independiente (cierre de la frontera Auth⊥Finanzas), CRUD de subcategorías, agregaciones `by-category`/`monthly` con validación de rango. 3 tareas.
+  - **023** — Investments: holdings `*Original`, serie de cotización por periodo, rename/delete de cartera con guards fiscales, summary global. 4 tareas.
+
+**Decisiones clave (revisión de planes):**
+- **Norma de EventHandlers**: son disparadores finos (`_mediator.Send(Command)`); el Command hace `entity.Add` + `SaveChangesAsync()`. Excepción documentada en código: el handler de Auth que encola el IntegrationEvent (no guarda; lo persiste el save-3 de la UoW componible, atómico con el `User`).
+- **Convención namespace = carpeta** (anidado, con subcarpetas por categoría); se corrigió la Spec 005 en consecuencia.
+- **Invariantes en el dominio**: `SubCategory.Delete(requestingUserId)` rechaza predefinidas y no-propietario; `Portfolio.Delete(today)` aplica guards de posiciones abiertas y gracia fiscal de 5 años (excepciones de dominio → 409).
+- **Sin magic values**: el periodo de la serie de cotización se modela como enum `ValuationPeriod` (valor subyacente = nº de meses), compartible con el frontend.
+- **DI**: se excluyen los `INotificationHandler` del escaneo Autofac (los posee MediatR) para evitar doble disparo; los `IIntegrationEventHandler` se resuelven por `GetServices`.
+
+**Resultado / Estado:**
+- Planes `docs/superpowers/plans/020–023` listos para ejecución task-by-task (subagent-driven).
+- Rama `feature/007-010-backend-features`.
+
+**Siguiente paso:**
+- [ ] Ejecutar los planes por orden (020 → 023), una tarea = una rama = un PR con gate humano.
