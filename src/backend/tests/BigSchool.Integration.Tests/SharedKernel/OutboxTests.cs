@@ -5,6 +5,7 @@ using BigSchool.Integration.Tests.Fixtures;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -51,7 +52,7 @@ public class OutboxTests
 
         var busMock = new Mock<IIntegrationEventBus>();
         await using (var ctx = NewContext())
-            await new OutboxDispatcher(ctx, busMock.Object).DispatchPendingAsync(CancellationToken.None);
+            await new OutboxDispatcher(ctx, busMock.Object, NullLogger<OutboxDispatcher>.Instance).DispatchPendingAsync(CancellationToken.None);
 
         busMock.Verify(b => b.PublishAsync(
             It.Is<IIntegrationEvent>(e => e.EventId == evt.EventId), It.IsAny<CancellationToken>()),
@@ -72,10 +73,44 @@ public class OutboxTests
         }
         var busMock = new Mock<IIntegrationEventBus>();
         await using (var ctx = NewContext())
-            await new OutboxDispatcher(ctx, busMock.Object).DispatchPendingAsync(CancellationToken.None);
+            await new OutboxDispatcher(ctx, busMock.Object, NullLogger<OutboxDispatcher>.Instance).DispatchPendingAsync(CancellationToken.None);
         await using (var ctx = NewContext())
-            await new OutboxDispatcher(ctx, busMock.Object).DispatchPendingAsync(CancellationToken.None);
+            await new OutboxDispatcher(ctx, busMock.Object, NullLogger<OutboxDispatcher>.Instance).DispatchPendingAsync(CancellationToken.None);
 
         busMock.Verify(b => b.PublishAsync(It.IsAny<IIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // Regresión: un IIntegrationEventHandler puede hacer _mediator.Send(...) de un command cuyo propio
+    // OutboxDispatchBehavior reentra en DispatchPendingAsync (caso real: CreateWelcomeEmailOnUserRegisteredHandler
+    // → CreateWelcomeEmailCommand). Si la fila no se marca ProcessedOn ANTES de invocar el handler, la
+    // consulta de "pending" de la llamada anidada la sigue viendo NULL → recursión infinita (visto: 5000+
+    // EmailLogs generados por un único registro antes de que el proceso quedara colgado).
+    [Fact]
+    public async Task Dispatcher_HandlerReentrante_NoReprocesaLaFilaNiRecurseInfinitamente()
+    {
+        await _db.ResetAsync();
+        var evt = new DummyEvent(Guid.NewGuid(), DateTime.UtcNow);
+        await using (var ctx = NewContext())
+        {
+            new IntegrationEventOutbox(ctx).Add(evt);
+            await ctx.SaveChangesAsync(dispatchEvents: false);
+        }
+
+        var callCount = 0;
+        var busMock = new Mock<IIntegrationEventBus>();
+        busMock.Setup(b => b.PublishAsync(It.IsAny<IIntegrationEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                callCount++;
+                await using var reentrantCtx = NewContext();
+                await new OutboxDispatcher(reentrantCtx, busMock.Object, NullLogger<OutboxDispatcher>.Instance)
+                    .DispatchPendingAsync(CancellationToken.None);
+            });
+
+        await using (var ctx = NewContext())
+            await new OutboxDispatcher(ctx, busMock.Object, NullLogger<OutboxDispatcher>.Instance)
+                .DispatchPendingAsync(CancellationToken.None);
+
+        callCount.Should().Be(1);
     }
 }
