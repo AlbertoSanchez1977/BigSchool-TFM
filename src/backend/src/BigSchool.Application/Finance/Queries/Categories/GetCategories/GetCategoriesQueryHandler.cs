@@ -33,7 +33,7 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, IRe
                 (int)mc,
                 mc.ToString(),
                 rows.Where(r => r.IdMainCategory == (int)mc)
-                    .Select(r => new SubCategoryDto(r.IdSubCategory, r.Name, r.IsDefault))
+                    .Select(r => new SubCategoryResponseDto(r.IdSubCategory, r.Name, r.IsDefault))
                     .ToList()))
             .ToList();
     }
