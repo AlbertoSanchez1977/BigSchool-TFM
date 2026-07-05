@@ -144,7 +144,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.WebApi/Controllers/Auth/UsersController.cs`
 - Test: `tests/BigSchool.Integration.Tests/Auth/GetMeTests.cs`
 
-- [ ] **Step 1: DTO + Query + Handler (Dapper)**
+- [x] **Step 1: DTO + Query + Handler (Dapper)**
 
 `UserProfileDto.cs`:
 ```csharp
@@ -194,7 +194,7 @@ public class GetMeQueryHandler : IRequestHandler<GetMeQuery, UserProfileDto?>
 }
 ```
 
-- [ ] **Step 2: `UsersController` (GET /users/me)**
+- [x] **Step 2: `UsersController` (GET /users/me)**
 
 `UsersController.cs`:
 ```csharp
@@ -238,7 +238,7 @@ public class UsersController : ControllerBase
 }
 ```
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 `GetMeTests.cs` (usa `AuthEndpointTestBase`; obtén un client autenticado del `AuthResponse.AccessToken`):
 ```csharp
@@ -267,7 +267,7 @@ public class UsersController : ControllerBase
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetMeTests` → PASS.
 
-- [ ] **Step 4: Verde + Commit**
+- [x] **Step 4: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
