@@ -1,1 +1,1 @@
-Usar: AGENTS.md
+AGENTS.md
