@@ -43,7 +43,7 @@ Cambio estructural atómico: `SubCategory` deja de ser hija de `User`. Debe term
 - Test: `tests/BigSchool.Domain.Tests/Entities/Finanzas/SubCategoryTests.cs`
 - Migration: `RemodelSubCategoryAggregate`
 
-- [ ] **Step 1: Test de dominio del nuevo AR (falla)**
+- [x] **Step 1: Test de dominio del nuevo AR (falla)**
 
 `SubCategoryTests.cs` — la invariante de borrado vive en el dominio: `Delete(requestingUserId)` exige propietario y rechaza predefinidas:
 ```csharp
@@ -58,7 +58,7 @@ namespace BigSchool.Domain.Tests.Entities.Finanzas;
 public class SubCategoryTests
 {
     [Fact]
-    public void Create_delUsuario_fija_IdUser_y_no_es_global_ni_default()
+    public void Create_WithIdUser_SetsIdUserAndIsNotGlobalOrDefault()
     {
         var s = SubCategory.Create(MainCategory.Luxuries, " Cine ", idUser: 7);
         s.IdUser.Should().Be(7);
@@ -68,15 +68,15 @@ public class SubCategoryTests
     }
 
     [Fact]
-    public void Create_global_idUser_null_es_global()
+    public void Create_NullIdUser_IsGlobal()
         => SubCategory.Create(MainCategory.Salary, "Nómina", null).IsGlobal.Should().BeTrue();
 
     [Fact]
-    public void Create_nombre_vacio_lanza()
+    public void Create_EmptyName_ThrowsArgumentException()
         => FluentActions.Invoking(() => SubCategory.Create(MainCategory.Other, " ", 1)).Should().Throw<System.ArgumentException>();
 
     [Fact]
-    public void Delete_por_su_dueno_soft_borra()
+    public void Delete_ByOwner_SoftDeletes()
     {
         var s = SubCategory.Create(MainCategory.Other, "X", idUser: 1);
         s.Delete(requestingUserId: 1);
@@ -84,14 +84,14 @@ public class SubCategoryTests
     }
 
     [Fact]
-    public void Delete_por_otro_usuario_lanza()
+    public void Delete_ByOtherUser_ThrowsInvalidOperationException()
     {
         var s = SubCategory.Create(MainCategory.Other, "X", idUser: 1);
         FluentActions.Invoking(() => s.Delete(requestingUserId: 2)).Should().Throw<System.InvalidOperationException>();
     }
 
     [Fact]
-    public void Delete_de_una_global_lanza()
+    public void Delete_GlobalSubCategory_ThrowsInvalidOperationException()
     {
         var s = SubCategory.Create(MainCategory.Other, "X", idUser: null); // global
         FluentActions.Invoking(() => s.Delete(requestingUserId: 1)).Should().Throw<System.InvalidOperationException>();
@@ -102,7 +102,7 @@ public class SubCategoryTests
 
 Run: `dotnet test tests/BigSchool.Domain.Tests --filter SubCategoryTests` → FAIL.
 
-- [ ] **Step 2: `SubCategory` → AR independiente (con invariante de borrado)**
+- [x] **Step 2: `SubCategory` → AR independiente (con invariante de borrado)**
 
 Sustituye `SubCategory.cs` por:
 ```csharp
@@ -124,7 +124,7 @@ public class SubCategory : BaseEntity, IAggregateRoot
 
     public bool IsGlobal => IdUser is null;
 
-    private SubCategory() { } // EF Core
+    protected SubCategory() { } // EF Core
 
     private SubCategory(MainCategory mainCategory, string name, int? idUser, bool isDefault, EntityStatus idStatus, DateTime createdAt)
     {
@@ -155,7 +155,7 @@ public class SubCategory : BaseEntity, IAggregateRoot
 }
 ```
 
-- [ ] **Step 3: `User` deja de conocer Finanzas**
+- [x] **Step 3: `User` deja de conocer Finanzas**
 
 En `User.cs`:
 - Elimina los `using` de Finanzas: `using BigSchool.Domain.Finanzas.Entities;`, `using BigSchool.Domain.Finanzas.Enums;`, `using BigSchool.Domain.Finanzas.Exceptions;`.
@@ -163,7 +163,7 @@ En `User.cs`:
 
 Tras esto `User` **no** referencia ningún tipo de Finanzas (solo `Currency`/`EntityStatus` de SharedKernel).
 
-- [ ] **Step 4: Configuraciones EF**
+- [x] **Step 4: Configuraciones EF**
 
 `SubCategoryConfiguration.cs` — sustituye la línea de la sombra por propiedad explícita:
 ```csharp
@@ -174,28 +174,28 @@ Tras esto `User` **no** referencia ningún tipo de Finanzas (solo `Currency`/`En
 
 `UserConfiguration.cs` — elimina el método `ConfigureRelationships` y su llamada en `Configure`, y el `using BigSchool.Domain.Finanzas.Entities;`. (La FK `SubCategories→Users` vivía ahí; al quitarla, la migración la suelta.)
 
-- [ ] **Step 5: Adaptar tests que usaban `User.AddSubCategory`/`SubCategories`**
+- [x] **Step 5: Adaptar tests que usaban `User.AddSubCategory`/`SubCategories`**
 
 Run: `grep -rn "AddSubCategory\|\.SubCategories" tests src | grep -v SubCategoryTests` → elimina/adapta esos tests (dominio o integración). La cobertura de `SubCategory` pasa a `SubCategoryTests` (AR directo).
 
-- [ ] **Step 6: Reactivar el guard test de frontera**
+- [x] **Step 6: Reactivar el guard test de frontera**
 
 En `ModuleBoundaryTests.cs`, cambia la línea de `Domain.Auth` y quita el comentario de excepción:
 ```csharp
     [InlineData("BigSchool.Domain.Auth", new[] { "BigSchool.Domain.Finanzas", "BigSchool.Domain.Investments" })]
 ```
 
-- [ ] **Step 7: Migración (solo suelta la FK)**
+- [x] **Step 7: Migración (solo suelta la FK)**
 
 Run (cwd `src/backend`): `dotnet ef migrations add RemodelSubCategoryAggregate --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi`
 *Expected:* el `Up()` **solo** suelta la FK `SubCategories→Users` (la columna `IdUser` y el resto del esquema no cambian; el seed no cambia). Revisa que no aparezcan alteraciones inesperadas. Luego:
 Run: `dotnet ef migrations has-pending-model-changes --project src/BigSchool.Infrastructure --startup-project src/BigSchool.WebApi` → sin pendientes.
 
-- [ ] **Step 8: Verde (build + tests + ARCH)**
+- [x] **Step 8: Verde (build + tests + ARCH)**
 
 Run: FULL + ARCH. *Expected:* verde; `ModuleBoundaryTests` con Auth prohibiendo Finanzas **pasa** (frontera cerrada). Los E2E de `GET /categories` siguen verdes (seed intacto).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 ```bash
 git add -A && git commit -m "refactor(finanzas): SubCategory como AR independiente + cierre frontera Auth⊥Finanzas
 
@@ -392,7 +392,7 @@ Añade a `CategoriesController` (usings de los nuevos commands + `SubCategoryDto
 
 - [ ] **Step 5: Unit tests (validator + handlers)**
 
-`CreateSubCategoryCommandValidatorTests.cs`: Name vacío/ >100 → inválido; MainCategory fuera de enum → inválido; válido pasa.
+`CreateSubCategoryCommandValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`): `Validate_EmptyName_HasError`, `Validate_NameTooLong_HasError`, `Validate_MainCategoryOutOfEnum_HasError`, `Validate_ValidCommand_NoErrors`.
 `CreateSubCategoryCommandHandlerTests.cs`:
 ```csharp
 using BigSchool.Application.Finanzas.Commands.CreateSubCategory;
@@ -409,7 +409,7 @@ namespace BigSchool.Application.Tests.Commands.Finanzas;
 public class CreateSubCategoryCommandHandlerTests
 {
     [Fact]
-    public async Task Duplicada_lanza_409()
+    public async Task Handle_DuplicateName_ThrowsDuplicateSubCategoryDomainException()
     {
         var repo = new Mock<ISubCategoryRepository>();
         repo.Setup(r => r.ExistsActiveAsync(1, MainCategory.Luxuries, "Cine", It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -420,7 +420,7 @@ public class CreateSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task Nueva_crea_y_guarda()
+    public async Task Handle_NewSubCategory_CreatesAndSaves()
     {
         var repo = new Mock<ISubCategoryRepository>();
         repo.Setup(r => r.ExistsActiveAsync(It.IsAny<int?>(), It.IsAny<MainCategory>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -459,7 +459,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task Inexistente_404()
+    public async Task Handle_NonExistentSubCategory_ThrowsNotFoundException()
     {
         var handler = new DeleteSubCategoryCommandHandler(RepoReturning(null).Object);
         await FluentActions.Invoking(() => handler.Handle(new DeleteSubCategoryCommand(1, 99), CancellationToken.None))
@@ -467,7 +467,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task Global_404()
+    public async Task Handle_GlobalSubCategory_ThrowsNotFoundException()
     {
         var global = SubCategory.Create(MainCategory.Other, "X", idUser: null);
         var handler = new DeleteSubCategoryCommandHandler(RepoReturning(global).Object);
@@ -476,7 +476,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task Ajena_404()
+    public async Task Handle_OtherUsersSubCategory_ThrowsNotFoundException()
     {
         var other = SubCategory.Create(MainCategory.Other, "X", idUser: 2);
         var handler = new DeleteSubCategoryCommandHandler(RepoReturning(other).Object);
@@ -485,7 +485,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task Propia_soft_borra()
+    public async Task Handle_OwnSubCategory_SoftDeletes()
     {
         var mine = SubCategory.Create(MainCategory.Other, "X", idUser: 1);
         var handler = new DeleteSubCategoryCommandHandler(RepoReturning(mine).Object);
@@ -500,7 +500,7 @@ public class DeleteSubCategoryCommandHandlerTests
 `SubCategoriesCrudTests.cs` (mirror de un base de Finanzas con user auth + `CountAsync`):
 ```csharp
     [Fact]
-    public async Task PostSub_Crea_Y_GetCategories_LaIncluye()
+    public async Task PostSub_ValidSubCategory_CreatesAndAppearsInGetCategories()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -513,7 +513,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task PostSub_Duplicada_Global_409()
+    public async Task PostSub_DuplicateOfGlobal_Returns409()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -523,7 +523,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task DeleteSub_Propia_SoftDelete()
+    public async Task DeleteSub_OwnSubCategory_SoftDeletes()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -536,7 +536,7 @@ public class DeleteSubCategoryCommandHandlerTests
     }
 
     [Fact]
-    public async Task DeleteSub_Global_404()
+    public async Task DeleteSub_GlobalSubCategory_Returns404()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -777,10 +777,10 @@ namespace BigSchool.Application.Tests.Validators.Finanzas;
 
 public class DateRangeValidationTests
 {
-    [Fact] public void Falta_uno_valido() => DateRange.IsValid(new DateOnly(2026,1,1), null).Should().BeTrue();
-    [Fact] public void From_mayor_que_To_invalido() => DateRange.IsValid(new DateOnly(2026,6,1), new DateOnly(2026,1,1)).Should().BeFalse();
-    [Fact] public void Span_4_anios_ok() => DateRange.IsValid(new DateOnly(2022,1,1), new DateOnly(2026,1,1)).Should().BeTrue();
-    [Fact] public void Span_mayor_4_anios_invalido() => DateRange.IsValid(new DateOnly(2022,1,1), new DateOnly(2026,1,2)).Should().BeFalse();
+    [Fact] public void IsValid_OneDateMissing_ReturnsTrue() => DateRange.IsValid(new DateOnly(2026,1,1), null).Should().BeTrue();
+    [Fact] public void IsValid_FromAfterTo_ReturnsFalse() => DateRange.IsValid(new DateOnly(2026,6,1), new DateOnly(2026,1,1)).Should().BeFalse();
+    [Fact] public void IsValid_SpanExactly4Years_ReturnsTrue() => DateRange.IsValid(new DateOnly(2022,1,1), new DateOnly(2026,1,1)).Should().BeTrue();
+    [Fact] public void IsValid_SpanMoreThan4Years_ReturnsFalse() => DateRange.IsValid(new DateOnly(2022,1,1), new DateOnly(2026,1,2)).Should().BeFalse();
 }
 ```
 
@@ -789,7 +789,7 @@ public class DateRangeValidationTests
 `GetByCategoryTests.cs` y `GetMonthlyTests.cs` (mirror `TransactionEndpointTestBase`): siembra transacciones multi-categoría, verifica totales sobre `BaseAmount`, filtros `type/from/to(/category)`, y **rango > 4 años → 400**. Ejemplos clave:
 ```csharp
     [Fact]
-    public async Task ByCategory_Rango_Mayor_4Anios_400()
+    public async Task ByCategory_RangeMoreThan4Years_Returns400()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -798,7 +798,7 @@ public class DateRangeValidationTests
     }
 
     [Fact]
-    public async Task ByCategory_AgregaPorCategoria_SobreBaseAmount()
+    public async Task ByCategory_AggregatesByCategory_OverBaseAmount()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);

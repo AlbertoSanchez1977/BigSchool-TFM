@@ -1,5 +1,4 @@
 using BigSchool.Domain.Auth.Entities;
-using BigSchool.Domain.Finanzas.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 using BigSchool.Infrastructure.SharedKernel.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.IdUser);
 
         ConfigureProperties(builder);
-        ConfigureRelationships(builder);
         ConfigureIndexes(builder);
         ConfigureFilters(builder);
 
@@ -42,20 +40,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<short>();
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt);
-    }
-
-    private static void ConfigureRelationships(EntityTypeBuilder<User> builder)
-    {
-        // SubCategory es entidad hija navegable de User
-        builder.HasMany(u => u.SubCategories)
-            .WithOne()
-            .HasForeignKey("IdUser")
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Acceso al backing field para la colección privada
-        builder.Navigation(u => u.SubCategories)
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 
     private static void ConfigureIndexes(EntityTypeBuilder<User> builder)

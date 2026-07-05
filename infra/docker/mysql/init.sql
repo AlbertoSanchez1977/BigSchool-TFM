@@ -27,7 +27,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260621173448_AddSectorMarketEnums',       '8.0.11'),
     ('20260621184811_CreatePortfolios',           '8.0.11'),
     ('20260702164337_AddOutboxMessage',           '8.0.11'),
-    ('20260704144600_AddNotificationsModule',     '8.0.11');
+    ('20260704144600_AddNotificationsModule',     '8.0.11'),
+    ('20260705113440_RemodelSubCategoryAggregate', '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -53,6 +54,10 @@ CREATE TABLE IF NOT EXISTS `Users` (
 -- Tabla: SubCategories
 -- EF Core: InitialCreate + HasData (28 subcategorías globales, IDs 1-28 explícitos)
 -- ATENCIÓN: El orden de IDs difiere del viejo init.sql (Lujos empiezan en 11, ONG en 19).
+-- RemodelSubCategoryAggregate (Spec 009 / Plan 022 Tarea 1): SubCategory pasa a ser AR
+-- independiente de Finanzas (ya no hija de User) → se suelta la FK/índice hacia Users.
+-- IdUser sigue siendo NULL = global, pero como referencia blanda (SIN FK dura), igual que
+-- EmailLogs.IdUser.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `SubCategories` (
     `IdSubCategory`  INT          AUTO_INCREMENT,
@@ -62,10 +67,7 @@ CREATE TABLE IF NOT EXISTS `SubCategories` (
     `IdStatus`       SMALLINT     NOT NULL DEFAULT 2,
     `CreatedAt`      DATETIME(6)  NOT NULL,
     `IdUser`         INT          NULL,
-    PRIMARY KEY (`IdSubCategory`),
-    KEY `IX_SubCategories_IdUser` (`IdUser`),
-    CONSTRAINT `FK_SubCategories_Users_IdUser`
-        FOREIGN KEY (`IdUser`) REFERENCES `Users` (`IdUser`) ON DELETE CASCADE
+    PRIMARY KEY (`IdSubCategory`)
 ) CHARACTER SET utf8mb4;
 
 -- Espejo exacto de EF Core HasData (InitialCreate migration, timestamp 2026-01-01 UTC)

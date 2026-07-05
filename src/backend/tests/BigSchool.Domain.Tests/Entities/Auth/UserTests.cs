@@ -19,7 +19,6 @@ public class UserTests
         user.IdStatus.Should().Be(EntityStatus.Active);
         user.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
         user.LastLoginDate.Should().BeNull();
-        user.SubCategories.Should().BeEmpty();
     }
 
     [Theory]
