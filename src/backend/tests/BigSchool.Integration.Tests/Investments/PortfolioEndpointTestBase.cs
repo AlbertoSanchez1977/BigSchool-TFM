@@ -130,7 +130,8 @@ public abstract class PortfolioEndpointTestBase : IntegrationTestBase
 
     protected record HoldingPerformanceResponse(
         int IdHolding, int IdCompany, string Ticker, decimal OpenShares,
-        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL, decimal UnrealizedPnLPct);
+        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL, decimal UnrealizedPnLPct,
+        string BuyOriginalCurrency, decimal CostBasisOriginal, decimal MarketValueOriginal, decimal UnrealizedPnLOriginal);
 
     protected record PerformanceResponse(
         int IdPortfolio, string Name, string BaseCurrency,

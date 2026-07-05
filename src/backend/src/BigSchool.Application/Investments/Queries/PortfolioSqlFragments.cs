@@ -17,7 +17,10 @@ SELECT
     x.LastPrice, x.LastDate, x.Rate,
     ROUND(x.OpenShares * COALESCE(x.LastPrice, 0) * x.Rate, 2) AS MarketValue,
     ROUND(x.OpenShares * x.BuyBaseAmount, 2) AS CostBasis,
-    ROUND(x.OpenShares * COALESCE(x.LastPrice, 0) * x.Rate - x.OpenShares * x.BuyBaseAmount, 2) AS UnrealizedPnL
+    ROUND(x.OpenShares * COALESCE(x.LastPrice, 0) * x.Rate - x.OpenShares * x.BuyBaseAmount, 2) AS UnrealizedPnL,
+    ROUND(x.OpenShares * x.BuyOriginalAmount, 2)                            AS CostBasisOriginal,
+    ROUND(x.OpenShares * COALESCE(x.LastPrice, 0), 2)                       AS MarketValueOriginal,
+    ROUND(x.OpenShares * COALESCE(x.LastPrice, 0) - x.OpenShares * x.BuyOriginalAmount, 2) AS UnrealizedPnLOriginal
 FROM (
     SELECT
         h.IdHolding, h.IdPortfolio, h.IdCompany, co.Ticker, co.Currency AS CompanyCurrency,
