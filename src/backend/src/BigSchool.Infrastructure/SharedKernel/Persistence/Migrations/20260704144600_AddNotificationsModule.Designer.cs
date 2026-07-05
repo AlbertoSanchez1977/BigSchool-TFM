@@ -81,7 +81,7 @@ namespace BigSchool.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("BigSchool.Domain.Finanzas.Entities.SubCategory", b =>
+            modelBuilder.Entity("BigSchool.Domain.Finance.Entities.SubCategory", b =>
                 {
                     b.Property<int>("IdSubCategory")
                         .ValueGeneratedOnAdd()
@@ -374,7 +374,7 @@ namespace BigSchool.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BigSchool.Domain.Finanzas.Entities.Transaction", b =>
+            modelBuilder.Entity("BigSchool.Domain.Finance.Entities.Transaction", b =>
                 {
                     b.Property<int>("IdTransaction")
                         .ValueGeneratedOnAdd()
@@ -948,7 +948,7 @@ namespace BigSchool.Infrastructure.Persistence.Migrations
                     b.ToTable("OutboxMessages", (string)null);
                 });
 
-            modelBuilder.Entity("BigSchool.Domain.Finanzas.Entities.SubCategory", b =>
+            modelBuilder.Entity("BigSchool.Domain.Finance.Entities.SubCategory", b =>
                 {
                     b.HasOne("BigSchool.Domain.Auth.Entities.User", null)
                         .WithMany("SubCategories")
@@ -956,9 +956,9 @@ namespace BigSchool.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("BigSchool.Domain.Finanzas.Entities.Transaction", b =>
+            modelBuilder.Entity("BigSchool.Domain.Finance.Entities.Transaction", b =>
                 {
-                    b.HasOne("BigSchool.Domain.Finanzas.Entities.SubCategory", null)
+                    b.HasOne("BigSchool.Domain.Finance.Entities.SubCategory", null)
                         .WithMany()
                         .HasForeignKey("IdSubCategory")
                         .OnDelete(DeleteBehavior.SetNull);

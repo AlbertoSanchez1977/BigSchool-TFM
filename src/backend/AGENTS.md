@@ -15,39 +15,48 @@
 - AutoMapper o Mapster para mapeos
 - JWT para autenticación
 
-## Estructura del Proyecto
+## Estructura del Proyecto — Monolito Modular (Spec 005)
+
+Arquitectura **layer-first + carpeta/namespace por módulo** (variante A de la Spec 005): un
+único despliegue y 4 proyectos de capa; dentro de cada capa, una carpeta por **módulo funcional**
++ `SharedKernel`. La frontera entre módulos es de **convención + NetArchTest** (`ModuleBoundaryTests`),
+no de assemblies. Namespace = ruta de carpeta: `BigSchool.{Capa}.{Módulo}[.Subcarpeta]`.
 
 ```
 backend/
 ├── src/
-│   ├── Domain/                → Entidades, Value Objects, Interfaces de repositorio
-│   ├── Application/           → Casos de uso (Commands/Queries), DTOs, Interfaces
-│   ├── Infrastructure/        → EF Core, Repositorios, Servicios externos
-│   └── WebApi/               → Controllers, Middleware, Configuración
+│   ├── BigSchool.Domain/          → {Módulo}/{Entities,Enums,Events,Exceptions}
+│   ├── BigSchool.Application/     → {Módulo}/{Commands,Queries,DTOs,Interfaces,EventHandlers}
+│   ├── BigSchool.Infrastructure/  → {Módulo}/{Persistence/{Configurations,Repositories},Services,DI}
+│   └── BigSchool.WebApi/          → Controllers/{Módulo}, Middleware, Program.cs
 ├── tests/
-│   ├── Domain.Tests/
-│   ├── Application.Tests/
-│   └── Integration.Tests/
+│   ├── BigSchool.Domain.Tests/        → Entities/{Módulo}/
+│   ├── BigSchool.Application.Tests/   → {Commands,Validators,EventHandlers}/{Módulo}/
+│   ├── BigSchool.Architecture.Tests/  → ModuleBoundaryTests (NetArchTest, guard de frontera)
+│   └── BigSchool.Integration.Tests/   → {Módulo}/ (E2E con WebApplicationFactory)
 └── Backend.sln
 ```
 
-## Bounded Contexts
+## Módulos funcionales
 
-### Finanzas Personales
-- **Gastos**: Entidad con categoría, importe, fecha, descripción, recurrencia
-- **Ingresos**: Entidad con fuente, importe, fecha, descripción, recurrencia
-- **Balance**: Servicio de dominio que calcula balances por periodo
+Cada módulo referencia a los demás **solo por Id** (p. ej. `Transaction.IdUser`, sin navegación) y
+**solo a través del SharedKernel o de contratos públicos** — nunca clases internas de otro módulo.
+La comunicación inter-módulo va por **IntegrationEvents** (`IIntegrationEventBus` in-memory + Outbox);
+la intra-módulo por **DomainEvents**.
 
-### Inversiones
-- **Empresa**: Entidad con nombre, ticker, sector, mercado
-- **Acción**: Value Object (cantidad, precio compra, fecha)
-- **Valoración**: Entidad con precio actual, fecha, fuente
-- **Cartera**: Aggregate Root que contiene las acciones del usuario
+| Módulo | Agregados / contenido | Responsabilidad |
+|---|---|---|
+| **Auth** | `User` (AR) | Registro, login (Argon2), JWT, perfil (`/users/me`), moneda base |
+| **Finance** | `Transaction` (AR), `SubCategory` (AR) | Gastos/ingresos, categorías/subcategorías, agregaciones (by-category, monthly, summary) |
+| **Investments** | `Company` (+`Valuation`), `Portfolio` (+`Holding`+`Disposal`) | Catálogo cotizadas, carteras, holdings FIFO, performance |
+| **Notifications** | `Contact`, `EmailLog` | Formulario de contacto y simulación de emails (welcome/acuse) |
+| **SharedKernel** | `BaseEntity`, `IAggregateRoot`, `IDomainEvent`, `IUnitOfWork`, `Money`, `Currency`, `EntityStatus`, `ApiResponse`, `IDbConnectionFactory`, `PagedResult<T>`, Outbox/IntegrationEvents, `ExchangeRate` | Contratos y building blocks compartidos por todos los módulos |
+| **Rag** *(futuro, fuera de MVP)* | `RagDocument`, `IRagServiceClient` | Anti-corruption layer hacia el RAG Service (Python): solo proxy HTTP, sin lógica de IA |
 
-### IA/RAG (Anti-corruption Layer)
-- Interfaz para comunicarse con el RAG Service (Python)
-- DTOs de petición/respuesta
-- No lógica de IA aquí, solo proxy HTTP
+> **Nota histórica**: el módulo **Finance** se llamó **`Finanzas`** (español) hasta el refactor
+> `refactor/rename-finanzas-to-finance`; se renombró a inglés por coherencia con Auth/Investments/
+> Notifications/SharedKernel y para deshacer la ambigüedad módulo↔agregado con "Transactions"
+> (que es una *feature* dentro de Finance: `Queries/Transactions`, no el nombre del módulo).
 
 ## Convenciones de Código
 
@@ -130,7 +139,7 @@ public sealed class ExchangeRateReader
 
 #### Reglas obligatorias de tests de integración E2E (Definition of Done por endpoint)
 Todo endpoint nuevo o modificado DEBE acompañarse de tests E2E que cumplan:
-1. **Un fichero por endpoint**, nombrado `{Verbo|Acción}{Recurso}Tests.cs` (p. ej. `RegisterTests`, `PostTransactionTests`, `GetTransactionsTests`), bajo carpeta por feature (`Auth/`, `Transactions/`). El plumbing común (ciclo de vida del factory, reset de BD, tipos de deserialización del envelope) vive en `IntegrationTestBase`; los helpers de cada feature en una base específica (`AuthEndpointTestBase`, `TransactionEndpointTestBase`).
+1. **Un fichero por endpoint**, nombrado `{Verbo|Acción}{Recurso}Tests.cs` (p. ej. `RegisterTests`, `PostTransactionTests`, `GetTransactionsTests`), bajo **carpeta por módulo** (`Auth/`, `Finance/`, `Investments/`, `Notifications/`). El plumbing común (ciclo de vida del factory, reset de BD, tipos de deserialización del envelope) vive en `IntegrationTestBase`; los helpers de cada módulo en una base específica (`AuthEndpointTestBase`, `TransactionEndpointTestBase`).
 2. **Al menos un test EXHAUSTIVO por feature** sobre la operación principal (POST/register), que valide:
    - **Request real serializado** (no se invoca el handler directamente): caza fallos de binding/serialización (enums string vía `JsonStringEnumConverter`, `DateOnly`, conversores Dapper como `DateOnlyTypeHandler`).
    - **Cada campo de la response** (contrato del frontend), incluida la forma serializada de enums y fechas.

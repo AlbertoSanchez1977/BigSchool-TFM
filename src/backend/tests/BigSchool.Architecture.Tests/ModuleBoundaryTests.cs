@@ -11,10 +11,10 @@ public class ModuleBoundaryTests
     private static readonly Assembly Application = typeof(BigSchool.Application.SharedKernel.Common.ApiResponse).Assembly;
 
     [Theory]
-    [InlineData("BigSchool.Domain.Auth", new[] { "BigSchool.Domain.Finanzas", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
-    [InlineData("BigSchool.Domain.Finanzas", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
-    [InlineData("BigSchool.Domain.Investments", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finanzas", "BigSchool.Domain.Notifications" })]
-    [InlineData("BigSchool.Domain.Notifications", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finanzas", "BigSchool.Domain.Investments" })]
+    [InlineData("BigSchool.Domain.Auth", new[] { "BigSchool.Domain.Finance", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
+    [InlineData("BigSchool.Domain.Finance", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
+    [InlineData("BigSchool.Domain.Investments", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finance", "BigSchool.Domain.Notifications" })]
+    [InlineData("BigSchool.Domain.Notifications", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finance", "BigSchool.Domain.Investments" })]
     public void Modulos_de_dominio_no_dependen_entre_si(string moduleNs, string[] forbidden)
     {
         var result = Types.InAssembly(Domain)
@@ -27,10 +27,10 @@ public class ModuleBoundaryTests
     }
 
     [Theory]
-    [InlineData("BigSchool.Application.Auth", new[] { "BigSchool.Application.Finanzas", "BigSchool.Application.Investments", "BigSchool.Application.Notifications" })]
-    [InlineData("BigSchool.Application.Finanzas", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Investments", "BigSchool.Application.Notifications" })]
-    [InlineData("BigSchool.Application.Investments", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Finanzas", "BigSchool.Application.Notifications" })]
-    [InlineData("BigSchool.Application.Notifications", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Finanzas", "BigSchool.Application.Investments" })]
+    [InlineData("BigSchool.Application.Auth", new[] { "BigSchool.Application.Finance", "BigSchool.Application.Investments", "BigSchool.Application.Notifications" })]
+    [InlineData("BigSchool.Application.Finance", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Investments", "BigSchool.Application.Notifications" })]
+    [InlineData("BigSchool.Application.Investments", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Finance", "BigSchool.Application.Notifications" })]
+    [InlineData("BigSchool.Application.Notifications", new[] { "BigSchool.Application.Auth", "BigSchool.Application.Finance", "BigSchool.Application.Investments" })]
     public void Modulos_de_application_no_dependen_entre_si(string moduleNs, string[] forbidden)
     {
         var result = Types.InAssembly(Application)

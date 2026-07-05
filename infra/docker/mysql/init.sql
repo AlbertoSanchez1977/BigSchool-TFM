@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `Users` (
 -- EF Core: InitialCreate + HasData (28 subcategorías globales, IDs 1-28 explícitos)
 -- ATENCIÓN: El orden de IDs difiere del viejo init.sql (Lujos empiezan en 11, ONG en 19).
 -- RemodelSubCategoryAggregate (Spec 009 / Plan 022 Tarea 1): SubCategory pasa a ser AR
--- independiente de Finanzas (ya no hija de User) → se suelta la FK/índice hacia Users.
+-- independiente de Finance (ya no hija de User) → se suelta la FK/índice hacia Users.
 -- IdUser sigue siendo NULL = global, pero como referencia blanda (SIN FK dura), igual que
 -- EmailLogs.IdUser.
 -- ============================================================

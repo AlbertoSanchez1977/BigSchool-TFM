@@ -32,13 +32,13 @@ try
             ?? new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" };
     });
 
-    // Autofac como DI container: un módulo por módulo funcional (SharedKernel/Auth/Finanzas/Investments)
+    // Autofac como DI container: un módulo por módulo funcional (SharedKernel/Auth/Finance/Investments)
     builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
         containerBuilder.RegisterModule<BigSchool.Infrastructure.SharedKernel.DI.SharedKernelModule>();
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Auth.DI.AuthModule>();
-        containerBuilder.RegisterModule<BigSchool.Infrastructure.Finanzas.DI.FinanzasModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Finance.DI.FinanceModule>();
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Investments.DI.InvestmentsModule>();
         containerBuilder.RegisterModule<BigSchool.Infrastructure.Notifications.DI.NotificationsModule>();
 
