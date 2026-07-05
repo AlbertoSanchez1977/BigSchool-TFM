@@ -1,4 +1,4 @@
-using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finance.Enums;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +11,7 @@ public static class SeedDataExtensions
 
     public static ModelBuilder SeedSubCategories(this ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Domain.Finanzas.Entities.SubCategory>().HasData(
+        modelBuilder.Entity<Domain.Finance.Entities.SubCategory>().HasData(
             // Gastos Necesarios
             new { IdSubCategory = 1, IdMainCategory = MainCategory.EssentialExpenses, Name = "Supermercado", IdUser = (int?)null, IsDefault = true, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },
             new { IdSubCategory = 2, IdMainCategory = MainCategory.EssentialExpenses, Name = "Farmacia", IdUser = (int?)null, IsDefault = true, IdStatus = EntityStatus.Active, CreatedAt = SeedDate },

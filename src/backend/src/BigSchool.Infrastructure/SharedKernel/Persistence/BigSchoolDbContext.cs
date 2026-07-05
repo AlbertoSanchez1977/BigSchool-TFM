@@ -1,6 +1,6 @@
 using BigSchool.Application.SharedKernel.Events;
 using BigSchool.Domain.Auth.Entities;
-using BigSchool.Domain.Finanzas.Entities;
+using BigSchool.Domain.Finance.Entities;
 using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.Notifications.Entities;
 using BigSchool.Domain.Rag.Entities;

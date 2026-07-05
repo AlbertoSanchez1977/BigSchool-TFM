@@ -37,8 +37,8 @@ E2E sobre MySQL real. Entidades hijas se testean **a través del AR** (sin `Inte
 | **Companies/Valuations charts (#5)** | Serie temporal de **precio de empresa** (catálogo global `Valuations`, sin `IdUser`) con selector de periodo 3m/6m/1y/3y/5y. **No** incluye serie de valor de cartera por-usuario. |
 | **Contactos vs Emails** | **Módulos separados**. Entidad `Contact` con CRUD propio; `EmailLog` aparte para la simulación de envíos. No se fusionan en una sola tabla. |
 | **Extras incluidos** | C (subcategorías CRUD), D (renombrar/borrar cartera), E (summary global de inversiones). También A (`GET /users/me`) y B (evento de bienvenida en register). |
-| **Monolito modular (Spec 0)** | Reubicación a **módulos funcionales** (Auth, Finanzas, Investments, **Notifications**) + **SharedKernel**, comunicación inter-módulo por **IntegrationEvents** sobre `IIntegrationEventBus` in-memory (simula RabbitMQ/SB sin serlo). Solo reubicaciones de carpeta/namespace + guard tests; **sin** partir en assemblies (futuro). |
-| **Categorías → Finanzas (Spec 0)** | `SubCategory` (hoy hija del AR `User`) se **reubica al módulo Finanzas** junto con `Transaction`: la taxonomía de presupuesto es asunto de Finanzas, no de Identity/Auth. La decisión se cierra en la Spec 0; su CRUD (#8/C) se implementa en la Spec 3. |
+| **Monolito modular (Spec 0)** | Reubicación a **módulos funcionales** (Auth, Finance, Investments, **Notifications**) + **SharedKernel**, comunicación inter-módulo por **IntegrationEvents** sobre `IIntegrationEventBus` in-memory (simula RabbitMQ/SB sin serlo). Solo reubicaciones de carpeta/namespace + guard tests; **sin** partir en assemblies (futuro). |
+| **Categorías → Finance (Spec 0)** | `SubCategory` (hoy hija del AR `User`) se **reubica al módulo Finance** junto con `Transaction`: la taxonomía de presupuesto es asunto de Finance, no de Identity/Auth. La decisión se cierra en la Spec 0; su CRUD (#8/C) se implementa en la Spec 3. |
 | **Paginación (Spec 00)** | **Todos** los listados (Companies, Portfolios, Valuations, Holdings) exponen `page`/`pageSize` + `meta.totalCount`, reutilizando el patrón ya presente en Transactions (`PagedResult<T>` compartido). Series/summaries (p.ej. charts #9) **no** se paginan. |
 
 ---
@@ -85,7 +85,7 @@ E2E sobre MySQL real. Entidades hijas se testean **a través del AR** (sin `Inte
 - Archivos: `Domain/Entities/EmailLog.cs`, EventHandlers, `…Queries/Emails/GetEmails/*`,
   `Controllers/EmailsController.cs`, migración. Front: `useEmails.ts`, `emails/page.tsx`.
 
-### Módulo Finanzas (Transactions)
+### Módulo Finance (ex-Finanzas)
 
 **6. Gastos/Ingresos agrupados por categoría (#7)**
 - Hoy: se agrega en el navegador (`aggregateByCategory`, Task 7). Spec §4.2 hueco #1.
@@ -152,11 +152,11 @@ la etiqueta conceptual de *fase fundacional*.
 
 | Orden | Spec (fichero) | Cubre | Nota |
 |-------|----------------|-------|------|
-| **0** | `005-…-backend-modular-monolith-design.md` | Reubicación a módulos (Auth/Finanzas/Investments/**Notifications**) + SharedKernel + `IIntegrationEventBus` (in-memory) + Domain/Integration events + guard tests (NetArchTest). Cierra **Categorías→Finanzas** | Fundacional; refactor estructural, primero para que el resto nazca aquí |
+| **0** | `005-…-backend-modular-monolith-design.md` | Reubicación a módulos (Auth/Finance/Investments/**Notifications**) + SharedKernel + `IIntegrationEventBus` (in-memory) + Domain/Integration events + guard tests (NetArchTest). Cierra **Categorías→Finance** | Fundacional; refactor estructural, primero para que el resto nazca aquí |
 | **00** | `006-…-backend-paginacion-listados-design.md` | `page`/`pageSize` + `meta.totalCount` en Companies, Portfolios, Valuations (Holdings a decidir); `PagedResult<T>` compartido | Cross-cutting; después de 0 para escribirlo ya en la estructura modular |
 | **1** | `007-…-backend-notifications-emails-contactos-design.md` | **#5** EmailLog + **#4** Contactos + **#3/B** welcome (Auth→Notifications vía IntegrationEvent) | Estrena el módulo Notifications y el bus de integración de la Spec 0 |
 | **2** | `008-…-backend-user-registro-moneda-design.md` | **#1** moneda en Registro + **#2/A** update/lectura usuario | Módulo Auth |
-| **3** | `009-…-backend-finanzas-agregaciones-design.md` | **#6** por categoría + **#7** por mes/año con filtros + **#8/C** subcategorías CRUD | Módulo Finanzas (Categorías ya reubicadas en Spec 0) |
+| **3** | `009-…-backend-finanzas-agregaciones-design.md` | **#6** por categoría + **#7** por mes/año con filtros + **#8/C** subcategorías CRUD | Módulo Finance (Categorías ya reubicadas en Spec 0) |
 | **4** | `010-…-backend-inversiones-summaries-design.md` | **#9** valuations por periodo + **#10** holdings Original + **#11/D/E** portfolio rename/delete + summary global | Módulo Investments |
 
 ---
