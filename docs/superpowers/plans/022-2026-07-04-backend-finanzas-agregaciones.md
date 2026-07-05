@@ -214,9 +214,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Finanzas/Commands/DeleteSubCategory/{DeleteSubCategoryCommand,DeleteSubCategoryCommandHandler}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Finanzas/CategoriesController.cs`
 - Test: `tests/BigSchool.Application.Tests/Commands/Finanzas/{CreateSubCategoryCommandHandlerTests,DeleteSubCategoryCommandHandlerTests}.cs`, `tests/BigSchool.Application.Tests/Validators/Finanzas/CreateSubCategoryCommandValidatorTests.cs`
-- Test: `tests/BigSchool.Integration.Tests/Finanzas/SubCategoriesCrudTests.cs`
+- Test: `tests/BigSchool.Integration.Tests/Transactions/SubCategoriesCrudTests.cs` (namespace `BigSchool.Integration.Tests.Transactions`; reutiliza `TransactionEndpointTestBase` — no crear carpeta/namespace "Finanzas" nueva, el módulo ya es español en Domain/Application/Infrastructure pero la carpeta E2E existente para este dominio es "Transactions")
 
-- [ ] **Step 1: Repositorio con guarda de unicidad**
+- [x] **Step 1: Repositorio con guarda de unicidad**
 
 `ISubCategoryRepository.cs`:
 ```csharp
@@ -260,7 +260,7 @@ public class SubCategoryRepository : EFRepository<SubCategory, int>, ISubCategor
 ```
 > `SubCategoryRepository` queda registrado por el escaneo Autofac de `FinanzasModule` (Infrastructure.Finanzas). No requiere cambios en DI.
 
-- [ ] **Step 2: DTO + Create (command/validator/handler)**
+- [x] **Step 2: DTO + Create (command/validator/handler)**
 
 `SubCategoryDto.cs`:
 ```csharp
@@ -322,9 +322,9 @@ public class CreateSubCategoryCommandHandler : IRequestHandler<CreateSubCategory
     }
 }
 ```
-> `DuplicateSubCategoryDomainException` (code `DUPLICATE_SUBCATEGORY`) debe mapear a **409** en el `ExceptionHandlingMiddleware` (mismo trato que `EmailAlreadyExistsDomainException`). Confírmalo; si el middleware solo mapea `ConflictException`, ajusta el mapeo o la jerarquía.
+> `DuplicateSubCategoryDomainException` debía mapear a **409** (mismo trato que `EmailAlreadyExistsDomainException`/`DuplicateTickerDomainException`/`DuplicateValuationDomainException`). Confirmado: el middleware solo mapea `ConflictException` a 409 (`DomainException` genérico → 400); la clase extendía `DomainException`, no `ConflictException`. Fix: cambiar su base a `ConflictException` (no tocar el middleware).
 
-- [ ] **Step 3: Delete (command/handler) — 404 no-leak + invariante de dominio**
+- [x] **Step 3: Delete (command/handler) — 404 no-leak + invariante de dominio**
 
 `DeleteSubCategoryCommand.cs`:
 ```csharp
@@ -362,21 +362,21 @@ public class DeleteSubCategoryCommandHandler : IRequestHandler<DeleteSubCategory
 ```
 > Ajusta el ctor de `NotFoundException` al existente. El pre-check devuelve 404 sin filtrar existencia; el `Delete(requestingUserId)` del dominio nunca fallará aquí (ya se validó), pero protege la invariante ante otros llamadores.
 
-- [ ] **Step 4: `CategoriesController` — POST /sub, DELETE /sub/{id}**
+- [x] **Step 4: `CategoriesController` — POST /sub, DELETE /sub/{id}**
 
-Añade a `CategoriesController` (usings de los nuevos commands + `SubCategoryDto`):
+Añade a `CategoriesController` (usings de los nuevos commands). **Colisión de nombres detectada**: `Application.Finanzas.Queries.Categories.GetCategories` ya define su propio `SubCategoryDto` (item anidado de `GetCategoriesQuery`, forma distinta: `IdSubCategory, Name, IsDefault`); el controller ya tiene ese `using`. No añadas `using BigSchool.Application.Finanzas.DTOs;` — cualifica el nuevo `SubCategoryDto` (CRUD) por nombre completo en los dos sitios donde se usa:
 ```csharp
     public record CreateSubCategoryRequest(BigSchool.Domain.Finanzas.Enums.MainCategory MainCategory, string Name);
 
     [HttpPost("sub")]
-    [ProducesResponseType(typeof(ApiResponse<SubCategoryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BigSchool.Application.Finanzas.DTOs.SubCategoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSub([FromBody] CreateSubCategoryRequest body)
     {
         var userId = CurrentUser.GetId(User, _encryptor);
         var result = await _mediator.Send(new CreateSubCategoryCommand(userId, body.MainCategory, body.Name));
-        return Ok(ApiResponse<SubCategoryDto>.Success(result));
+        return Ok(ApiResponse<BigSchool.Application.Finanzas.DTOs.SubCategoryDto>.Success(result));
     }
 
     [HttpDelete("sub/{id:int}")]
@@ -390,7 +390,7 @@ Añade a `CategoriesController` (usings de los nuevos commands + `SubCategoryDto
     }
 ```
 
-- [ ] **Step 5: Unit tests (validator + handlers)**
+- [x] **Step 5: Unit tests (validator + handlers)**
 
 `CreateSubCategoryCommandValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`): `Validate_EmptyName_HasError`, `Validate_NameTooLong_HasError`, `Validate_MainCategoryOutOfEnum_HasError`, `Validate_ValidCommand_NoErrors`.
 `CreateSubCategoryCommandHandlerTests.cs`:
@@ -495,9 +495,9 @@ public class DeleteSubCategoryCommandHandlerTests
 }
 ```
 
-- [ ] **Step 6: E2E**
+- [x] **Step 6: E2E**
 
-`SubCategoriesCrudTests.cs` (mirror de un base de Finanzas con user auth + `CountAsync`):
+`SubCategoriesCrudTests.cs` (hereda `TransactionEndpointTestBase`; añade `CountAsync(sql)` genérico ahí si no existe):
 ```csharp
     [Fact]
     public async Task PostSub_ValidSubCategory_CreatesAndAppearsInGetCategories()
@@ -549,7 +549,7 @@ public class DeleteSubCategoryCommandHandlerTests
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter SubCategoriesCrud` → PASS.
 
-- [ ] **Step 7: Verde + Commit**
+- [x] **Step 7: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -568,7 +568,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetMonthly/{GetMonthlyQuery,GetMonthlyQueryHandler,GetMonthlyQueryValidator}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Finanzas/TransactionsController.cs` (2 endpoints)
 - Test: `tests/BigSchool.Application.Tests/Validators/Finanzas/DateRangeValidationTests.cs`
-- Test: `tests/BigSchool.Integration.Tests/Finanzas/{GetByCategoryTests,GetMonthlyTests}.cs`
+- Test: `tests/BigSchool.Integration.Tests/Transactions/{GetByCategoryTests,GetMonthlyTests}.cs` (mismo namespace/carpeta que `SubCategoriesCrudTests`)
 
 - [ ] **Step 1: Predicado de rango compartido**
 

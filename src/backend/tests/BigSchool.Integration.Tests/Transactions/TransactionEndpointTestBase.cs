@@ -77,6 +77,12 @@ public abstract class TransactionEndpointTestBase : IntegrationTestBase
             "SELECT IdStatus FROM Transactions WHERE IdTransaction = @id;", new { id = idTransaction });
     }
 
+    protected async Task<int> CountAsync(string sql)
+    {
+        await using var conn = new MySqlConnection(Fixture.ConnectionString);
+        return await conn.ExecuteScalarAsync<int>(sql);
+    }
+
     // TransactionDto: Type/IdMainCategory STRING (JsonStringEnumConverter); fechas "yyyy-MM-dd".
     protected record TransactionResponse(
         int IdTransaction, string Type, string IdMainCategory, int? IdSubCategory,

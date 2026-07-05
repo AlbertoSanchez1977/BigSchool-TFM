@@ -3,7 +3,7 @@ using BigSchool.Domain.SharedKernel.Exceptions;
 
 namespace BigSchool.Domain.Finanzas.Exceptions;
 
-public class DuplicateSubCategoryDomainException : DomainException
+public class DuplicateSubCategoryDomainException : ConflictException
 {
     public DuplicateSubCategoryDomainException(string name, MainCategory mainCategory)
         : base("DUPLICATE_SUBCATEGORY",
