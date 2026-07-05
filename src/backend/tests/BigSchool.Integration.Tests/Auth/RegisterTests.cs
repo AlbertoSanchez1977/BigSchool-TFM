@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using BigSchool.Integration.Tests.Fixtures;
+using Dapper;
 using FluentAssertions;
+using MySqlConnector;
 using Xunit;
 
 namespace BigSchool.Integration.Tests.Auth;
@@ -63,5 +66,37 @@ public class RegisterTests : AuthEndpointTestBase
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var env = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
         env!.Errors.Should().Contain(e => e.Code == "VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task Register_NewUser_CreatesSingleWelcomeEmailLogAndDrainsOutbox()
+    {
+        var email = $"welcome-{Guid.NewGuid():N}@test.com";
+        var resp = await RegisterRawAsync(email, DefaultPassword, "Ada Lovelace");
+        resp.EnsureSuccessStatusCode();
+
+        await using var conn = new MySqlConnection(Fixture.ConnectionString);
+        var idUser = await conn.ExecuteScalarAsync<int>("SELECT IdUser FROM Users WHERE Email=@email", new { email });
+
+        // Frontera Auth↔Notifications: lo único que Auth conoce de primera mano es que su propio
+        // outbox se drenó. EXACTAMENTE 1 fila procesada: si PublishIntegrationEventHandler se
+        // registrara también en Autofac (además de en MediatR/el bus), se dispararía 2 veces → 2 filas.
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM OutboxMessages WHERE ProcessedOn IS NOT NULL"))
+            .Should().Be(1);
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM OutboxMessages WHERE ProcessedOn IS NULL"))
+            .Should().Be(0);
+
+        var payload = await conn.ExecuteScalarAsync<string>(
+            "SELECT Payload FROM OutboxMessages WHERE Type LIKE '%UserRegisteredIntegrationEvent%' ORDER BY IdOutboxMessage DESC LIMIT 1");
+        using var json = JsonDocument.Parse(payload);
+        json.RootElement.GetProperty("IdUser").GetInt32().Should().Be(idUser);
+        json.RootElement.GetProperty("Email").GetString().Should().Be(email);
+
+        // Cruce de frontera DELIBERADO (solo válido en monolito modular con BD compartida): confirma
+        // que Notifications efectivamente creó el EmailLog de bienvenida. En un microservicio estricto
+        // Auth no podría consultar EmailLogs (tabla de otro servicio) y este assert se eliminaría.
+        (await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM EmailLogs WHERE Recipient=@email AND Type=1 AND IdUser=@idUser", new { email, idUser }))
+            .Should().Be(1);
     }
 }

@@ -946,10 +946,11 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.Application/Notifications/EventHandlers/CreateWelcomeEmailOnUserRegisteredHandler.cs`
 - Modify: `src/BigSchool.Infrastructure/Auth/DI/AuthModule.cs` (excluir INotificationHandler del escaneo)
 - Modify: `tests/BigSchool.Architecture.Tests/ModuleBoundaryTests.cs` (incluir Notifications)
+- **Fix crítico (no previsto en el plan original)**: `src/BigSchool.Infrastructure/SharedKernel/IntegrationEvents/OutboxDispatcher.cs` — reentrancia infinita. `CreateWelcomeEmailOnUserRegisteredHandler` hace `_mediator.Send(CreateWelcomeEmailCommand)`, que también pasa por `OutboxDispatchBehavior`; como el `MarkProcessed` original solo se guardaba al FINAL del `foreach` (tras invocar el handler), la consulta `WHERE ProcessedOn IS NULL` de la llamada anidada seguía viendo la fila como pendiente → recursión infinita (comprobado: 5000+ EmailLogs generados por un único registro antes de que el proceso quedara colgado). Fix: marcar `ProcessedOn` y hacer `SaveChangesAsync` ANTES de invocar el handler de cada mensaje. Añadido `ILogger<OutboxDispatcher>` para el catch. Test de regresión: `Dispatcher_HandlerReentrante_NoReprocesaLaFilaNiRecurseInfinitamente` en `OutboxTests.cs`.
 - Test: `tests/BigSchool.Application.Tests/EventHandlers/Auth/PublishIntegrationEventHandlerTests.cs`; `tests/BigSchool.Application.Tests/Commands/Notifications/CreateWelcomeEmailCommandHandlerTests.cs`; `tests/BigSchool.Application.Tests/EventHandlers/Notifications/CreateWelcomeEmailTriggerTests.cs`
-- Test: `tests/BigSchool.Integration.Tests/Notifications/RegisterWelcomeEmailTests.cs`
+- Test: `tests/BigSchool.Integration.Tests/Auth/RegisterTests.cs` (nuevo caso `Register_NewUser_CreatesSingleWelcomeEmailLogAndDrainsOutbox` — vive en Auth, no en Notifications: el endpoint bajo prueba es `/api/v1/auth/register`; la consulta a `EmailLogs` queda documentada inline como cruce de frontera deliberado, solo válido en monolito modular)
 
-- [ ] **Step 1: Contrato compartido**
+- [x] **Step 1: Contrato compartido**
 
 `UserRegisteredIntegrationEvent.cs`:
 ```csharp
@@ -959,7 +960,7 @@ public sealed record UserRegisteredIntegrationEvent(
     Guid EventId, DateTime OccurredOn, int IdUser, string Email, string FullName) : IIntegrationEvent;
 ```
 
-- [ ] **Step 2: Handler de Auth — EXCEPCIÓN documentada (encola, no guarda)**
+- [x] **Step 2: Handler de Auth — EXCEPCIÓN documentada (encola, no guarda)**
 
 `PublishIntegrationEventHandler.cs`:
 ```csharp
@@ -991,7 +992,7 @@ public sealed class PublishIntegrationEventHandler
 }
 ```
 
-- [ ] **Step 3: Command interno del welcome + disparador (norma)**
+- [x] **Step 3: Command interno del welcome + disparador (norma)**
 
 `CreateWelcomeEmailCommand.cs`:
 ```csharp
@@ -1046,7 +1047,7 @@ public sealed class CreateWelcomeEmailOnUserRegisteredHandler
 ```
 > `CreateWelcomeEmailOnUserRegisteredHandler` **no** es `INotificationHandler` → el escaneo de `NotificationsModule` (Tarea 4) lo registra como `IIntegrationEventHandler<UserRegisteredIntegrationEvent>` una sola vez; el bus lo resuelve por `GetServices`. No añadas registro explícito (duplicaría → 2 welcomes).
 
-- [ ] **Step 4: Fix DI en `AuthModule` (excluir INotificationHandler)**
+- [x] **Step 4: Fix DI en `AuthModule` (excluir INotificationHandler)**
 
 En `AuthModule.cs`, añade el filtro `&& !IsMediatrNotificationHandler(t)` al escaneo de Application y el helper:
 ```csharp
@@ -1066,7 +1067,7 @@ using MediatR;
 ```
 > Sin esto, `PublishIntegrationEventHandler` se registraría en MediatR **y** en Autofac → `Publish` lo invocaría 2 veces → 2 filas de outbox → 2 welcomes. (`RegisterCommandHandler` es `IRequestHandler`, no afectado.)
 
-- [ ] **Step 5: Unit tests**
+- [x] **Step 5: Unit tests**
 
 `PublishIntegrationEventHandlerTests.cs`:
 ```csharp
@@ -1157,7 +1158,7 @@ public class CreateWelcomeEmailTriggerTests
 }
 ```
 
-- [ ] **Step 6: Actualizar `ModuleBoundaryTests` con Notifications**
+- [x] **Step 6: Actualizar `ModuleBoundaryTests` con Notifications**
 
 En `ModuleBoundaryTests.cs`, añade Notifications a los `[InlineData]` (dominio y application) y prohíbe que los demás dependan de él. Dominio:
 ```csharp
@@ -1168,29 +1169,45 @@ En `ModuleBoundaryTests.cs`, añade Notifications a los `[InlineData]` (dominio 
 ```
 Y análogo para `BigSchool.Application.*` (incluye `BigSchool.Application.Notifications` como módulo y como prohibido en los demás). **Clave**: `BigSchool.Application.Auth` **no** debe depender de `BigSchool.Application.Notifications` (publica el contrato vía SharedKernel) → el test lo verifica.
 
-- [ ] **Step 7: E2E — register genera EXACTAMENTE 1 welcome tras drenar el outbox**
+- [x] **Step 7: E2E — register genera EXACTAMENTE 1 welcome tras drenar el outbox**
 
-`RegisterWelcomeEmailTests.cs`:
+Añadido a `RegisterTests.cs` (Auth) — no a un fichero nuevo bajo Notifications: el endpoint bajo prueba es `/api/v1/auth/register`, responsabilidad de Auth, aunque la aserción cruce a leer `EmailLogs`/`OutboxMessages`:
 ```csharp
     [Fact]
-    public async Task Register_Genera_UnicoWelcomeEmailLog_Y_OutboxProcesado()
+    public async Task Register_NewUser_CreatesSingleWelcomeEmailLogAndDrainsOutbox()
     {
         var email = $"welcome-{Guid.NewGuid():N}@test.com";
-        var resp = await Factory.CreateClient().PostAsJsonAsync("/api/v1/auth/register",
-            new { email, password = "Passw0rd!", fullName = "Ada Lovelace" });
+        var resp = await RegisterRawAsync(email, DefaultPassword, "Ada Lovelace");
         resp.EnsureSuccessStatusCode();
 
-        // El OutboxDispatchBehavior drena en el mismo request → el welcome ya existe (exactamente 1).
-        (await CountAsync($"SELECT COUNT(*) FROM EmailLogs WHERE Recipient='{email}' AND Type=1")).Should().Be(1);
-        (await CountAsync($"SELECT COUNT(*) FROM EmailLogs WHERE Recipient='{email}' AND Type=1 AND IdUser IS NOT NULL")).Should().Be(1);
-        (await CountAsync("SELECT COUNT(*) FROM OutboxMessages WHERE ProcessedOn IS NULL")).Should().Be(0);
+        await using var conn = new MySqlConnection(Fixture.ConnectionString);
+        var idUser = await conn.ExecuteScalarAsync<int>("SELECT IdUser FROM Users WHERE Email=@email", new { email });
+
+        // Frontera Auth↔Notifications: lo único que Auth conoce de primera mano es que su propio
+        // outbox se drenó. EXACTAMENTE 1 fila procesada: si PublishIntegrationEventHandler se
+        // registrara también en Autofac (además de en MediatR/el bus), se dispararía 2 veces → 2 filas.
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM OutboxMessages WHERE ProcessedOn IS NOT NULL")).Should().Be(1);
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM OutboxMessages WHERE ProcessedOn IS NULL")).Should().Be(0);
+
+        var payload = await conn.ExecuteScalarAsync<string>(
+            "SELECT Payload FROM OutboxMessages WHERE Type LIKE '%UserRegisteredIntegrationEvent%' ORDER BY IdOutboxMessage DESC LIMIT 1");
+        using var json = JsonDocument.Parse(payload);
+        json.RootElement.GetProperty("IdUser").GetInt32().Should().Be(idUser);
+        json.RootElement.GetProperty("Email").GetString().Should().Be(email);
+
+        // Cruce de frontera DELIBERADO (solo válido en monolito modular con BD compartida): confirma
+        // que Notifications efectivamente creó el EmailLog de bienvenida. En un microservicio estricto
+        // Auth no podría consultar EmailLogs (tabla de otro servicio) y este assert se eliminaría.
+        (await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM EmailLogs WHERE Recipient=@email AND Type=1 AND IdUser=@idUser", new { email, idUser }))
+            .Should().Be(1);
     }
 ```
-> Ajusta el payload de register al contrato real (revisa `RegisterCommand`/`AuthController`). El "**exactamente 1**" caza una regresión del fix de DI (Step 4).
+> El "**exactamente 1**" caza dos regresiones distintas: doble registro DI (Step 4) y la reentrada infinita del `OutboxDispatcher` (ver Fix crítico arriba).
 
-Run: `dotnet test tests/BigSchool.Integration.Tests --filter "RegisterWelcomeEmail"` y `dotnet test tests/BigSchool.Architecture.Tests` → PASS.
+Run: `dotnet test tests/BigSchool.Integration.Tests --filter "Register_NewUser_CreatesSingleWelcomeEmailLogAndDrainsOutbox"` y `dotnet test tests/BigSchool.Architecture.Tests` → PASS.
 
-- [ ] **Step 8: Verde + Commit**
+- [x] **Step 8: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
