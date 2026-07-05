@@ -21,13 +21,15 @@
 # ═════════════════════════════════════════════════════════════════════════════
 
 ### 01 Registro — crear cuenta demo (ejecutar UNA sola vez)
+# baseCurrency es OBLIGATORIA (Plan 021 Tarea 1): EUR|USD|GBP|CHF|JPY; inmutable tras el registro.
 POST {{baseUrl}}/api/v1/auth/register
 Content-Type: application/json
 
 {
   "email": "demo@bigschool.com",
   "password": "Demo2026!",
-  "fullName": "Usuario Demo"
+  "fullName": "Usuario Demo",
+  "baseCurrency": "EUR"
 }
 
 ###
@@ -447,5 +449,33 @@ Authorization: Bearer {{token}}
 # Cambiar 1 por el IdEmailLog real (p.ej. el welcome generado al ejecutar "01 Registro").
 GET {{baseUrl}}/api/v1/emails/1
 Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# USERS — Perfil (Plan 021 / Spec 008)
+#
+# email y baseCurrency son INMUTABLES tras el registro (no se pueden cambiar por aquí).
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 37 Mi perfil — lectura (Dapper)
+# Respuesta: { idUser, email, fullName, baseCurrency, lastLoginDate }
+GET {{baseUrl}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+###
+
+### 38 Actualizar mi perfil — cambia fullName y, opcionalmente, password (re-hash Argon2)
+# password es OPCIONAL: si se omite, solo cambia fullName. Si se envía, re-hashea y
+# el login siguiente debe usar la nueva contraseña (la vieja deja de funcionar).
+PUT {{baseUrl}}/api/v1/users/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fullName": "Usuario Demo Actualizado",
+  "password": null
+}
 
 ###

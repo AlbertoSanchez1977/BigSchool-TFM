@@ -1,1 +1,1 @@
-Usar: infra\AGENTS.md
+Usar: AGENTS.md dentro de este mismo directorio

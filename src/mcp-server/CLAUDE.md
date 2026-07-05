@@ -1,1 +1,1 @@
-Usar: src\mcp-server\AGENTS.md
+Usar: AGENTS.md dentro de este mismo directorio

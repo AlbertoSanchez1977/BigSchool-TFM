@@ -1,1 +1,1 @@
-Usar: src\rag-service\AGENTS.md
+Usar: AGENTS.md dentro de este mismo directorio
