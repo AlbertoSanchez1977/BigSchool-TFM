@@ -35,38 +35,36 @@ Recetas: **BUILD** (`dotnet build`, cwd `src/backend`); **UNIT** (`dotnet test t
 - Modify: `tests/BigSchool.Integration.Tests/Auth/RegisterTests.cs` (nuevos casos + ajuste)
 - Test: `tests/BigSchool.Application.Tests/Validators/Auth/RegisterCommandValidatorTests.cs` (crear o extender)
 
-- [ ] **Step 1: Test del validator (falla)**
+- [x] **Step 1: Test del validator (falla)**
 
-`RegisterCommandValidatorTests.cs` (añade estos casos; si el fichero existe, agrégalos):
+`RegisterCommandValidatorTests.cs` (añade estos casos al fichero existente; sigue su estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`, no `.Validate(...).IsValid`):
 ```csharp
-using BigSchool.Application.Auth.Commands.Register;
-using BigSchool.Domain.SharedKernel.Enums;
-using FluentAssertions;
-using Xunit;
-
-namespace BigSchool.Application.Tests.Validators.Auth;
-
-public class RegisterCommandValidatorTests
-{
-    private readonly RegisterCommandValidator _v = new();
-    private static RegisterCommand Valid(Currency c) => new("ada@example.com", "Secret123!", "Ada", c);
+    [Fact]
+    public void Validate_ValidBaseCurrency_NoError()
+    {
+        var result = _validator.TestValidate(new RegisterCommand("test@email.com", "P@ssw0rd!", "John Doe", Currency.USD));
+        result.ShouldNotHaveValidationErrorFor(x => x.BaseCurrency);
+    }
 
     [Fact]
-    public void Moneda_valida_pasa()
-        => _v.Validate(Valid(Currency.USD)).IsValid.Should().BeTrue();
+    public void Validate_OmittedBaseCurrency_HasError()
+    {
+        var result = _validator.TestValidate(new RegisterCommand("test@email.com", "P@ssw0rd!", "John Doe", default));
+        result.ShouldHaveValidationErrorFor(x => x.BaseCurrency);
+    }
 
     [Fact]
-    public void Moneda_omitida_default0_falla()
-        => _v.Validate(new RegisterCommand("ada@example.com", "Secret123!", "Ada", default)).IsValid.Should().BeFalse();
-
-    [Fact]
-    public void Moneda_fuera_de_enum_falla()
-        => _v.Validate(new RegisterCommand("ada@example.com", "Secret123!", "Ada", (Currency)999)).IsValid.Should().BeFalse();
-}
+    public void Validate_BaseCurrencyOutOfEnum_HasError()
+    {
+        var result = _validator.TestValidate(new RegisterCommand("test@email.com", "P@ssw0rd!", "John Doe", (Currency)999));
+        result.ShouldHaveValidationErrorFor(x => x.BaseCurrency);
+    }
 ```
+> Añade `using BigSchool.Domain.SharedKernel.Enums;` a las `using` del fichero. Los `[Fact]` YA existentes (`Validate_ValidCommand_NoErrors`, etc.) dejan de compilar en cuanto `RegisterCommand` pase a tener 4 parámetros (Step 2) — hay que pasarles también `Currency.EUR` en ese mismo Step, no antes.
+
 Run: `dotnet test tests/BigSchool.Application.Tests --filter RegisterCommandValidatorTests` → FAIL (el command aún no tiene `BaseCurrency`).
 
-- [ ] **Step 2: `RegisterCommand` + Validator + Handler**
+- [x] **Step 2: `RegisterCommand` + Validator + Handler**
 
 `RegisterCommand.cs`:
 ```csharp
@@ -88,7 +86,7 @@ En `RegisterCommandHandler.cs`, pasa la moneda al factory:
         var user = User.Create(request.Email, hash, salt, request.FullName, request.BaseCurrency);
 ```
 
-- [ ] **Step 3: Ajustar el helper de E2E al nuevo contrato**
+- [x] **Step 3: Ajustar el helper de E2E al nuevo contrato**
 
 En `AuthEndpointTestBase.cs`, añade `baseCurrency` (default EUR para no romper los tests existentes):
 ```csharp
@@ -99,12 +97,12 @@ En `AuthEndpointTestBase.cs`, añade `baseCurrency` (default EUR para no romper 
 `RegisterAsync` no cambia (usa el default EUR). Los otros tests de Auth (`LoginTests`, `RefreshTests`) siguen verdes.
 > Busca además seeds/utilidades que registren usuarios vía API (`grep -rn "auth/register" infra scripts tests`) y añádeles `baseCurrency`. Los seeds que usan `User.Create(...)` sin moneda siguen válidos (default EUR).
 
-- [ ] **Step 4: E2E de registro (moneda persiste / obligatoria)**
+- [x] **Step 4: E2E de registro (moneda persiste / obligatoria)**
 
 En `RegisterTests.cs` añade:
 ```csharp
     [Fact]
-    public async Task Register_ConBaseCurrencyUSD_PersisteUSD()
+    public async Task Register_WithBaseCurrencyUsd_PersistsUsd()
     {
         var email = $"cur-{Guid.NewGuid():N}@test.com";
         var resp = await RegisterRawAsync(email, DefaultPassword, "Ada", "USD");
@@ -117,7 +115,7 @@ En `RegisterTests.cs` añade:
     }
 
     [Fact]
-    public async Task Register_SinBaseCurrency_400_ValidationError()
+    public async Task Register_MissingBaseCurrency_Returns400_ValidationError()
     {
         var email = $"nocur-{Guid.NewGuid():N}@test.com";
         var resp = await Factory.CreateClient().PostAsJsonAsync("/api/v1/auth/register",
@@ -127,7 +125,7 @@ En `RegisterTests.cs` añade:
 ```
 > Revisa que el test exhaustivo existente de `RegisterTests` (si asertaba `BaseCurrency`) siga coherente: ahora `RegisterRawAsync` envía EUR por defecto.
 
-- [ ] **Step 5: Verde + Commit**
+- [x] **Step 5: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -245,11 +243,11 @@ public class UsersController : ControllerBase
 `GetMeTests.cs` (usa `AuthEndpointTestBase`; obtén un client autenticado del `AuthResponse.AccessToken`):
 ```csharp
     [Fact]
-    public async Task GetMe_SinToken_401()
+    public async Task GetMe_WithoutToken_Returns401()
         => (await Factory.CreateClient().GetAsync("/api/v1/users/me")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
     [Fact]
-    public async Task GetMe_DevuelvePerfilDelToken()
+    public async Task GetMe_Authenticated_ReturnsProfileFromToken()
     {
         var email = $"me-{Guid.NewGuid():N}@test.com";
         var auth = await RegisterAsync(email, "Ada Lovelace"); // EUR por defecto
@@ -305,7 +303,7 @@ public class UserProfileTests
     private static User NewUser() => User.Create("ada@example.com", "h", "s", "Ada");
 
     [Fact]
-    public void UpdateProfile_cambia_FullName_y_UpdatedAt()
+    public void UpdateProfile_ValidFullName_UpdatesFullNameAndUpdatedAt()
     {
         var u = NewUser();
         u.UpdateProfile("Ada L.");
@@ -314,14 +312,14 @@ public class UserProfileTests
     }
 
     [Fact]
-    public void UpdateProfile_vacio_lanza()
+    public void UpdateProfile_EmptyFullName_ThrowsArgumentException()
     {
         var u = NewUser();
         FluentActions.Invoking(() => u.UpdateProfile(" ")).Should().Throw<System.ArgumentException>();
     }
 
     [Fact]
-    public void ChangePassword_cambia_hash_salt_y_UpdatedAt()
+    public void ChangePassword_ValidHashAndSalt_UpdatesHashSaltAndUpdatedAt()
     {
         var u = NewUser();
         u.ChangePassword("newHash", "newSalt");
@@ -440,22 +438,33 @@ Añade a `UsersController` (`using BigSchool.Application.Auth.Commands.UpdateUse
 
 - [ ] **Step 5: Unit tests de Application**
 
-`UpdateUserCommandValidatorTests.cs`:
+`UpdateUserCommandValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`, no `.Validate(...).IsValid`):
 ```csharp
 using BigSchool.Application.Auth.Commands.UpdateUser;
-using FluentAssertions;
+using FluentValidation.TestHelper;
 using Xunit;
 
 namespace BigSchool.Application.Tests.Validators.Auth;
 
 public class UpdateUserCommandValidatorTests
 {
-    private readonly UpdateUserCommandValidator _v = new();
+    private readonly UpdateUserCommandValidator _validator = new();
 
-    [Fact] public void SinPassword_valido() => _v.Validate(new UpdateUserCommand(1, "Ada", null)).IsValid.Should().BeTrue();
-    [Fact] public void FullNameVacio_falla() => _v.Validate(new UpdateUserCommand(1, "", null)).IsValid.Should().BeFalse();
-    [Fact] public void PasswordCorto_falla() => _v.Validate(new UpdateUserCommand(1, "Ada", "123")).IsValid.Should().BeFalse();
-    [Fact] public void PasswordValido_pasa() => _v.Validate(new UpdateUserCommand(1, "Ada", "Secret123!")).IsValid.Should().BeTrue();
+    [Fact]
+    public void Validate_ValidCommandWithoutPassword_NoErrors()
+        => _validator.TestValidate(new UpdateUserCommand(1, "Ada", null)).ShouldNotHaveAnyValidationErrors();
+
+    [Fact]
+    public void Validate_EmptyFullName_HasError()
+        => _validator.TestValidate(new UpdateUserCommand(1, "", null)).ShouldHaveValidationErrorFor(x => x.FullName);
+
+    [Fact]
+    public void Validate_ShortPassword_HasError()
+        => _validator.TestValidate(new UpdateUserCommand(1, "Ada", "123")).ShouldHaveValidationErrorFor(x => x.Password);
+
+    [Fact]
+    public void Validate_ValidCommandWithPassword_NoErrors()
+        => _validator.TestValidate(new UpdateUserCommand(1, "Ada", "Secret123!")).ShouldNotHaveAnyValidationErrors();
 }
 ```
 `UpdateUserCommandHandlerTests.cs`:
@@ -477,7 +486,7 @@ public class UpdateUserCommandHandlerTests
     private static User NewUser() => User.Create("ada@example.com", "h", "s", "Ada");
 
     [Fact]
-    public async Task SinPassword_no_rehashea_pero_actualiza_nombre()
+    public async Task Handle_NullPassword_UpdatesFullNameWithoutRehashing()
     {
         var user = NewUser();
         var repo = new Mock<IUserRepository>();
@@ -493,7 +502,7 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task ConPassword_rehashea()
+    public async Task Handle_WithPassword_RehashesPassword()
     {
         var user = NewUser();
         var repo = new Mock<IUserRepository>();
@@ -510,7 +519,7 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task UsuarioInexistente_lanza_NotFound()
+    public async Task Handle_NonExistentUser_ThrowsNotFoundException()
     {
         var repo = new Mock<IUserRepository>();
         repo.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -528,12 +537,12 @@ public class UpdateUserCommandHandlerTests
 `PutMeTests.cs`:
 ```csharp
     [Fact]
-    public async Task PutMe_SinToken_401()
+    public async Task PutMe_WithoutToken_Returns401()
         => (await Factory.CreateClient().PutAsJsonAsync("/api/v1/users/me", new { fullName = "X" }))
             .StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
     [Fact]
-    public async Task PutMe_CambiaFullName()
+    public async Task PutMe_ValidFullName_UpdatesFullName_AndPersists()
     {
         var email = $"put-{Guid.NewGuid():N}@test.com";
         var auth = await RegisterAsync(email, "Ada");
@@ -547,7 +556,7 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task PutMe_CambiaPassword_LoginNuevaOk_ViejaFalla()
+    public async Task PutMe_NewPassword_NewLoginSucceeds_AndOldLoginFails()
     {
         var email = $"pwd-{Guid.NewGuid():N}@test.com";
         var auth = await RegisterAsync(email, "Ada"); // password DefaultPassword
