@@ -1,7 +1,4 @@
 using BigSchool.Domain.Auth.Events;
-using BigSchool.Domain.Finanzas.Entities;
-using BigSchool.Domain.Finanzas.Enums;
-using BigSchool.Domain.Finanzas.Exceptions;
 using BigSchool.Domain.SharedKernel.Entities;
 using BigSchool.Domain.SharedKernel.Enums;
 
@@ -19,9 +16,6 @@ public class User : BaseEntity, IAggregateRoot
     public EntityStatus IdStatus { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
-
-    private readonly List<SubCategory> _subCategories = [];
-    public IReadOnlyCollection<SubCategory> SubCategories => _subCategories.AsReadOnly();
 
     protected User() { } // EF Core
 
@@ -80,24 +74,5 @@ public class User : BaseEntity, IAggregateRoot
         PasswordHash = hash;
         PasswordSalt = salt;
         UpdatedAt = DateTime.UtcNow;
-    }
-
-    public SubCategory AddSubCategory(MainCategory mainCategory, string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Name is required.", nameof(name));
-
-        var trimmedName = name.Trim();
-
-        if (_subCategories.Any(s => s.IdMainCategory == mainCategory
-            && s.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)
-            && s.IdStatus != EntityStatus.Deleted))
-        {
-            throw new DuplicateSubCategoryDomainException(trimmedName, mainCategory);
-        }
-
-        var subCategory = SubCategory.Create(mainCategory, trimmedName);
-        _subCategories.Add(subCategory);
-        return subCategory;
     }
 }

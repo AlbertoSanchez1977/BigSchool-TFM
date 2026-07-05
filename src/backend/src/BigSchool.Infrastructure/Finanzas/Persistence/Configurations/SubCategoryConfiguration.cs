@@ -29,8 +29,8 @@ public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
             .HasDefaultValue(EntityStatus.Active)
             .HasConversion<short>();
         builder.Property(s => s.CreatedAt).IsRequired();
-        // Shadow property IdUser (FK gestionada en UserConfiguration)
-        builder.Property<int?>("IdUser");
+        // IdUser explícito (nullable; NULL = global). Referencia suave por Id, SIN FK dura.
+        builder.Property(s => s.IdUser);
     }
 
     private static void ConfigureFilters(EntityTypeBuilder<SubCategory> builder)

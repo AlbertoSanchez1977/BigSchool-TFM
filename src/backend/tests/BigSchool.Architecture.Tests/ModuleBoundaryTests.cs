@@ -10,12 +10,8 @@ public class ModuleBoundaryTests
     private static readonly Assembly Domain = typeof(BigSchool.Domain.SharedKernel.Entities.BaseEntity).Assembly;
     private static readonly Assembly Application = typeof(BigSchool.Application.SharedKernel.Common.ApiResponse).Assembly;
 
-    // Auth -> Finanzas: excepción deliberada y documentada (spec 005 §7). SubCategory sigue siendo
-    // entidad hija del agregado User hasta que la Spec 009 la re-modele como AR independiente de
-    // Finanzas; hasta entonces, User referencia SubCategory/MainCategory/DuplicateSubCategoryDomainException.
-    // No se relaja aquí sin más: el plan 018 prohíbe explícitamente re-modelar SubCategory en esta tarea.
     [Theory]
-    [InlineData("BigSchool.Domain.Auth", new[] { "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
+    [InlineData("BigSchool.Domain.Auth", new[] { "BigSchool.Domain.Finanzas", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
     [InlineData("BigSchool.Domain.Finanzas", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Investments", "BigSchool.Domain.Notifications" })]
     [InlineData("BigSchool.Domain.Investments", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finanzas", "BigSchool.Domain.Notifications" })]
     [InlineData("BigSchool.Domain.Notifications", new[] { "BigSchool.Domain.Auth", "BigSchool.Domain.Finanzas", "BigSchool.Domain.Investments" })]
