@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BigSchool.Application.Auth.Interfaces.Services;
+using BigSchool.Application.Finance.DTOs;
 
 namespace BigSchool.WebApi.Controllers.Finance;
 
@@ -36,14 +37,14 @@ public class CategoriesController : ControllerBase
     public record CreateSubCategoryRequest(BigSchool.Domain.Finance.Enums.MainCategory MainCategory, string Name);
 
     [HttpPost("sub")]
-    [ProducesResponseType(typeof(ApiResponse<BigSchool.Application.Finance.DTOs.SubCategoryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubCategoryFromCategoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSub([FromBody] CreateSubCategoryRequest body)
     {
         var userId = CurrentUser.GetId(User, _encryptor);
         var result = await _mediator.Send(new CreateSubCategoryCommand(userId, body.MainCategory, body.Name));
-        return Ok(ApiResponse<BigSchool.Application.Finance.DTOs.SubCategoryDto>.Success(result));
+        return Ok(ApiResponse<SubCategoryFromCategoryDto>.Success(result));
     }
 
     [HttpDelete("sub/{id:int}")]
