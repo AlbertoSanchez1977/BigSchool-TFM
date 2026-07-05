@@ -763,3 +763,93 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 **Siguiente paso:**
 - [ ] Ejecutar los planes por orden (020 → 023), una tarea = una rama = un PR con gate humano.
+
+---
+
+## 2026-07-04 al 2026-07-05 — Backend: módulo Notifications completo (Spec 007, Plan 020, Tasks 1-6)
+
+### Fase: Implementación
+
+**Módulo**: backend (Notifications)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/007-2026-07-04-backend-notifications-emails-contactos-design.md` y plan `docs/superpowers/plans/020-2026-07-04-backend-notifications-emails-contactos.md`; ejecución tarea a tarea con gate humano. Primer módulo funcional nuevo desde el monolito modular (Spec 0) y primer consumidor real de `IIntegrationEventBus`/Outbox (Spec 0, Tasks 6-7 del plan 018).
+- **Task 1 (PR #141)**: dominio del módulo — `Contact`, `EmailLog` (ARs), `EmailType` (Welcome=1, Contact=2), `ContactSubmittedDomainEvent`, `UserRegisteredDomainEvent` (nuevo en `Auth`, disparado por `User.Create`).
+- **Task 2 (PR #142)**: **UoW transaccional componible** — `BigSchoolDbContext.SaveChangesAsync` reescrito para envolver en transacción y persistir en la **misma** transacción los efectos que los domain-event handlers añaden (p. ej. una fila de `EmailLog` disparada por el evento de otro agregado), con guard `CurrentTransaction is null` para admitir llamadas anidadas sin intentar un `BEGIN` doble en MySQL.
+- **Task 3 (PR #143)**: persistencia — `IContactRepository`/`IEmailLogRepository`, configuraciones EF (`EmailLogs.IdUser` nullable **sin FK dura**, referencia blanda), migración `AddNotificationsModule`.
+- **Task 4 (PR #144)**: flujo Contacto — `POST /contacts` (público) dispara `ContactSubmittedDomainEvent` → `SendContactAckEmailOnContactSubmittedHandler` (disparador fino) → `CreateContactAckEmailCommand` persiste el `EmailLog` de acuse en la **misma transacción** (Task 2). `GET /contacts` paginado. `NotificationsModule` (Autofac) excluye los `INotificationHandler<T>` del escaneo para que MediatR sea el único dueño de su resolución (si no, `Publish` los invocaría 2 veces vía `GetServices`).
+- **Task 5 (PR #145)**: flujo Welcome — `Register` (Auth) → `UserRegisteredDomainEvent` → `PublishIntegrationEventHandler` encola `UserRegisteredIntegrationEvent` (excepción documentada: no llama a `SaveChanges`, lo persiste el save-3 de la UoW componible) → `OutboxDispatchBehavior` drena post-commit → `CreateWelcomeEmailOnUserRegisteredHandler` dispara el command del `EmailLog` de bienvenida. `AuthModule` recibe el mismo guard anti-doble-registro que `NotificationsModule`.
+- **Task 6 (PR #146)**: lecturas — `GET /emails` (paginado, visibilidad `IdUser = @user OR IdUser IS NULL`) y `GET /emails/{id}` (404 si no visible, p. ej. welcome ajeno).
+- `docs/swagger/bigschool-api.http` e `infra/docker/mysql/init.sql` actualizados en cada tarea relevante (endpoints nuevos; tablas `Contacts`/`EmailLogs` espejo de la migración, validado con `dotnet ef database update` contra el `init.sql` modificado).
+
+**Decisiones / Problemas encontrados:**
+- **Convención de carpetas de test establecida en esta sesión** (feedback humano, dos rondas): `Domain.Tests` reestructurado a `Entities/{Módulo}/` (con cambio de namespace, `git mv`); `Application.Tests` a `Commands/{Módulo}/`, `Validators/{Módulo}/` y una categoría nueva `EventHandlers/{Módulo}/`. Se propagó retroactivamente a los planes 021-023 (que aún usaban rutas planas) antes de ejecutarlos.
+- **Nomenclatura de tests**: alineados a inglés + PascalCase (`Método_Escenario_Resultado`) tras detectar snake_case en español en los primeros ficheros generados; referencia canónica `PostTransactionTests.cs`.
+- **Bug crítico real en `OutboxDispatcher` (hallado durante Task 5, no introducido por ella)**: `OutboxDispatchBehavior` corre en **todo** request MediatR; como `CreateWelcomeEmailOnUserRegisteredHandler` hace `_mediator.Send(CreateWelcomeEmailCommand)`, esa llamada reentra en el mismo pipeline. El `OutboxDispatcher` original solo marcaba `ProcessedOn` y guardaba **al final** del `foreach`, así que la consulta de pendientes de la llamada anidada seguía viendo la fila como `NULL` en BD → **recursión infinita**. Detectado empíricamente: un único registro generó 5000+ `EmailLogs` antes de que el proceso quedara colgado (vstest lo abortó). Corregido marcando y persistiendo `ProcessedOn` **antes** de invocar el handler de cada mensaje; test de regresión dedicado que simula la reentrada.
+- **`DuplicateSubCategoryDomainException`-style guard**: mismo patrón de doble-registro Autofac/MediatR que ya se había resuelto en el plan 018 (Task 8), reaplicado aquí para `NotificationsModule` y `AuthModule`.
+- **Test E2E del flujo Welcome reubicado**: vive en `Integration.Tests/Auth/RegisterTests.cs` (el endpoint bajo prueba es `/api/v1/auth/register`, de Auth) y no en `Notifications/`, aunque sus asserts lean `EmailLogs`/`OutboxMessages` — documentado inline como cruce de frontera deliberado, válido solo en monolito modular con BD compartida.
+
+**Resultado / Estado:**
+- Plan 020 completado (6/6 tareas, PRs #141-#146, todos mergeados).
+- Suite final: Domain 83/83 · Application 74/74 · Architecture 8/8 · Integration 102/102.
+- Primer módulo de negocio nuevo construido sobre la infraestructura de eventos de la Spec 0 (DomainEvent intra-módulo + IntegrationEvent/Outbox inter-módulo), con un bug de infraestructura real corregido y cubierto por regresión.
+
+**Siguiente paso:**
+- [ ] Plan 021 (User/Registro): moneda obligatoria + perfil.
+
+---
+
+## 2026-07-05 — Backend: User/Registro completo (Spec 008, Plan 021, Tasks 1-3)
+
+### Fase: Implementación
+
+**Módulo**: backend (Auth)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/008-2026-07-04-backend-user-registro-moneda-design.md` y plan `docs/superpowers/plans/021-2026-07-04-backend-user-registro-moneda.md`; revisión previa de nomenclatura de tests del propio documento (todavía en español/estilo antiguo) antes de empezar, alineada a la convención cerrada en el plan 020.
+- **Task 1 (PR #147)**: `BaseCurrency` **obligatoria** en el registro — `RegisterCommand` añade el 4º parámetro `Currency BaseCurrency`, validado con `IsInEnum` (omitirla → `default=0` → 400). Cambio de contrato rompedor: ajustados todos los call-sites existentes (`AuthEndpointTestBase.RegisterRawAsync`, tests de `GetEmailsTests` del plan 020) para pasar la moneda explícitamente.
+- **Task 2 (PR #148)**: `GET /users/me` — `UserProfileDto` + `GetMeQuery/Handler` (Dapper, lectura directa por `IdUser` del token) + `UsersController` nuevo bajo `/api/v1/users`.
+- **Task 3 (PR #149)**: `PUT /users/me` — métodos de dominio `User.UpdateProfile(fullName)` (valida no-vacío) y `User.ChangePassword(hash, salt)`; `UpdateUserCommand/Validator/Handler` con re-hash Argon2 **solo si** llega `password`; verificado con round-trip real de login (contraseña nueva funciona, la vieja falla) sin mocks.
+- `docs/swagger/bigschool-api.http` actualizado (registro con `baseCurrency` + `GET/PUT /users/me`), junto con una limpieza de redacción en los `CLAUDE.md` de cada subdirectorio (referencia a `AGENTS.md` relativa al propio directorio).
+
+**Decisiones / Problemas encontrados:**
+- **Nomenclatura de tests del plan corregida antes de implementar**: el documento traía nombres en español (`Moneda_valida_pasa`, etc.) y estilo `.Validate(...).IsValid` en vez del `TestValidate`/`ShouldHaveValidationErrorFor` ya establecido en `RegisterCommandValidatorTests.cs` real — reescrito el plan completo (las 3 tareas) antes de tocar código.
+- **`NotFoundException` requiere `(entityName, key)`**, no un mensaje libre: el snippet del plan usaba un solo argumento; ajustado al ctor real del repo.
+- Sin cambios de frontera de módulo (todo dentro de Auth); `ModuleBoundaryTests` no se toca.
+
+**Resultado / Estado:**
+- Plan 021 completado (3/3 tareas, PRs #147-#149, todos mergeados).
+- Suite final: Domain 83/83 · Application 87/87 · Architecture 10/10 · Integration 109/109.
+
+**Siguiente paso:**
+- [ ] Plan 022 (Finanzas/Finance): re-modelado de `SubCategory` + agregaciones.
+
+---
+
+## 2026-07-05 — Backend: Finanzas re-modelada + agregaciones (Spec 009, Plan 022, Tasks 1-3) + rename `Finanzas → Finance`
+
+### Fase: Implementación
+
+**Módulo**: backend (Finance, ex-Finanzas)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/009-2026-07-04-backend-finanzas-agregaciones-design.md` y plan `docs/superpowers/plans/022-2026-07-04-backend-finanzas-agregaciones.md`; ejecución tarea a tarea con gate humano.
+- **Task 1 (PR #150)**: `SubCategory` re-modelada de entidad hija de `User` a **Aggregate Root independiente**. `IdUser` pasa de propiedad sombra a explícita (nullable = global; referencia blanda **sin FK dura**, mismo patrón que `EmailLogs.IdUser`). Invariante de borrado en el dominio: `Delete(requestingUserId)` rechaza predefinidas (`IsDefault`) y no-propietarios. `User` pierde `_subCategories`/`SubCategories`/`AddSubCategory` y sus `using` de Finanzas → deja de referenciar el módulo. `ModuleBoundaryTests` **reactivado**: `Domain.Auth ⊥ Domain.Finanzas` pasa a estar en verde (cierra la excepción documentada desde el plan 018). Migración `RemodelSubCategoryAggregate` (solo suelta la FK; validada contra `init.sql` con `dotnet ef database update` → *already up to date*).
+- **Task 2 (PR #151)**: CRUD de subcategorías — `POST/DELETE /categories/sub`. `ISubCategoryRepository.ExistsActiveAsync` (unicidad por nombre+categoría entre las propias y las globales); `DeleteSubCategoryCommandHandler` con 404 no-leak (inexistente, predefinida, global o ajena) reafirmado por la invariante del dominio como defensa en profundidad.
+- **Refactor intermedio (PR #152)**: renombrado el módulo **`Finanzas` → `Finance`** en las 4 capas + tests (namespaces, carpetas, `FinanzasModule`→`FinanceModule`), consolidando además la carpeta de tests E2E `Integration.Tests/Transactions` → `Integration.Tests/Finance` (era el único punto donde módulo y agregado colisionaban de nombre). Ver detalle en "Decisiones" — se trata como entrada propia por alcance (afecta a las 4 capas + AGENTS.md), aunque nace de una observación durante este mismo plan.
+- **Task 3 (PR #153)**: agregaciones — `GET /transactions/by-category` (totales por `MainCategory` sobre `BaseAmount`) y `GET /transactions/monthly` (agrupado año-mes, split Income/Expense, reutiliza `MonthlyChartPointDto`). `DateRange.IsValid` (`SharedKernel.Common`) como predicado de rango compartido (`from ≤ to`, span ≤ 4 años) entre ambos validators. `GET /transactions/monthly-chart?year=` (dashboard) confirmado sin tocar.
+- `docs/swagger/bigschool-api.http` actualizado con los 4 endpoints nuevos (`POST/DELETE /categories/sub`, `GET /transactions/by-category`, `GET /transactions/monthly`).
+
+**Decisiones / Problemas encontrados:**
+- **`DuplicateSubCategoryDomainException` mal jerarquizada**: heredaba de `DomainException` (→400) en vez de `ConflictException` (→409), a diferencia de sus hermanas (`EmailAlreadyExistsDomainException`, `DuplicateTickerDomainException`, `DuplicateValuationDomainException`). El propio plan señalaba el riesgo; confirmado y corregido cambiando la base, sin tocar el middleware.
+- **Colisión de nombres `SubCategoryDto`**: `Application.Finance.DTOs.SubCategoryDto` (nuevo, forma CRUD) colisionaba con el `SubCategoryDto` ya existente en `Queries.Categories.GetCategories` (item anidado, forma distinta). Resuelto cualificando por nombre completo en `CategoriesController` en vez de añadir el `using` que colisiona.
+- **Rename `Finanzas → Finance` (PR #152)**: el usuario detectó que "Finanzas" era el único módulo en español (resto: Auth/Investments/Notifications/SharedKernel en inglés) y que colisionaba conceptualmente con "Transactions" — que en realidad es una *feature* dentro del módulo (`Queries/Transactions`), no el módulo. Decisiones tomadas explícitamente: (1) nombre elegido `Finance` (bounded context completo, no solo el agregado `Transaction`); (2) la carpeta de tests E2E se renombra también, a diferencia de dejarla como `Transactions/`; (3) el módulo `Rag` (2 ficheros, marcado "futuro" en spec 005) se mantiene y se documenta como 6º módulo futuro en `AGENTS.md`. Alcance del rename **acotado a código + AGENTS.md + backlog vivo** (`04-backend-tech-debt.md`) — specs/planes históricos (005/009/010, diario, 01-arquitectura, 02-backend-design) se dejan como registro de época; los planes en vuelo (022 Task 3, 023) se adaptan al ejecutarlos. Verificado behavior-preserving: `has-pending-model-changes` sin cambios (los strings de tipo del `ModelSnapshot` se reescribieron en el mismo commit) y suite completa en verde antes/después.
+- **`SubCategory.IdUser` como referencia suave**: se reafirma el patrón (sin FK dura) ya usado en `EmailLog`, coherente con la filosofía de frontera de módulo por convención + `NetArchTest`, no por integridad referencial de BD.
+
+**Resultado / Estado:**
+- Plan 022 completado (3/3 tareas, PRs #150-#153, todos mergeados) + refactor de nomenclatura (PR #152).
+- Suite final: Domain 81/81 · Application 101/101 · Architecture 10/10 (`Auth ⊥ Finance` en verde) · Integration 122/122.
+- Con esto, el módulo Finance queda con nomenclatura consistente (inglés, sin ambigüedad módulo↔agregado) y su deuda de re-modelado (Spec 009) cerrada.
+
+**Siguiente paso:**
+- [ ] Plan 023 (Investments): holdings `*Original`, serie de cotización por periodo, rename/delete de cartera con guards fiscales, summary global — namespaces ya en inglés (`Investments`), sin impacto del rename.

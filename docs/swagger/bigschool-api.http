@@ -479,3 +479,46 @@ Authorization: Bearer {{token}}
 }
 
 ###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# FINANCE — Subcategorías + agregaciones (Plan 022 / Spec 009)
+#
+# SubCategory ya es AR independiente de Finanzas (ex-Finanzas → Finance): unicidad por
+# nombre+MainCategory entre las propias del usuario y las globales predefinidas del seed;
+# borrado solo permitido al propietario (nunca predefinidas ni globales).
+# by-category/monthly comparten la validación de rango: from ≤ to y span ≤ 4 años → 400 si no.
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 39 Crear subcategoría propia — 409 si ya existe (propia o global) con ese nombre+categoría
+POST {{baseUrl}}/api/v1/categories/sub
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "mainCategory": "Luxuries",
+  "name": "Cine"
+}
+
+###
+
+### 40 Borrar subcategoría propia — soft-delete (IdStatus=Deleted)
+# Cambiar 1 por el IdSubCategory devuelto en 39. 404 si no existe, es global/predefinida o de otro usuario.
+DELETE {{baseUrl}}/api/v1/categories/sub/1
+Authorization: Bearer {{token}}
+
+###
+
+### 41 Totales por categoría — agrupa por MainCategory sobre BaseAmount
+# Filtros opcionales: type (Income|Expense), from, to. Sin ellos: todas las transacciones del usuario.
+GET {{baseUrl}}/api/v1/transactions/by-category?type=Expense
+Authorization: Bearer {{token}}
+
+###
+
+### 42 Totales por mes — agrupa año-mes (Income/Expense) sobre BaseAmount
+# Filtros opcionales: from, to, category (IdMainCategory), type. monthly-chart?year= (dashboard) no se toca.
+GET {{baseUrl}}/api/v1/transactions/monthly?from=2026-01-01&to=2026-12-31
+Authorization: Bearer {{token}}
+
+###
