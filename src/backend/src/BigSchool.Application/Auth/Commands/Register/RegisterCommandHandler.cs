@@ -31,7 +31,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         }
 
         var (hash, salt) = _passwordHasher.HashPassword(request.Password);
-        var user = User.Create(request.Email, hash, salt, request.FullName);
+        var user = User.Create(request.Email, hash, salt, request.FullName, request.BaseCurrency);
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.UnitOfWork.SaveChangesAsync();

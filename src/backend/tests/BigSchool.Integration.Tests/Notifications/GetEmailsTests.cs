@@ -20,10 +20,10 @@ public class GetEmailsTests : NotificationEndpointTestBase
     {
         var emailA = $"a-{Guid.NewGuid():N}@test.com";
         var pub = Factory.CreateClient();
-        await pub.PostAsJsonAsync("/api/v1/auth/register", new { email = emailA, password = "Passw0rd!", fullName = "A" });
+        await pub.PostAsJsonAsync("/api/v1/auth/register", new { email = emailA, password = "Passw0rd!", fullName = "A", baseCurrency = "EUR" });
         await pub.PostAsJsonAsync("/api/v1/contacts", new { fullName = "Vis", email = "vis@x.com", message = "m" });
         var emailB = $"b-{Guid.NewGuid():N}@test.com";
-        await pub.PostAsJsonAsync("/api/v1/auth/register", new { email = emailB, password = "Passw0rd!", fullName = "B" });
+        await pub.PostAsJsonAsync("/api/v1/auth/register", new { email = emailB, password = "Passw0rd!", fullName = "B", baseCurrency = "EUR" });
 
         var idA = await ScalarAsync<int>($"SELECT IdUser FROM Users WHERE Email='{emailA}'");
         var env = await (await AuthenticatedClient(idA, emailA).GetAsync("/api/v1/emails?page=1&pageSize=50"))
@@ -39,7 +39,7 @@ public class GetEmailsTests : NotificationEndpointTestBase
     {
         var emailB = $"b-{Guid.NewGuid():N}@test.com";
         await Factory.CreateClient().PostAsJsonAsync("/api/v1/auth/register",
-            new { email = emailB, password = "Passw0rd!", fullName = "B" });
+            new { email = emailB, password = "Passw0rd!", fullName = "B", baseCurrency = "EUR" });
         var idWelcomeB = await ScalarAsync<int>($"SELECT IdEmailLog FROM EmailLogs WHERE Recipient='{emailB}' AND Type=1");
 
         var (idA, emailA) = await SeedUserAsync();

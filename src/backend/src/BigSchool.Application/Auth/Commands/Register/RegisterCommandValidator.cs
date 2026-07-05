@@ -19,5 +19,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("El nombre completo es obligatorio.")
             .MaximumLength(200);
+
+        RuleFor(x => x.BaseCurrency)
+            .IsInEnum().WithMessage("La moneda base es obligatoria y debe ser válida.");
     }
 }

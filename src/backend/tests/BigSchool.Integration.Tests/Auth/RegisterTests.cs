@@ -99,4 +99,25 @@ public class RegisterTests : AuthEndpointTestBase
             "SELECT COUNT(*) FROM EmailLogs WHERE Recipient=@email AND Type=1 AND IdUser=@idUser", new { email, idUser }))
             .Should().Be(1);
     }
+
+    [Fact]
+    public async Task Register_WithBaseCurrencyUsd_PersistsUsd()
+    {
+        var email = $"cur-{Guid.NewGuid():N}@test.com";
+        var resp = await RegisterRawAsync(email, DefaultPassword, "Ada", "USD");
+        resp.EnsureSuccessStatusCode();
+
+        await using var conn = new MySqlConnection(Fixture.ConnectionString);
+        var currency = await conn.ExecuteScalarAsync<string>("SELECT BaseCurrency FROM Users WHERE Email=@email;", new { email });
+        currency.Should().Be("USD");
+    }
+
+    [Fact]
+    public async Task Register_MissingBaseCurrency_Returns400_ValidationError()
+    {
+        var email = $"nocur-{Guid.NewGuid():N}@test.com";
+        var resp = await Factory.CreateClient().PostAsJsonAsync("/api/v1/auth/register",
+            new { email, password = DefaultPassword, fullName = "Ada" }); // sin baseCurrency
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
