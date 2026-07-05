@@ -39,12 +39,17 @@ public abstract class NotificationEndpointTestBase : IntegrationTestBase
         return client;
     }
 
-    protected async Task<int> CountAsync(string sql)
+    protected async Task<int> CountAsync(string sql) => await ScalarAsync<int>(sql);
+
+    protected async Task<T> ScalarAsync<T>(string sql)
     {
         await using var conn = new MySqlConnection(Fixture.ConnectionString);
-        return await conn.ExecuteScalarAsync<int>(sql);
+        return await conn.ExecuteScalarAsync<T>(sql);
     }
 
     // ContactListItemDto: FullName/Email/Message string, CreatedAt "yyyy-MM-ddTHH:mm:ss..." (System.Text.Json).
     protected record ContactListItemResponse(int IdContact, string FullName, string Email, string Message, string CreatedAt);
+
+    // EmailLogListItemDto: Recipient/Subject string, SentAt "yyyy-MM-ddTHH:mm:ss..." (System.Text.Json).
+    protected record EmailLogListItemResponse(int IdEmailLog, int? IdUser, string Recipient, string Subject, short Type, string SentAt);
 }
