@@ -67,6 +67,21 @@ public class User : BaseEntity, IAggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void UpdateProfile(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("Full name is required.", nameof(fullName));
+        FullName = fullName.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangePassword(string hash, string salt)
+    {
+        PasswordHash = hash;
+        PasswordSalt = salt;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public SubCategory AddSubCategory(MainCategory mainCategory, string name)
     {
         if (string.IsNullOrWhiteSpace(name))

@@ -288,7 +288,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Test: `tests/BigSchool.Application.Tests/Commands/Auth/UpdateUserCommandHandlerTests.cs`, `tests/BigSchool.Application.Tests/Validators/Auth/UpdateUserCommandValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Auth/PutMeTests.cs`
 
-- [ ] **Step 1: Tests de dominio (fallan)**
+- [x] **Step 1: Tests de dominio (fallan)**
 
 `UserProfileTests.cs`:
 ```csharp
@@ -331,7 +331,7 @@ public class UserProfileTests
 ```
 Run: `dotnet test tests/BigSchool.Domain.Tests --filter UserProfileTests` → FAIL.
 
-- [ ] **Step 2: Métodos de dominio en `User`**
+- [x] **Step 2: Métodos de dominio en `User`**
 
 Añade a `User` (junto a `UpdateLastLogin`):
 ```csharp
@@ -351,7 +351,7 @@ Añade a `User` (junto a `UpdateLastLogin`):
     }
 ```
 
-- [ ] **Step 3: Command + Validator + Handler**
+- [x] **Step 3: Command + Validator + Handler**
 
 `UpdateUserCommand.cs`:
 ```csharp
@@ -419,7 +419,7 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserP
 ```
 > Ajusta el ctor de `NotFoundException` al existente en el repo (ver otros usos). El `ExceptionHandlingMiddleware` debe mapear `NotFoundException` → 404 `ENTITY_NOT_FOUND`; confírmalo (si no, añade el mapeo).
 
-- [ ] **Step 4: PUT en `UsersController`**
+- [x] **Step 4: PUT en `UsersController`**
 
 Añade a `UsersController` (`using BigSchool.Application.Auth.Commands.UpdateUser;`):
 ```csharp
@@ -436,7 +436,7 @@ Añade a `UsersController` (`using BigSchool.Application.Auth.Commands.UpdateUse
     }
 ```
 
-- [ ] **Step 5: Unit tests de Application**
+- [x] **Step 5: Unit tests de Application**
 
 `UpdateUserCommandValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`, no `.Validate(...).IsValid`):
 ```csharp
@@ -532,7 +532,7 @@ public class UpdateUserCommandHandlerTests
 ```
 > Ajusta la tupla de retorno de `HashPassword` al tipo real (revisa `IPasswordHasher`: `(string hash, string salt)`).
 
-- [ ] **Step 6: E2E — cambia nombre; password round-trip real (Argon2)**
+- [x] **Step 6: E2E — cambia nombre; password round-trip real (Argon2)**
 
 `PutMeTests.cs`:
 ```csharp
@@ -580,7 +580,7 @@ public class UpdateUserCommandHandlerTests
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter PutMeTests` → PASS.
 
-- [ ] **Step 7: Verde + Commit**
+- [x] **Step 7: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -593,11 +593,11 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (DoD — spec 008 §8)
 
-- [ ] **Unit Domain**: `User.Create` persiste `baseCurrency`; `UpdateProfile` valida no vacío + `UpdatedAt`; `ChangePassword` cambia hash/salt + `UpdatedAt`.
-- [ ] **Unit Application**: `RegisterCommandValidator` rechaza moneda omitida (default 0)/inválida; `UpdateUserCommandValidator` (password corto solo si se envía); `UpdateUserCommandHandler` (re-hash solo con password; 404 si no existe).
-- [ ] **E2E**: register con `baseCurrency:"USD"` persiste USD; sin/ inválida → 400; `GET /users/me` 401 sin token, devuelve perfil del token; `PUT /users/me` cambia `fullName`; con `password` → login nueva OK / vieja falla (Argon2 real). Bases/tests de Auth ajustados al contrato.
-- [ ] **Arquitectura**: `ModuleBoundaryTests` sin cambios (todo en Auth).
-- [ ] **FULL** verde.
+- [x] **Unit Domain**: `User.Create` persiste `baseCurrency`; `UpdateProfile` valida no vacío + `UpdatedAt`; `ChangePassword` cambia hash/salt + `UpdatedAt`.
+- [x] **Unit Application**: `RegisterCommandValidator` rechaza moneda omitida (default 0)/inválida; `UpdateUserCommandValidator` (password corto solo si se envía); `UpdateUserCommandHandler` (re-hash solo con password; 404 si no existe).
+- [x] **E2E**: register con `baseCurrency:"USD"` persiste USD; sin/ inválida → 400; `GET /users/me` 401 sin token, devuelve perfil del token; `PUT /users/me` cambia `fullName`; con `password` → login nueva OK / vieja falla (Argon2 real). Bases/tests de Auth ajustados al contrato.
+- [x] **Arquitectura**: `ModuleBoundaryTests` sin cambios (todo en Auth).
+- [x] **FULL** verde.
 
 ## Self-Review (cobertura de la spec 008)
 

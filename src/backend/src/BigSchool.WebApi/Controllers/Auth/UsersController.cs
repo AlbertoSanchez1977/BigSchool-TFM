@@ -1,3 +1,4 @@
+using BigSchool.Application.Auth.Commands.UpdateUser;
 using BigSchool.Application.Auth.DTOs;
 using BigSchool.Application.Auth.Interfaces.Services;
 using BigSchool.Application.Auth.Queries.GetMe;
@@ -34,5 +35,17 @@ public class UsersController : ControllerBase
         return result is null
             ? NotFound(ApiResponse.Fail(new ApiError { Code = "ENTITY_NOT_FOUND", Message = "Usuario no encontrado." }))
             : Ok(ApiResponse<UserProfileDto>.Success(result));
+    }
+
+    public record UpdateUserRequest(string FullName, string? Password);
+
+    [HttpPut("me")]
+    [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateUserRequest body)
+    {
+        var result = await _mediator.Send(new UpdateUserCommand(UserId, body.FullName, body.Password));
+        return Ok(ApiResponse<UserProfileDto>.Success(result));
     }
 }

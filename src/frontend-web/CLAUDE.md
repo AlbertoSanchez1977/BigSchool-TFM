@@ -1,1 +1,1 @@
-Usar: src\frontend-web\AGENTS.md
+Usar: AGENTS.md dentro de este mismo directorio
