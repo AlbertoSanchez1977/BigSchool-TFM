@@ -1229,7 +1229,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `src/BigSchool.WebApi/Controllers/Notifications/EmailsController.cs`
 - Test: `tests/BigSchool.Integration.Tests/Notifications/GetEmailsTests.cs`
 
-- [ ] **Step 1: DTOs**
+- [x] **Step 1: DTOs**
 
 `EmailLogListItemDto.cs`:
 ```csharp
@@ -1244,7 +1244,7 @@ namespace BigSchool.Application.Notifications.DTOs;
 public record EmailLogDto(int IdEmailLog, int? IdUser, string Recipient, string Subject, string Body, short Type, DateTime SentAt);
 ```
 
-- [ ] **Step 2: Query de listado (paginada, con visibilidad)**
+- [x] **Step 2: Query de listado (paginada, con visibilidad)**
 
 `GetEmailsQuery.cs`:
 ```csharp
@@ -1301,7 +1301,7 @@ public class GetEmailsQueryHandler : IRequestHandler<GetEmailsQuery, PagedResult
 }
 ```
 
-- [ ] **Step 3: Query de detalle (mismo filtro de visibilidad)**
+- [x] **Step 3: Query de detalle (mismo filtro de visibilidad)**
 
 `GetEmailByIdQuery.cs`:
 ```csharp
@@ -1347,7 +1347,7 @@ public class GetEmailByIdQueryHandler : IRequestHandler<GetEmailByIdQuery, Email
 }
 ```
 
-- [ ] **Step 4: `EmailsController` (`[Authorize]`)**
+- [x] **Step 4: `EmailsController` (`[Authorize]`)**
 
 `EmailsController.cs`:
 ```csharp
@@ -1402,7 +1402,7 @@ public class EmailsController : ControllerBase
 ```
 > Confirma los namespaces reales de `IUserIdEncryptor` y `CurrentUser` como los usa `TransactionsController`.
 
-- [ ] **Step 5: E2E — visibilidad + paginación + detalle ajeno 404**
+- [x] **Step 5: E2E — visibilidad + paginación + detalle ajeno 404**
 
 `GetEmailsTests.cs`:
 ```csharp
@@ -1446,7 +1446,7 @@ public class EmailsController : ControllerBase
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter "GetEmails"` → PASS.
 
-- [ ] **Step 6: Verde + Commit**
+- [x] **Step 6: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -1459,12 +1459,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (Definition of Done — spec 007 §14)
 
-- [ ] **Unit Domain**: `Contact.Create` valida + levanta `ContactSubmittedDomainEvent`; `User.Create` levanta `UserRegisteredDomainEvent`; `EmailLog.CreateWelcome/CreateContactAck` fijan Type/IdUser/subject/body.
-- [ ] **Unit Application**: validator; command handlers de acuse y welcome (crean EmailLog + guardan); disparadores (`Send` del command correcto); `PublishIntegrationEventHandler` encola.
-- [ ] **UoW componible**: `POST /contacts` persiste `Contact` **y** `EmailLog` (Type=Contact, IdUser=null) — **exactamente 1** cada uno; register → **exactamente 1** welcome + `OutboxMessage.ProcessedOn` marcado (0 pendientes). Un doble = regresión del fix de DI (Tarea 5 Step 4).
-- [ ] **E2E**: `GET /emails` ve el welcome propio + contactos globales, **no** welcomes ajenos, paginado; `GET /emails/{id}` de welcome ajeno → 404; `GET /contacts` 401 sin token, bandeja global paginada con token.
-- [ ] **Arquitectura**: `ModuleBoundaryTests` en verde con Notifications; `Application.Auth` **no** depende de `Application.Notifications`.
-- [ ] **FULL** verde (BUILD + UNIT + ARCH + INTEGRATION).
+- [x] **Unit Domain**: `Contact.Create` valida + levanta `ContactSubmittedDomainEvent`; `User.Create` levanta `UserRegisteredDomainEvent`; `EmailLog.CreateWelcome/CreateContactAck` fijan Type/IdUser/subject/body.
+- [x] **Unit Application**: validator; command handlers de acuse y welcome (crean EmailLog + guardan); disparadores (`Send` del command correcto); `PublishIntegrationEventHandler` encola.
+- [x] **UoW componible**: `POST /contacts` persiste `Contact` **y** `EmailLog` (Type=Contact, IdUser=null) — **exactamente 1** cada uno; register → **exactamente 1** welcome + `OutboxMessage.ProcessedOn` marcado (0 pendientes). Un doble = regresión del fix de DI (Tarea 5 Step 4).
+- [x] **E2E**: `GET /emails` ve el welcome propio + contactos globales, **no** welcomes ajenos, paginado; `GET /emails/{id}` de welcome ajeno → 404; `GET /contacts` 401 sin token, bandeja global paginada con token.
+- [x] **Arquitectura**: `ModuleBoundaryTests` en verde con Notifications; `Application.Auth` **no** depende de `Application.Notifications`.
+- [x] **FULL** verde (BUILD + UNIT + ARCH + INTEGRATION).
 
 ## Self-Review (cobertura de la spec 007)
 

@@ -1,6 +1,6 @@
 -- BigSchool-TFM: Inicialización de Base de Datos
 -- ESTRATEGIA: Este script crea el schema COMPLETO en estado final (Plans 2A + 2B) y registra
--- las 4 migraciones EF Core en __EFMigrationsHistory para que dotnet run arranque sin conflictos.
+-- las migraciones EF Core en __EFMigrationsHistory para que dotnet run arranque sin conflictos.
 --
 -- En docker-compose la BD 'bigschool' la crea MySQL via MYSQL_DATABASE.
 -- Ejecución manual: descomenta la siguiente línea.
@@ -26,7 +26,8 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260621101518_CreateCompanies',            '8.0.11'),
     ('20260621173448_AddSectorMarketEnums',       '8.0.11'),
     ('20260621184811_CreatePortfolios',           '8.0.11'),
-    ('20260702164337_AddOutboxMessage',           '8.0.11');
+    ('20260702164337_AddOutboxMessage',           '8.0.11'),
+    ('20260704144600_AddNotificationsModule',     '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -317,6 +318,37 @@ CREATE TABLE IF NOT EXISTS `OutboxMessages` (
     CONSTRAINT `PK_OutboxMessages` PRIMARY KEY (`IdOutboxMessage`),
     UNIQUE KEY `IX_OutboxMessages_EventId` (`EventId`),
     KEY `IX_OutboxMessages_ProcessedOn` (`ProcessedOn`)
+) CHARACTER SET utf8mb4;
+
+-- ============================================================
+-- Tablas: Contacts + EmailLogs
+-- EF Core: AddNotificationsModule (Spec 007 / Plan 020 Tarea 3) — espejo exacto de
+-- migración 20260704144600. EmailLogs.IdUser es una referencia "blanda" (SIN FK):
+-- mantiene limpia la frontera de módulo Auth/Notifications. Visibilidad por query
+-- en la Application layer: IdUser = @user OR IdUser IS NULL (welcome propio + globales).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `Contacts` (
+    `IdContact` INT           NOT NULL AUTO_INCREMENT,
+    `FullName`  VARCHAR(200)  CHARACTER SET utf8mb4 NOT NULL,
+    `Email`     VARCHAR(255)  CHARACTER SET utf8mb4 NOT NULL,
+    `Message`   VARCHAR(2000) CHARACTER SET utf8mb4 NOT NULL,
+    `IdStatus`  SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt` DATETIME(6)   NOT NULL,
+    CONSTRAINT `PK_Contacts` PRIMARY KEY (`IdContact`)
+) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `EmailLogs` (
+    `IdEmailLog` INT           NOT NULL AUTO_INCREMENT,
+    `IdUser`     INT           NULL,
+    `Recipient`  VARCHAR(255)  CHARACTER SET utf8mb4 NOT NULL,
+    `Subject`    VARCHAR(300)  CHARACTER SET utf8mb4 NOT NULL,
+    `Body`       VARCHAR(4000) CHARACTER SET utf8mb4 NOT NULL,
+    `Type`       SMALLINT      NOT NULL,
+    `SentAt`     DATETIME(6)   NOT NULL,
+    `IdStatus`   SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`  DATETIME(6)   NOT NULL,
+    CONSTRAINT `PK_EmailLogs` PRIMARY KEY (`IdEmailLog`),
+    KEY `IX_EmailLogs_IdUser` (`IdUser`)
 ) CHARACTER SET utf8mb4;
 
 -- ============================================================

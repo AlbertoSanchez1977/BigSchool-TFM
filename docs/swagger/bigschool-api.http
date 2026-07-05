@@ -402,3 +402,50 @@ DELETE {{baseUrl}}/api/v1/portfolios/1/holdings/5
 Authorization: Bearer {{token}}
 
 ###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# NOTIFICATIONS — Contactos y bandeja de emails (Plan 020 / Spec 007)
+#
+# EmailType: 1=Welcome | 2=Contact
+# Flujo A (Contacto): POST público (33) → Contact + EmailLog (Type=Contact, IdUser=null)
+#                     en la MISMA transacción (UoW componible, DomainEvent → command atómico).
+# Flujo B (Welcome): se dispara automáticamente al ejecutar "01 Registro" vía
+#                    IntegrationEvent + Outbox → EmailLog (Type=Welcome, IdUser=<nuevo usuario>).
+#                    No tiene endpoint propio; se ve reflejado en 35/36.
+# Visibilidad de /emails: el usuario ve sus propios EmailLogs (IdUser=@user) + los globales
+# (IdUser IS NULL, p.ej. los acuses de Contact). Un EmailLog de OTRO usuario → 404 en /emails/{id}.
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 33 Crear contacto — endpoint público (sin token); genera acuse por email automáticamente
+POST {{baseUrl}}/api/v1/contacts
+Content-Type: application/json
+
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "message": "Hola, tengo una duda sobre mi cuenta."
+}
+
+###
+
+### 34 Listar contactos — bandeja global paginada (requiere token; cualquier usuario autenticado ve TODOS los contactos)
+GET {{baseUrl}}/api/v1/contacts?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+### 35 Listar mis emails — paginado, con visibilidad (propios + globales)
+# Respuesta: { data: [{ idEmailLog, idUser, recipient, subject, type, sentAt }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+GET {{baseUrl}}/api/v1/emails?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+### 36 Detalle de un email — incluye Body; 404 si no es visible para el usuario (p.ej. welcome ajeno)
+# Cambiar 1 por el IdEmailLog real (p.ej. el welcome generado al ejecutar "01 Registro").
+GET {{baseUrl}}/api/v1/emails/1
+Authorization: Bearer {{token}}
+
+###
