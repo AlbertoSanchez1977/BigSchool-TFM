@@ -562,15 +562,20 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Task 3: #6 by-category + #7 monthly + validación de rango compartida
 
+> **Nota (post-refactor `Finanzas→Finance`, 2026-07-05, PR #152)**: el módulo se llama ahora
+> `Finance` en las 4 capas y en los tests (`Domain.Tests/Entities/Finance`,
+> `Application.Tests/{Commands,Validators}/Finance`, `Integration.Tests/Finance`). Todo lo que
+> sigue en este Task usa `Finance` (ya reescrito en el texto de abajo).
+
 **Files:**
 - Create: `src/BigSchool.Application/SharedKernel/Common/DateRange.cs`
-- Create: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetByCategory/{GetTransactionsByCategoryQuery,GetTransactionsByCategoryQueryHandler,GetTransactionsByCategoryQueryValidator,CategoryTotalDto}.cs`
-- Create: `src/BigSchool.Application/Finanzas/Queries/Transactions/GetMonthly/{GetMonthlyQuery,GetMonthlyQueryHandler,GetMonthlyQueryValidator}.cs`
-- Modify: `src/BigSchool.WebApi/Controllers/Finanzas/TransactionsController.cs` (2 endpoints)
-- Test: `tests/BigSchool.Application.Tests/Validators/Finanzas/DateRangeValidationTests.cs`
-- Test: `tests/BigSchool.Integration.Tests/Transactions/{GetByCategoryTests,GetMonthlyTests}.cs` (mismo namespace/carpeta que `SubCategoriesCrudTests`)
+- Create: `src/BigSchool.Application/Finance/Queries/Transactions/GetByCategory/{GetTransactionsByCategoryQuery,GetTransactionsByCategoryQueryHandler,GetTransactionsByCategoryQueryValidator,CategoryTotalDto}.cs`
+- Create: `src/BigSchool.Application/Finance/Queries/Transactions/GetMonthly/{GetMonthlyQuery,GetMonthlyQueryHandler,GetMonthlyQueryValidator}.cs`
+- Modify: `src/BigSchool.WebApi/Controllers/Finance/TransactionsController.cs` (2 endpoints)
+- Test: `tests/BigSchool.Application.Tests/Validators/Finance/DateRangeValidationTests.cs`
+- Test: `tests/BigSchool.Integration.Tests/Finance/{GetByCategoryTests,GetMonthlyTests}.cs` (mismo namespace/carpeta que `SubCategoriesCrudTests`)
 
-- [ ] **Step 1: Predicado de rango compartido**
+- [x] **Step 1: Predicado de rango compartido**
 
 `DateRange.cs`:
 ```csharp
@@ -584,20 +589,20 @@ public static class DateRange
 }
 ```
 
-- [ ] **Step 2: #6 — by-category (DTO + query + handler + validator)**
+- [x] **Step 2: #6 — by-category (DTO + query + handler + validator)**
 
 `CategoryTotalDto.cs`:
 ```csharp
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetByCategory;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetByCategory;
 
 public record CategoryTotalDto(int IdMainCategory, string MainCategory, decimal Total);
 ```
 `GetTransactionsByCategoryQuery.cs`:
 ```csharp
-using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finance.Enums;
 using MediatR;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetByCategory;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetByCategory;
 
 public record GetTransactionsByCategoryQuery(int IdUser, TransactionType? Type, DateOnly? From, DateOnly? To)
     : IRequest<IReadOnlyList<CategoryTotalDto>>;
@@ -607,7 +612,7 @@ public record GetTransactionsByCategoryQuery(int IdUser, TransactionType? Type, 
 using BigSchool.Application.SharedKernel.Common;
 using FluentValidation;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetByCategory;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetByCategory;
 
 public class GetTransactionsByCategoryQueryValidator : AbstractValidator<GetTransactionsByCategoryQuery>
 {
@@ -622,12 +627,12 @@ public class GetTransactionsByCategoryQueryValidator : AbstractValidator<GetTran
 `GetTransactionsByCategoryQueryHandler.cs`:
 ```csharp
 using BigSchool.Application.SharedKernel.Interfaces;
-using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finance.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetByCategory;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetByCategory;
 
 public class GetTransactionsByCategoryQueryHandler
     : IRequestHandler<GetTransactionsByCategoryQuery, IReadOnlyList<CategoryTotalDto>>
@@ -663,15 +668,15 @@ public class GetTransactionsByCategoryQueryHandler
 }
 ```
 
-- [ ] **Step 3: #7 — monthly (query + handler + validator; reutiliza `MonthlyChartPointDto`)**
+- [x] **Step 3: #7 — monthly (query + handler + validator; reutiliza `MonthlyChartPointDto`)**
 
 `GetMonthlyQuery.cs`:
 ```csharp
-using BigSchool.Application.Finanzas.Queries.Transactions.GetMonthlyChart;
-using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Application.Finance.Queries.Transactions.GetMonthlyChart;
+using BigSchool.Domain.Finance.Enums;
 using MediatR;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetMonthly;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetMonthly;
 
 public record GetMonthlyQuery(int IdUser, DateOnly? From, DateOnly? To, MainCategory? Category, TransactionType? Type)
     : IRequest<IReadOnlyList<MonthlyChartPointDto>>;
@@ -681,7 +686,7 @@ public record GetMonthlyQuery(int IdUser, DateOnly? From, DateOnly? To, MainCate
 using BigSchool.Application.SharedKernel.Common;
 using FluentValidation;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetMonthly;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetMonthly;
 
 public class GetMonthlyQueryValidator : AbstractValidator<GetMonthlyQuery>
 {
@@ -695,14 +700,14 @@ public class GetMonthlyQueryValidator : AbstractValidator<GetMonthlyQuery>
 ```
 `GetMonthlyQueryHandler.cs`:
 ```csharp
-using BigSchool.Application.Finanzas.Queries.Transactions.GetMonthlyChart;
+using BigSchool.Application.Finance.Queries.Transactions.GetMonthlyChart;
 using BigSchool.Application.SharedKernel.Interfaces;
-using BigSchool.Domain.Finanzas.Enums;
+using BigSchool.Domain.Finance.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using Dapper;
 using MediatR;
 
-namespace BigSchool.Application.Finanzas.Queries.Transactions.GetMonthly;
+namespace BigSchool.Application.Finance.Queries.Transactions.GetMonthly;
 
 public class GetMonthlyQueryHandler : IRequestHandler<GetMonthlyQuery, IReadOnlyList<MonthlyChartPointDto>>
 {
@@ -743,7 +748,7 @@ public class GetMonthlyQueryHandler : IRequestHandler<GetMonthlyQuery, IReadOnly
 }
 ```
 
-- [ ] **Step 4: Endpoints en `TransactionsController`**
+- [x] **Step 4: Endpoints en `TransactionsController`**
 
 Añade (usings de los dos handlers + DTO):
 ```csharp
@@ -765,7 +770,7 @@ Añade (usings de los dos handlers + DTO):
 ```
 > `monthly-chart?year=` (dashboard) **no se toca**. `UserId` ya es la propiedad privada del controller.
 
-- [ ] **Step 5: Unit tests de rango**
+- [x] **Step 5: Unit tests de rango**
 
 `DateRangeValidationTests.cs`:
 ```csharp
@@ -773,7 +778,7 @@ using BigSchool.Application.SharedKernel.Common;
 using FluentAssertions;
 using Xunit;
 
-namespace BigSchool.Application.Tests.Validators.Finanzas;
+namespace BigSchool.Application.Tests.Validators.Finance;
 
 public class DateRangeValidationTests
 {
@@ -784,7 +789,7 @@ public class DateRangeValidationTests
 }
 ```
 
-- [ ] **Step 6: E2E**
+- [x] **Step 6: E2E**
 
 `GetByCategoryTests.cs` y `GetMonthlyTests.cs` (mirror `TransactionEndpointTestBase`): siembra transacciones multi-categoría, verifica totales sobre `BaseAmount`, filtros `type/from/to(/category)`, y **rango > 4 años → 400**. Ejemplos clave:
 ```csharp
@@ -817,11 +822,11 @@ public class DateRangeValidationTests
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter "GetByCategory|GetMonthly"` → PASS.
 
-- [ ] **Step 7: Verde + Commit**
+- [x] **Step 7: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
-git add -A && git commit -m "feat(finanzas): GET /transactions/by-category y /monthly + validación de rango (≤4 años)
+git add -A && git commit -m "feat(finance): GET /transactions/by-category y /monthly + validación de rango (≤4 años)
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
@@ -830,12 +835,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (DoD — spec 009 §10)
 
-- [ ] **Unit Domain**: `SubCategory.Create` (valida, fija `IdUser`, `IsGlobal`) + `Delete(requestingUserId)` (soft-borra solo la propia; rechaza global/predefinida/ajena); tests de `User.AddSubCategory` eliminados; `SubCategory` testeada como AR directo.
-- [ ] **Unit Application**: validators create/delete; **rango 4 años** (#6 y #7); handler create (409 vs usuario y globales); handler delete (404 inexistente/global/ajena/default + invariante de dominio).
-- [ ] **Arquitectura**: `ModuleBoundaryTests` con `Domain.Auth` prohibiendo `Finanzas` **en verde** (frontera cerrada) — prueba canónica del re-modelado.
-- [ ] **Migración**: `RemodelSubCategoryAggregate` solo suelta la FK; `has-pending-model-changes` sin sorpresas.
-- [ ] **E2E**: `POST /categories/sub` crea (409 duplicada usuario/global), `GET /categories` la incluye; `DELETE` soft-borra la propia, global/ajena → 404; `by-category` totales sobre `BaseAmount` + filtros + rango>4a→400; `monthly` agrupa año-mes + filtros + rango>4a→400; `monthly-chart`/`summary`/`categories` siguen verdes.
-- [ ] **FULL** + ARCH verde.
+- [x] **Unit Domain**: `SubCategory.Create` (valida, fija `IdUser`, `IsGlobal`) + `Delete(requestingUserId)` (soft-borra solo la propia; rechaza global/predefinida/ajena); tests de `User.AddSubCategory` eliminados; `SubCategory` testeada como AR directo.
+- [x] **Unit Application**: validators create/delete; **rango 4 años** (#6 y #7); handler create (409 vs usuario y globales); handler delete (404 inexistente/global/ajena/default + invariante de dominio).
+- [x] **Arquitectura**: `ModuleBoundaryTests` con `Domain.Auth` prohibiendo `Finance` **en verde** (frontera cerrada) — prueba canónica del re-modelado.
+- [x] **Migración**: `RemodelSubCategoryAggregate` solo suelta la FK; `has-pending-model-changes` sin sorpresas.
+- [x] **E2E**: `POST /categories/sub` crea (409 duplicada usuario/global), `GET /categories` la incluye; `DELETE` soft-borra la propia, global/ajena → 404; `by-category` totales sobre `BaseAmount` + filtros + rango>4a→400; `monthly` agrupa año-mes + filtros + rango>4a→400; `monthly-chart`/`summary`/`categories` siguen verdes.
+- [x] **FULL** + ARCH verde.
 
 ## Self-Review (cobertura de la spec 009)
 

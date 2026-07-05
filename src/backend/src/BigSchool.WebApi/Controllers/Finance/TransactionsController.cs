@@ -3,6 +3,8 @@ using BigSchool.Application.Finance.Commands.Delete;
 using BigSchool.Application.Finance.Commands.Update;
 using BigSchool.Application.SharedKernel.Common;
 using BigSchool.Application.Finance.DTOs;
+using BigSchool.Application.Finance.Queries.Transactions.GetByCategory;
+using BigSchool.Application.Finance.Queries.Transactions.GetMonthly;
 using BigSchool.Application.Finance.Queries.Transactions.GetMonthlyChart;
 using BigSchool.Application.Finance.Queries.Transactions.GetTransactionById;
 using BigSchool.Application.Finance.Queries.Transactions.GetTransactions;
@@ -104,6 +106,22 @@ public class TransactionsController : ControllerBase
     public async Task<IActionResult> MonthlyChart([FromQuery] int year)
     {
         var result = await _mediator.Send(new GetMonthlyChartQuery(UserId, year));
+        return Ok(ApiResponse<IReadOnlyList<MonthlyChartPointDto>>.Success(result));
+    }
+
+    [HttpGet("by-category")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CategoryTotalDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ByCategory([FromQuery] TransactionType? type, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
+    {
+        var result = await _mediator.Send(new GetTransactionsByCategoryQuery(UserId, type, from, to));
+        return Ok(ApiResponse<IReadOnlyList<CategoryTotalDto>>.Success(result));
+    }
+
+    [HttpGet("monthly")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<MonthlyChartPointDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Monthly([FromQuery] DateOnly? from, [FromQuery] DateOnly? to, [FromQuery] MainCategory? category, [FromQuery] TransactionType? type)
+    {
+        var result = await _mediator.Send(new GetMonthlyQuery(UserId, from, to, category, type));
         return Ok(ApiResponse<IReadOnlyList<MonthlyChartPointDto>>.Success(result));
     }
 }
