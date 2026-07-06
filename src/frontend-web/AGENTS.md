@@ -100,14 +100,32 @@ frontend-web/
 ---
 
 ## Huecos del Backend a tener presentes
-1. Sin agregación por categoría → agregar en cliente desde la lista de transacciones.
-   La costura está aislada en `hooks/useCategoryChart.ts` (devuelve `CategoryAggregation`):
-   hoy calcula en cliente con `lib/charts/aggregateByCategory.ts`; el día que exista
-   `GET /transactions/category-chart?from&to&type` solo cambia ese hook — ni la página ni
-   `components/charts/category-bars.tsx` se tocan. El contrato futuro está documentado en el hook.
-2. Sin renombrar/borrar cartera → en el MVP la cartera solo se crea.
-3. La venta es FIFO a nivel empresa → el botón "vender" de un holding vende acciones de *esa
-   empresa* y consume lotes en orden FIFO.
+
+> **Cerrados por backend (los cablea la Iteración 2 —
+> `docs/superpowers/specs/011-2026-07-06-frontend-web-backend-integracion-design.md`):**
+>
+> - ~~**Sin agregación por categoría**~~ → el backend ya expone `GET /transactions/by-category` y
+>   `GET /transactions/monthly` (filtrados). La agregación en cliente
+>   (`useCategoryChart` + `lib/charts/aggregateByCategory.ts`) se **retira**; las gráficas de Finance
+>   pasan a 2 gráficas nativas (por categoría × año vía 4 llamadas, y serie mensual por tipo).
+> - ~~**Sin renombrar/borrar cartera**~~ → ya existen `PUT /portfolios/{id}` y `DELETE /portfolios/{id}`
+>   (borrado con guards fiscales: 409 si hay holdings abiertos).
+> - ~~**Editar usuario fuera de alcance**~~ → ya existen `GET /users/me` y `PUT /users/me`; el perfil
+>   deja de ser mock.
+
+**Vigentes (dejar como costuras documentadas, sin botones muertos):**
+
+1. **La venta es FIFO a nivel empresa** → el botón "vender" de un holding vende acciones de *esa
+   empresa* y consume lotes en orden FIFO. (Comportamiento permanente, no una carencia.)
+2. **Companies sin `PUT/DELETE`** → el catálogo de empresas se lista, ve y crea, pero **no se edita ni
+   borra** desde el frontend.
+3. **Valuations sin `GET{id}` ni `DELETE`** → las valoraciones se listan, crean y grafican
+   (`/valuations/series`), pero **no hay ver-detalle-individual ni borrado**.
+4. **Sin búsqueda server-side de empresas (`?search=`)** → el combobox de "añadir holding" pide
+   `GET /companies?pageSize=100` y **filtra en cliente**; si el catálogo supera 100 empresas el filtro
+   queda incompleto. Deuda a resolver con un endpoint de búsqueda/typeahead en backend.
+
+> Estas deudas se consolidan para la próxima ronda de backend en el §6 de la spec 011.
 
 ---
 
