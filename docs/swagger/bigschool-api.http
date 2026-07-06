@@ -377,7 +377,9 @@ Authorization: Bearer {{token}}
 
 ### 30 Performance de la cartera — realizado + no realizado consolidados en EUR
 # Respuesta: { marketValue, costBasis, unrealizedPnL, realizedPnL, totalPnL, returnPct,
-#              holdings: [{ticker, openShares, costBasis, marketValue, unrealizedPnL, unrealizedPnLPct}] }
+#              holdings: [{ticker, openShares, costBasis, marketValue, unrealizedPnL, unrealizedPnLPct,
+#                          buyOriginalCurrency, costBasisOriginal, marketValueOriginal, unrealizedPnLOriginal}] }
+# Los campos *Original (Plan 023 Tarea 1) son el mismo cálculo en moneda de la empresa (sin conversión FX).
 # Nota: solo holdings con OpenShares > 0 aparecen en la lista de hijos.
 GET {{baseUrl}}/api/v1/portfolios/1/performance
 Authorization: Bearer {{token}}
@@ -519,6 +521,56 @@ Authorization: Bearer {{token}}
 ### 42 Totales por mes — agrupa año-mes (Income/Expense) sobre BaseAmount
 # Filtros opcionales: from, to, category (IdMainCategory), type. monthly-chart?year= (dashboard) no se toca.
 GET {{baseUrl}}/api/v1/transactions/monthly?from=2026-01-01&to=2026-12-31
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INVESTMENTS — Serie de valoraciones, rename/delete de cartera, summary (Plan 023 / Spec 010)
+#
+# period (enum ValuationPeriod, valor = nº de meses): ThreeMonths(3)|SixMonths(6)|OneYear(12)|
+#   ThreeYears(36)|FiveYears(60). Acepta nombre o valor numérico por query (?period=OneYear o ?period=12).
+# La serie está anclada a la ÚLTIMA valoración de la empresa (no a "hoy"); moneda de la empresa, sin FX.
+# DELETE /portfolios/{id}: 409 PORTFOLIO_HAS_OPEN_POSITIONS si hay holdings con OpenShares>0;
+#   409 PORTFOLIO_WITHIN_FISCAL_GRACE si la última venta fue hace <5 años; si no, soft-delete (200).
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 43 Serie de cotización de una empresa — último año, anclada a la última valoración
+# Respuesta: { currency, points: [{date, price}], summary: {first, last, min, max, changePct} }
+GET {{baseUrl}}/api/v1/companies/1/valuations/series?period=OneYear
+Authorization: Bearer {{token}}
+
+###
+
+### 44 Serie de cotización — periodo inválido → 400 (IsInEnum)
+GET {{baseUrl}}/api/v1/companies/1/valuations/series?period=99
+Authorization: Bearer {{token}}
+
+###
+
+### 45 Renombrar cartera (PUT) — siempre permitido si el nombre no está vacío
+PUT {{baseUrl}}/api/v1/portfolios/2
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Cartera renombrada"
+}
+
+###
+
+### 46 Borrar cartera (DELETE) — soft-delete con guards fiscales
+# 409 PORTFOLIO_HAS_OPEN_POSITIONS si la cartera 1 (con holdings abiertos) se intenta borrar así.
+# Para probar el camino 200, usar una cartera sin holdings o con ventas de hace >5 años.
+DELETE {{baseUrl}}/api/v1/portfolios/1
+Authorization: Bearer {{token}}
+
+###
+
+### 47 Resumen global de inversiones — agregado de todas las carteras del usuario en moneda base
+# Respuesta: { baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL, totalPnL, returnPct, portfolioCount }
+GET {{baseUrl}}/api/v1/portfolios/summary
 Authorization: Bearer {{token}}
 
 ###
