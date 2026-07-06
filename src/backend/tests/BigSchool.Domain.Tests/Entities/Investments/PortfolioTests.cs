@@ -15,6 +15,8 @@ public class PortfolioTests
 
     private static Portfolio NewPortfolio() => Portfolio.Create(1, "Mi cartera", Currency.EUR);
 
+    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
+
     [Fact]
     public void Create_InitializesRealizedPnLToZeroInBaseCurrency()
     {
@@ -199,5 +201,71 @@ public class PortfolioTests
         p.Holdings.Single().IdStatus.Should().Be(EntityStatus.Deleted);
         p.Holdings.Single().Disposals.Should().OnlyContain(d => d.IdStatus == EntityStatus.Deleted);
         p.RealizedPnL.Amount.Should().Be(0m); // realizado revertido
+    }
+
+    [Fact]
+    public void Rename_ValidName_UpdatesName()
+    {
+        var p = NewPortfolio();
+
+        p.Rename("  Nueva cartera  ");
+
+        p.Name.Should().Be("Nueva cartera");
+    }
+
+    [Fact]
+    public void Rename_EmptyName_Throws()
+    {
+        var p = NewPortfolio();
+
+        var act = () => p.Rename("   ");
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Delete_WithOpenPosition_ThrowsHasOpenPositions()
+    {
+        var p = NewPortfolio();
+        p.AddHolding(3, 10m, Px(100m, Currency.EUR), Currency.EUR, 1m, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null);
+
+        var act = () => p.Delete(Today);
+
+        act.Should().Throw<PortfolioHasOpenPositionsDomainException>();
+    }
+
+    [Fact]
+    public void Delete_RecentSale_ThrowsFiscalGracePeriod()
+    {
+        var p = NewPortfolio();
+        p.AddHolding(3, 10m, Px(100m, Currency.EUR), Currency.EUR, 1m, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null);
+        p.SellShares(3, 10m, Px(150m, Currency.EUR), Currency.EUR, 1m, Today.AddMonths(-1), Today.AddMonths(-1));
+
+        var act = () => p.Delete(Today);
+
+        act.Should().Throw<PortfolioWithinFiscalGracePeriodDomainException>();
+    }
+
+    [Fact]
+    public void Delete_NoHoldings_SoftDeletes()
+    {
+        var p = NewPortfolio();
+
+        p.Delete(Today);
+
+        p.IdStatus.Should().Be(EntityStatus.Deleted);
+    }
+
+    [Fact]
+    public void Delete_OldSale_SoftDeletes()
+    {
+        var p = NewPortfolio();
+        var oldSaleDate = Today.AddYears(-5).AddDays(-1);
+        p.AddHolding(3, 10m, Px(100m, Currency.EUR), Currency.EUR, 1m, oldSaleDate.AddYears(-1), oldSaleDate.AddYears(-1), null);
+        p.SellShares(3, 10m, Px(150m, Currency.EUR), Currency.EUR, 1m, oldSaleDate, oldSaleDate);
+
+        p.Delete(Today);
+
+        p.IdStatus.Should().Be(EntityStatus.Deleted);
     }
 }

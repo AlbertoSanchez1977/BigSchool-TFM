@@ -1,6 +1,8 @@
 using BigSchool.Application.Investments.Commands.AddHolding;
 using BigSchool.Application.Investments.Commands.CreatePortfolio;
 using BigSchool.Application.Investments.Commands.DeleteHolding;
+using BigSchool.Application.Investments.Commands.DeletePortfolio;
+using BigSchool.Application.Investments.Commands.RenamePortfolio;
 using BigSchool.Application.Investments.Commands.SellShares;
 using BigSchool.Application.Investments.Commands.UpdateHolding;
 using BigSchool.Application.SharedKernel.Common;
@@ -33,6 +35,7 @@ public class PortfoliosController : ControllerBase
     private int UserId => CurrentUser.GetId(User, _encryptor);
 
     public record CreatePortfolioRequest(string Name);
+    public record RenamePortfolioRequest(string Name);
     public record AddHoldingRequest(int IdCompany, decimal Shares, decimal BuyPrice, DateOnly BuyDate, string? Notes);
     public record UpdateHoldingRequest(string? Notes);
     public record SellSharesRequest(int CompanyId, decimal Shares, decimal SellPrice, DateOnly SellDate, string? Notes);
@@ -116,5 +119,25 @@ public class PortfoliosController : ControllerBase
         var command = new SellSharesCommand(id, UserId, body.CompanyId, body.Shares, body.SellPrice, body.SellDate, body.Notes);
         var result = await _mediator.Send(command);
         return Ok(ApiResponse<SellSharesResultDto>.Success(result));
+    }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Rename(int id, [FromBody] RenamePortfolioRequest body)
+    {
+        await _mediator.Send(new RenamePortfolioCommand(id, UserId, body.Name));
+        return Ok(ApiResponse.Success());
+    }
+
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _mediator.Send(new DeletePortfolioCommand(id, UserId));
+        return Ok(ApiResponse.Success());
     }
 }

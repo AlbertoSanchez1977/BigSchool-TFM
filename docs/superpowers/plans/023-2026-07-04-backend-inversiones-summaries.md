@@ -362,15 +362,19 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 **Files:**
 - Create: `src/BigSchool.Domain/Investments/Exceptions/{PortfolioHasOpenPositionsDomainException,PortfolioWithinFiscalGracePeriodDomainException}.cs`
 - Modify: `src/BigSchool.Domain/Investments/Entities/Portfolio.cs` (`Rename`, `Delete`)
-- Modify: `src/BigSchool.WebApi/Middleware/ExceptionHandlingMiddleware.cs` (mapear las 2 excepciones → 409)
 - Create: `src/BigSchool.Application/Investments/Commands/RenamePortfolio/{RenamePortfolioCommand,RenamePortfolioCommandHandler,RenamePortfolioCommandValidator}.cs`
 - Create: `src/BigSchool.Application/Investments/Commands/DeletePortfolio/{DeletePortfolioCommand,DeletePortfolioCommandHandler}.cs`
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/PortfoliosController.cs`
-- Test: `tests/BigSchool.Domain.Tests/Entities/Investments/PortfolioRenameDeleteTests.cs`
+- Modify: `tests/BigSchool.Domain.Tests/Entities/Investments/PortfolioTests.cs` (añadir tests de Rename/Delete al fichero existente de la clase `Portfolio` — "un fichero por clase bajo prueba", no uno nuevo)
 - Test: `tests/BigSchool.Application.Tests/Validators/Investments/RenamePortfolioCommandValidatorTests.cs`
-- Test: `tests/BigSchool.Integration.Tests/Investments/PortfolioRenameDeleteTests.cs`
+- Test: `tests/BigSchool.Application.Tests/Commands/Investments/RenamePortfolioCommandHandlerTests.cs` (mock `IPortfolioRepository`, sigue el patrón de `DeleteHoldingCommandHandlerTests`)
+- Test: `tests/BigSchool.Application.Tests/Commands/Investments/DeletePortfolioCommandHandlerTests.cs` (idem; cubre además que el guard `PortfolioHasOpenPositionsDomainException` propaga desde el handler)
+- Test: `tests/BigSchool.Integration.Tests/Investments/PutPortfolioTests.cs` (un fichero por endpoint)
+- Test: `tests/BigSchool.Integration.Tests/Investments/DeletePortfolioTests.cs` (un fichero por endpoint)
 
-- [ ] **Step 1: Excepciones de dominio (→ 409)**
+- [x] **Step 1: Excepciones de dominio (→ 409)**
+
+> **Corrección aplicada al plan**: el snippet original heredaba de `DomainException` (→400 en `ExceptionHandlingMiddleware`). Ambas son conflictos de negocio (409), como `DuplicateSubCategoryDomainException` (ver bug equivalente corregido en plan 022 Task 2) — deben heredar de `ConflictException`, no de `DomainException`. `ExceptionHandlingMiddleware.HandleExceptionAsync` despacha por *pattern matching* de tipo, que ya cubre subtipos: cualquier `ConflictException` (incluidas subclases) cae en la rama 409 sin tocar el middleware. Por tanto el antiguo Step 3 ("mapear las 2 excepciones en el middleware") **no es necesario** y se elimina.
 
 `PortfolioHasOpenPositionsDomainException.cs`:
 ```csharp
@@ -378,7 +382,7 @@ using BigSchool.Domain.SharedKernel.Exceptions;
 
 namespace BigSchool.Domain.Investments.Exceptions;
 
-public class PortfolioHasOpenPositionsDomainException : DomainException
+public class PortfolioHasOpenPositionsDomainException : ConflictException
 {
     public PortfolioHasOpenPositionsDomainException(int idPortfolio)
         : base("PORTFOLIO_HAS_OPEN_POSITIONS",
@@ -391,7 +395,7 @@ using BigSchool.Domain.SharedKernel.Exceptions;
 
 namespace BigSchool.Domain.Investments.Exceptions;
 
-public class PortfolioWithinFiscalGracePeriodDomainException : DomainException
+public class PortfolioWithinFiscalGracePeriodDomainException : ConflictException
 {
     public PortfolioWithinFiscalGracePeriodDomainException(int idPortfolio, DateOnly lastSaleDate)
         : base("PORTFOLIO_WITHIN_FISCAL_GRACE",
@@ -399,7 +403,7 @@ public class PortfolioWithinFiscalGracePeriodDomainException : DomainException
 }
 ```
 
-- [ ] **Step 2: `Portfolio.Rename` + `Portfolio.Delete(today)`**
+- [x] **Step 2: `Portfolio.Rename` + `Portfolio.Delete(today)`**
 
 Añade a `Portfolio` (con `using BigSchool.Domain.Investments.Exceptions;` ya presente):
 ```csharp
@@ -432,11 +436,9 @@ Añade a `Portfolio` (con `using BigSchool.Domain.Investments.Exceptions;` ya pr
     }
 ```
 
-- [ ] **Step 3: Mapear las excepciones en el middleware**
+- [x] **Step 3: (eliminado)** Ya no aplica — ver nota en Step 1: al heredar de `ConflictException`, el middleware ya las mapea a 409 sin cambios.
 
-En `ExceptionHandlingMiddleware`, añade el mapeo de `PortfolioHasOpenPositionsDomainException` y `PortfolioWithinFiscalGracePeriodDomainException` → **409 Conflict** (sigue el patrón de `EmailAlreadyExistsDomainException`; el `Code`/`Message` del `DomainException` viaja en `ApiError`). Verifica cómo mapea hoy (por tipo concreto o por lista) y añade estas dos.
-
-- [ ] **Step 4: Commands + handlers**
+- [x] **Step 4: Commands + handlers**
 
 `RenamePortfolioCommand.cs`:
 ```csharp
@@ -456,6 +458,7 @@ public class RenamePortfolioCommandValidator : AbstractValidator<RenamePortfolio
 `RenamePortfolioCommandHandler.cs`:
 ```csharp
 using BigSchool.Application.Investments.Interfaces.Repositories;
+using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using MediatR;
 
@@ -470,7 +473,7 @@ public class RenamePortfolioCommandHandler : IRequestHandler<RenamePortfolioComm
     {
         var p = await _portfolios.GetByIdWithHoldingsAsync(request.IdPortfolio, cancellationToken);
         if (p is null || p.IdUser != request.IdUser)
-            throw new NotFoundException("Cartera no encontrada.");
+            throw new NotFoundException(nameof(Portfolio), request.IdPortfolio); // NotFoundException(entityName, key), no mensaje libre
         p.Rename(request.Name);
         await _portfolios.UnitOfWork.SaveChangesAsync();
     }
@@ -485,6 +488,7 @@ public record DeletePortfolioCommand(int IdPortfolio, int IdUser) : IRequest;
 `DeletePortfolioCommandHandler.cs`:
 ```csharp
 using BigSchool.Application.Investments.Interfaces.Repositories;
+using BigSchool.Domain.Investments.Entities;
 using BigSchool.Domain.SharedKernel.Exceptions;
 using MediatR;
 
@@ -499,14 +503,14 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
     {
         var p = await _portfolios.GetByIdWithHoldingsAsync(request.IdPortfolio, cancellationToken);
         if (p is null || p.IdUser != request.IdUser)
-            throw new NotFoundException("Cartera no encontrada.");
+            throw new NotFoundException(nameof(Portfolio), request.IdPortfolio); // NotFoundException(entityName, key), no mensaje libre
         p.Delete(DateOnly.FromDateTime(DateTime.UtcNow)); // guards → 409 si aplica
         await _portfolios.UnitOfWork.SaveChangesAsync();
     }
 }
 ```
 
-- [ ] **Step 5: Endpoints en `PortfoliosController`**
+- [x] **Step 5: Endpoints en `PortfoliosController`**
 
 ```csharp
     public record RenamePortfolioRequest(string Name);
@@ -531,9 +535,11 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
     }
 ```
 
-- [ ] **Step 6: Unit tests de dominio (3 caminos del Delete)**
+- [x] **Step 6: Unit tests de dominio (3 caminos del Delete)**
 
-`PortfolioRenameDeleteTests.cs` (dominio): construye una cartera vía `Portfolio.Create` + `AddHolding`/`SellShares` para montar los escenarios:
+> **Corrección aplicada al plan**: `Rename`/`Delete` son métodos de la clase `Portfolio`, que ya tiene `PortfolioTests.cs`. Por la regla "un fichero de test por clase bajo prueba" (no crear `PortfolioRenameDeleteTests.cs` aparte), estos tests se añaden al fichero existente.
+
+`PortfolioTests.cs` (dominio, tests añadidos): construye una cartera vía `Portfolio.Create` + `AddHolding`/`SellShares` para montar los escenarios:
 ```csharp
     [Fact] public void Rename_ValidName_UpdatesName() { /* Create → Rename("X") → Name == "X" */ }
 
@@ -553,15 +559,25 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
 
 `RenamePortfolioCommandValidatorTests.cs`: Name vacío/ >100 → inválido.
 
-- [ ] **Step 7: E2E**
+`RenamePortfolioCommandHandlerTests.cs` / `DeletePortfolioCommandHandlerTests.cs` (Application.Tests/Commands/Investments, mock de `IPortfolioRepository`): siguen el patrón ya establecido para el resto de handlers de Investments (`AddHoldingCommandHandlerTests`, `DeleteHoldingCommandHandlerTests`, etc.) — no se pueden omitir aunque el E2E cubra el camino feliz, porque el E2E no aísla el handler ni cubre casos con dependencias mockeadas. Casos: rename/delete válidos, cartera de otro usuario → `NotFoundException`, y (`DeletePortfolioCommandHandlerTests`) posición abierta → `PortfolioHasOpenPositionsDomainException` propaga desde el handler.
 
-`PortfolioRenameDeleteTests.cs` (integración, `PortfolioEndpointTestBase`):
+- [x] **Step 7: E2E**
+
+> **Corrección aplicada al plan**: un fichero por endpoint (regla de `AGENTS.md`) — se separa en `PutPortfolioTests.cs` y `DeletePortfolioTests.cs`, no un único `PortfolioRenameDeleteTests.cs`. Además, usando `CompanySanEur` (moneda EUR) con `SeedUserAsync(Currency.EUR)`, el rate es 1 sin necesidad de `SeedExchangeRateAsync` (`AddHoldingCommandHandler`/`SellSharesCommandHandler` ya cortocircuitan a `rate=1m` cuando `company.Currency == baseCurrency`).
+
+`PutPortfolioTests.cs` (integración, `PortfolioEndpointTestBase`):
 ```csharp
     [Fact] public async Task Put_ValidName_RenamesPortfolio() { /* create → PUT {name:"Nueva"} 200 → GET detalle Name=="Nueva" */ }
+    [Fact] public async Task Put_EmptyName_Returns400() { /* create → PUT {name:""} → 400 */ }
+    [Fact] public async Task Put_OtherUsersPortfolio_Returns404() { /* cartera de otro usuario → PUT → 404 */ }
+    [Fact] public async Task Put_WithoutToken_Returns401() { /* sin JWT → 401 */ }
+```
 
+`DeletePortfolioTests.cs` (integración, `PortfolioEndpointTestBase`):
+```csharp
     [Fact]
     public async Task Delete_WithOpenPosition_Returns409_OpenPositions()
-    { /* create + AddHolding → DELETE → 409, errors[0].code == "PORTFOLIO_HAS_OPEN_POSITIONS" */ }
+    { /* create + AddHolding → DELETE → 409, errors contiene Code == "PORTFOLIO_HAS_OPEN_POSITIONS" */ }
 
     [Fact]
     public async Task Delete_RecentSale_Returns409_FiscalGrace()
@@ -570,12 +586,15 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
     [Fact]
     public async Task Delete_OldSale_Returns200_AndDisappearsFromListings()
     { /* create + AddHolding + Sell total con sellDate > 5 años atrás → DELETE 200 → GET /portfolios no la lista */ }
+
+    [Fact] public async Task Delete_OtherUsersPortfolio_Returns404() { /* cartera de otro usuario → DELETE → 404 */ }
+    [Fact] public async Task Delete_WithoutToken_Returns401() { /* sin JWT → 401 */ }
 ```
-> Para "venta antigua" siembra la `ExchangeRate` a esa `sellDate` antigua (determinismo multimoneda). Verifica el `Code` en `errors[0].code` del envelope.
+> Verifica el `Code` vía `env.Errors.Should().Contain(e => e.Code == "...")` (estilo real de `AddValuationTests`, no `errors[0].code`).
 
-Run: `dotnet test tests/BigSchool.Integration.Tests --filter PortfolioRenameDelete` → PASS.
+Run: `dotnet test tests/BigSchool.Integration.Tests --filter "FullyQualifiedName~PutPortfolioTests|FullyQualifiedName~DeletePortfolioTests"` → PASS.
 
-- [ ] **Step 8: Verde + Commit**
+- [x] **Step 8: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
