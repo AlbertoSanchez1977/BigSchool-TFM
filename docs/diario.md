@@ -853,3 +853,35 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 **Siguiente paso:**
 - [ ] Plan 023 (Investments): holdings `*Original`, serie de cotización por periodo, rename/delete de cartera con guards fiscales, summary global — namespaces ya en inglés (`Investments`), sin impacto del rename.
+
+---
+
+## 2026-07-05 al 2026-07-06 — Backend: Investments completo (Spec 010, Plan 023, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: backend (Investments)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/010-2026-07-04-backend-inversiones-summaries-design.md` y plan `docs/superpowers/plans/023-2026-07-04-backend-inversiones-summaries.md`; ejecución tarea a tarea con gate humano y TDD estricto (RED verificado antes de cada implementación).
+- **Task 1 (PR #155)**: campos `*Original` (moneda de la empresa, sin conversión FX) en `HoldingPerformanceDto` — `CostBasisOriginal`, `MarketValueOriginal`, `UnrealizedPnLOriginal`, reutilizando `PortfolioSqlFragments.HOLDING_VALUATION` (aditivo, no toca `GetPortfolios`).
+- **Task 2 (PR #156)**: `GET /companies/{id}/valuations/series?period=` — serie de precio + summary (`first/last/min/max/changePct`), anclada a la **última** valoración de la empresa (no a "hoy"). Periodo modelado como enum `ValuationPeriod` cuyo valor subyacente **es el nº de meses** (3/6/12/36/60) — sin magic values, mismo patrón que `Currency`.
+- **Task 3 (PR #157)**: `PUT`/`DELETE /portfolios/{id}` — rename siempre permitido; delete con dos guards de dominio (`PortfolioHasOpenPositionsDomainException`, `PortfolioWithinFiscalGracePeriodDomainException`, ambas → 409). `Portfolio.Delete(today)` como dominio puro (el reloj lo resuelve Application).
+- **Task 4 (PR #158)**: `GET /portfolios/summary` — agregado en moneda base de todas las carteras activas del usuario (market value/cost basis/unrealized de holdings abiertos + realized/portfolio count de todas las carteras). Cierra el plan 023 al completo.
+- `docs/swagger/bigschool-api.http`: nueva sección "INVESTMENTS — Plan 023" (endpoints 43-46: serie de valoraciones, periodo inválido→400, rename, delete, summary) + nota de los campos `*Original` añadida a la entrada 30 (performance) ya existente.
+
+**Decisiones / Problemas encontrados:**
+- **Bug real — columna SQL duplicada (Task 1)**: el primer intento re-seleccionaba `x.BuyOriginalCurrency AS BuyOriginalCurrency` como columna "nueva" en `HOLDING_VALUATION`, pero ya se seleccionaba sin alias más arriba en el mismo SELECT — dos columnas con el mismo nombre en la derived table. Al referenciarla por nombre desde un consumidor (`OPEN_HOLDINGS_QUERY`), MySQL la resolvía como ambigua en runtime → 500 que tumbó 6 tests E2E de Investments, incluidos algunos de `GetPortfolios` que ni tocan las columnas nuevas (comparten el mismo fragmento). Corregido eliminando la re-selección redundante.
+- **Excepciones de dominio con base class incorrecta (Task 3)**: mismo patrón de bug que `DuplicateSubCategoryDomainException` en el plan 022 — `PortfolioHasOpenPositionsDomainException`/`PortfolioWithinFiscalGracePeriodDomainException` debían heredar de `ConflictException` (409), no de `DomainException` (400). Al despachar `ExceptionHandlingMiddleware` por *pattern matching* de tipo (cubre subtipos), el Step del plan que proponía modificar el middleware sobraba y se eliminó.
+- **`NotFoundException` con mensaje libre no compila (Task 3)**: el plan pasaba un string suelto; el ctor real es `(entityName, key)`. Mismo bug ya visto y corregido en el plan 021.
+- **Convenciones de organización de tests no respetadas al implementar Task 3, corregidas tras revisión humana**: (1) los tests de dominio de `Rename`/`Delete` se crearon en un fichero nuevo (`PortfolioRenameDeleteTests.cs`) en vez de añadirse al `PortfolioTests.cs` ya existente de la misma clase — violaba "un fichero de test por clase bajo prueba"; fusionados en el fichero existente. (2) el E2E se escribió como un único fichero combinando `PUT` y `DELETE` — violaba "un fichero de test por endpoint"; separado en `PutPortfolioTests.cs`/`DeletePortfolioTests.cs`. (3) **tests de handler ausentes**: se habían omitido `RenamePortfolioCommandHandlerTests.cs`/`DeletePortfolioCommandHandlerTests.cs` (mock de `IPortfolioRepository`), pese a ser el patrón ya establecido para el resto de handlers de Investments — el E2E no sustituye la cobertura aislada del handler; añadidos a posteriori.
+- **Bug real — `COUNT(*)` como `long` en Dapper (Task 4)**: `RealizedRow(decimal RealizedPnL, int PortfolioCount)` fallaba en runtime (`InvalidOperationException` al materializar). `COUNT(*)` en MySQL/MySqlConnector se lee como `long`; cuando Dapper construye un record de **varias columnas vía su constructor** (path IL-generado) exige tipo exacto, sin conversión numérica — a diferencia de los `COUNT(*)` ya existentes en el proyecto (paginación de `GetCompanies`, `GetPortfolios`, etc.), que lo leen como **valor escalar único** (`ReadSingleAsync<int>()`), donde Dapper sí convierte. Corregido con `long PortfolioCount` + cast a `int` al construir el DTO; no aplica a los conteos escalares existentes.
+- **Nota aparte — symlinks `CLAUDE.md` → `AGENTS.md`**: se detectó que `CLAUDE.md` (raíz y los 6 subdirectorios) solo apuntaban a `AGENTS.md` con un texto ("Usar: AGENTS.md"), que no se resuelve automáticamente al cargar contexto en un agente — depende de que este decida seguir el puntero. Convertidos los 7 en symlinks reales (target relativo, mismo directorio) para que el auto-load de `CLAUDE.md` lea directamente el contenido de `AGENTS.md`, sin duplicar texto. Encontrado un problema de entorno: con `core.symlinks=false` (config del repo en esta máquina), git guarda el symlink correctamente en el índice (modo `120000`) pero cada `checkout`/cambio de rama lo materializaba en el working tree como fichero de texto plano con la ruta, no como enlace real — pasó desapercibido varias veces durante los cambios de rama de este mismo plan hasta que se verificó explícitamente. Solucionado activando `core.symlinks=true` (ejecutado por el usuario, no por el agente) y re-materializando los symlinks.
+
+**Resultado / Estado:**
+- Plan 023 completado (4/4 tareas, PRs #155-#158, todos mergeados).
+- Suite final: Domain 87/87 · Application 113/113 · Architecture 10/10 · Integration 139/139.
+- Con esto, Investments cubre performance con desglose en moneda de empresa, serie histórica de cotización por periodo, gestión completa de carteras (crear/renombrar/borrar con guards fiscales) y un resumen global multi-cartera — cierra la Spec 010. Con los planes 020-023 completados, la deuda técnica de backend identificada tras el MVP de frontend queda resuelta.
+
+**Siguiente paso:**
+- [ ] Frontend-web: consumir los endpoints de backend ya cerrados (Notifications, User/Registro, Finance, Investments) — la deuda técnica de backend que los bloqueaba está resuelta.
