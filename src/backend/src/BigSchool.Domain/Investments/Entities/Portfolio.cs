@@ -122,6 +122,34 @@ public class Portfolio : BaseEntity, IAggregateRoot
         return disposals;
     }
 
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("El nombre de la cartera es obligatorio.", nameof(name));
+        Name = name.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Soft-delete con guards. `today` lo pasa Application (dominio puro, sin reloj).</summary>
+    public void Delete(DateOnly today)
+    {
+        if (_holdings.Any(h => h.IdStatus != EntityStatus.Deleted && h.OpenShares > 0m))
+            throw new PortfolioHasOpenPositionsDomainException(IdPortfolio);
+
+        DateOnly? lastSale = _holdings
+            .Where(h => h.IdStatus != EntityStatus.Deleted)
+            .SelectMany(h => h.Disposals)
+            .Where(d => d.IdStatus != EntityStatus.Deleted)
+            .Select(d => (DateOnly?)d.SellDate)
+            .Max();
+
+        if (lastSale is not null && lastSale.Value > today.AddYears(-5))
+            throw new PortfolioWithinFiscalGracePeriodDomainException(IdPortfolio, lastSale.Value);
+
+        IdStatus = EntityStatus.Deleted;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     private Holding FindActiveHolding(int holdingId)
     {
         return _holdings.FirstOrDefault(h => h.IdHolding == holdingId && h.IdStatus != EntityStatus.Deleted)
