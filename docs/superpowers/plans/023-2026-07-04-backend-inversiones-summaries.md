@@ -613,7 +613,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `src/BigSchool.WebApi/Controllers/Investments/PortfoliosController.cs`
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetInvestmentsSummaryTests.cs`
 
-- [ ] **Step 1: DTO + Query + Handler**
+- [x] **Step 1: DTO + Query + Handler**
 
 `InvestmentsSummaryDto.cs`:
 ```csharp
@@ -666,7 +666,10 @@ SELECT COALESCE(SUM(RealizedPnL),0) AS RealizedPnL, COUNT(*) AS PortfolioCount
 FROM Portfolios WHERE IdUser = @IdUser AND IdStatus <> @StatusDeleted;";
 
     private sealed record AggRow(decimal MarketValue, decimal CostBasis, decimal UnrealizedPnL);
-    private sealed record RealizedRow(decimal RealizedPnL, int PortfolioCount);
+
+    // COUNT(*) en MySQL/MySqlConnector se materializa como long: un ctor con `int PortfolioCount`
+    // no matchea y Dapper lanza InvalidOperationException al construir el record.
+    private sealed record RealizedRow(decimal RealizedPnL, long PortfolioCount);
 
     public async Task<InvestmentsSummaryDto> Handle(GetInvestmentsSummaryQuery request, CancellationToken cancellationToken)
     {
@@ -687,12 +690,13 @@ FROM Portfolios WHERE IdUser = @IdUser AND IdStatus <> @StatusDeleted;";
         var returnPct = agg.CostBasis > 0m ? Math.Round(agg.UnrealizedPnL / agg.CostBasis * 100m, 2) : 0m;
 
         return new InvestmentsSummaryDto(baseCurrency, agg.MarketValue, agg.CostBasis, agg.UnrealizedPnL,
-            realized.RealizedPnL, total, returnPct, realized.PortfolioCount);
+            realized.RealizedPnL, total, returnPct, (int)realized.PortfolioCount);
     }
 }
 ```
+> **Bug real encontrado al implementar**: el snippet original tenía `RealizedRow(decimal RealizedPnL, int PortfolioCount)`. `COUNT(*)` en MySQL/MySqlConnector se lee como `long`; cuando Dapper materializa una fila con **varias columnas hacia un record vía su constructor** (path IL-generado), exige tipo exacto y lanza `InvalidOperationException: ... required for RealizedRow materialization`. Esto es distinto de los `COUNT(*)` ya existentes en el proyecto (`GetCompaniesQueryHandler`, `GetPortfoliosQueryHandler`, etc.), que leen el conteo como **valor escalar único** (`multi.ReadSingleAsync<int>()`) — ahí Dapper sí hace conversión numérica. Corregido: `RealizedRow` usa `long PortfolioCount`, con cast a `int` al construir el DTO. No aplica a los conteos escalares existentes (no hace falta tocarlos).
 
-- [ ] **Step 2: Endpoint**
+- [x] **Step 2: Endpoint**
 
 En `PortfoliosController` (`summary` no colisiona con `{id:int}`):
 ```csharp
@@ -705,7 +709,7 @@ En `PortfoliosController` (`summary` no colisiona con `{id:int}`):
     }
 ```
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 `GetInvestmentsSummaryTests.cs`: crea 2 carteras con holdings, verifica que `summary` coincide con la suma de los `performance`; sin carteras → todo 0, `PortfolioCount=0`.
 ```csharp
@@ -735,7 +739,7 @@ En `PortfoliosController` (`summary` no colisiona con `{id:int}`):
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetInvestmentsSummary` → PASS.
 
-- [ ] **Step 4: Verde + Commit**
+- [x] **Step 4: Verde + Commit**
 
 Run: FULL. Luego:
 ```bash
@@ -748,10 +752,10 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Verificación final (DoD — spec 010 §10)
 
-- [ ] **Unit Domain**: `Portfolio.Rename` valida; `Portfolio.Delete` 3 caminos (posición abierta → `PortfolioHasOpenPositions…`; venta <5 años → `PortfolioWithinFiscalGracePeriod…`; venta ≥5 años/sin ventas → soft-delete).
-- [ ] **Unit Application**: validador de rename; validador de `period` (#9, `IsInEnum`); summary/ChangePct con serie vacía.
-- [ ] **E2E**: `performance` con `*Original` correctos (moneda empresa) y totales base intactos; `valuations/series?period=OneYear` puntos en ventana anclada + ordenados + summary; `period` inválido → 400; `PUT` renombra; `DELETE` posición abierta → 409 `PORTFOLIO_HAS_OPEN_POSITIONS`, venta reciente → 409 `PORTFOLIO_WITHIN_FISCAL_GRACE`, venta antigua/sin ventas → 200 + desaparece; `summary` = suma de performances. E2E existentes de performance/portfolios/valuations siguen verdes.
-- [ ] **FULL** verde.
+- [x] **Unit Domain**: `Portfolio.Rename` valida; `Portfolio.Delete` 3 caminos (posición abierta → `PortfolioHasOpenPositions…`; venta <5 años → `PortfolioWithinFiscalGracePeriod…`; venta ≥5 años/sin ventas → soft-delete).
+- [x] **Unit Application**: validador de rename; validador de `period` (#9, `IsInEnum`); summary/ChangePct con serie vacía.
+- [x] **E2E**: `performance` con `*Original` correctos (moneda empresa) y totales base intactos; `valuations/series?period=OneYear` puntos en ventana anclada + ordenados + summary; `period` inválido → 400; `PUT` renombra; `DELETE` posición abierta → 409 `PORTFOLIO_HAS_OPEN_POSITIONS`, venta reciente → 409 `PORTFOLIO_WITHIN_FISCAL_GRACE`, venta antigua/sin ventas → 200 + desaparece; `summary` = suma de performances. E2E existentes de performance/portfolios/valuations siguen verdes.
+- [x] **FULL** verde.
 
 ## Self-Review (cobertura de la spec 010)
 

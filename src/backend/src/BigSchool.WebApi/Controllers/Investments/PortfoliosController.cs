@@ -7,6 +7,7 @@ using BigSchool.Application.Investments.Commands.SellShares;
 using BigSchool.Application.Investments.Commands.UpdateHolding;
 using BigSchool.Application.SharedKernel.Common;
 using BigSchool.Application.Investments.DTOs;
+using BigSchool.Application.Investments.Queries.GetInvestmentsSummary;
 using BigSchool.Application.Investments.Queries.GetPortfolioById;
 using BigSchool.Application.Investments.Queries.GetPortfolioPerformance;
 using BigSchool.Application.Investments.Queries.GetPortfolios;
@@ -139,5 +140,13 @@ public class PortfoliosController : ControllerBase
     {
         await _mediator.Send(new DeletePortfolioCommand(id, UserId));
         return Ok(ApiResponse.Success());
+    }
+
+    [HttpGet("summary")]
+    [ProducesResponseType(typeof(ApiResponse<InvestmentsSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Summary()
+    {
+        var result = await _mediator.Send(new GetInvestmentsSummaryQuery(UserId));
+        return Ok(ApiResponse<InvestmentsSummaryDto>.Success(result));
     }
 }
