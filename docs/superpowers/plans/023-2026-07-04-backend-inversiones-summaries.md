@@ -39,19 +39,18 @@ Aditivo: exponer en `HOLDING_VALUATION` los valores en moneda de la empresa (sin
 - Modify: `tests/BigSchool.Integration.Tests/Investments/PortfolioEndpointTestBase.cs` (`HoldingPerformanceResponse`)
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetPerformanceOriginalTests.cs`
 
-- [ ] **Step 1: Añadir columnas `*Original` al fragmento**
+- [x] **Step 1: Añadir columnas `*Original` al fragmento**
 
 En `PortfolioSqlFragments.HOLDING_VALUATION`, en el SELECT externo (el que empieza `SELECT x.IdHolding, ...`), añade tras `UnrealizedPnL`:
 ```sql
     ,
-    x.BuyOriginalCurrency                                                   AS BuyOriginalCurrency,
     ROUND(x.OpenShares * x.BuyOriginalAmount, 2)                            AS CostBasisOriginal,
     ROUND(x.OpenShares * COALESCE(x.LastPrice, 0), 2)                       AS MarketValueOriginal,
     ROUND(x.OpenShares * COALESCE(x.LastPrice, 0) - x.OpenShares * x.BuyOriginalAmount, 2) AS UnrealizedPnLOriginal
 ```
-> `x.BuyOriginalCurrency` ya viaja en `x`; el alias explícito la deja disponible como columna del resultado. `GetPortfolios` selecciona por nombre (`SUM(hv.MarketValue/...)`) → ignora las nuevas.
+> **Bug real encontrado al implementar**: `x.BuyOriginalCurrency` **ya** se selecciona sin alias en la línea de `x.BuyOriginalAmount, x.BuyOriginalCurrency, x.BuyExchangeRate` (arriba en el mismo SELECT) — el nombre de columna implícito ya es `BuyOriginalCurrency`. Re-seleccionarla aquí con `x.BuyOriginalCurrency AS BuyOriginalCurrency` crea **dos columnas con el mismo nombre** en el resultado de la subquery. MySQL lo permite al definir la derived table, pero en cuanto un consumidor selecciona `hv.BuyOriginalCurrency` por nombre (Task 1 Step 3, `OPEN_HOLDINGS_QUERY`), la referencia es ambigua y el query falla en runtime — 6 tests E2E de Investments (incluidos los de `GetPortfolios`, que ni siquiera tocan esa columna) cayeron con `Data` nulo por el 500 subyacente. **No re-selecciones `BuyOriginalCurrency`**: ya está disponible en `x`/`hv` desde antes; solo añade las 3 columnas `*Original` nuevas. `GetPortfolios` selecciona por nombre (`SUM(hv.MarketValue/...)`) → ignora las nuevas columnas sin problema (no hay ambigüedad porque no las referencia).
 
-- [ ] **Step 2: Extender el DTO**
+- [x] **Step 2: Extender el DTO**
 
 `HoldingPerformanceDto.cs`:
 ```csharp
@@ -65,7 +64,7 @@ public record HoldingPerformanceDto(
     decimal MarketValueOriginal, decimal UnrealizedPnLOriginal);
 ```
 
-- [ ] **Step 3: Propagar en el handler**
+- [x] **Step 3: Propagar en el handler**
 
 En `GetPortfolioPerformanceQueryHandler`:
 - Amplía `OPEN_HOLDINGS_QUERY` para seleccionar las 4 nuevas columnas:
@@ -92,7 +91,7 @@ ORDER BY hv.BuyDate, hv.IdHolding;";
 ```
 > Los totales de cartera (`marketValue`/`costBasis`/`unrealized`/`returnPct`) **no cambian** (siguen sumando los campos base).
 
-- [ ] **Step 4: E2E**
+- [x] **Step 4: E2E**
 
 En `PortfolioEndpointTestBase`, añade los 4 campos a `HoldingPerformanceResponse`:
 ```csharp
@@ -104,7 +103,7 @@ En `PortfolioEndpointTestBase`, añade los 4 campos a `HoldingPerformanceRespons
 `GetPerformanceOriginalTests.cs` (holding USD, moneda empresa; verifica `*Original` sin `Rate`):
 ```csharp
     [Fact]
-    public async Task Performance_TraeCamposOriginal_EnMonedaEmpresa()
+    public async Task Performance_ReturnsOriginalFields_InCompanyCurrency()
     {
         var (userId, email) = await SeedUserAsync(Currency.EUR);
         var client = AuthenticatedClient(userId, email);
@@ -118,20 +117,20 @@ En `PortfolioEndpointTestBase`, añade los 4 campos a `HoldingPerformanceRespons
         var h = perf.Holdings.Single();
 
         h.BuyOriginalCurrency.Should().Be("USD");
-        // CostBasisOriginal = OpenShares(10) × BuyOriginal(195.50) = 1955 (sin Rate)
-        h.CostBasisOriginal.Should().Be(1955m);
-        // MarketValueOriginal = 10 × LastPrice(210 USD) = 2100
+        // CostBasisOriginal = OpenShares(10) × BuyOriginal(195) = 1950 (sin Rate)
+        h.CostBasisOriginal.Should().Be(1950m);
+        // MarketValueOriginal = 10 × LastPrice(210 USD, seed AAPL 2026-03-02) = 2100
         h.MarketValueOriginal.Should().Be(2100m);
-        h.UnrealizedPnLOriginal.Should().Be(145m);
+        h.UnrealizedPnLOriginal.Should().Be(150m);
         // Los totales base NO cambian (sanity)
         perf.MarketValue.Should().Be(2100m); // rate 1.00 en la última valoración
     }
 ```
-> Ajusta las cifras al seed real de AAPL (última valoración/última fecha). El objetivo es que `*Original` use **precio en USD sin `Rate`** y que los totales base sigan igual.
+> Cifras verificadas contra el seed real de AAPL (`IdCompany=1`, última valoración `IdValuation=2`, `Date=2026-03-02`, `Price=210.00 USD`). El snippet original de este plan traía errores aritméticos (195.50/1955/145 en vez de 195/1950/150); corregido tras ejecutar el test. El objetivo es que `*Original` use **precio en USD sin `Rate`** y que los totales base sigan igual.
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter "GetPerformanceOriginal|GetPerformance|GetPortfolios"` → PASS (los E2E de performance/portfolios existentes siguen verdes).
 
-- [ ] **Step 5: Verde + Commit**
+- [x] **Step 5: Verde + Commit**
 ```bash
 git add -A && git commit -m "feat(investments): campos *Original en HoldingPerformanceDto (moneda de la empresa)
 
@@ -283,29 +282,29 @@ Con `using BigSchool.Domain.Investments.Enums;` (+ usings de `GetCompanyValuatio
 
 - [ ] **Step 5: Unit test del validator**
 
-`ValuationSeriesPeriodValidatorTests.cs`:
+`ValuationSeriesPeriodValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`, no `.Validate(...).IsValid`):
 ```csharp
 using BigSchool.Application.Investments.Queries.GetCompanyValuationSeries;
 using BigSchool.Domain.Investments.Enums;
-using FluentAssertions;
+using FluentValidation.TestHelper;
 using Xunit;
 
 namespace BigSchool.Application.Tests.Validators.Investments;
 
 public class ValuationSeriesPeriodValidatorTests
 {
-    private readonly GetCompanyValuationSeriesQueryValidator _v = new();
+    private readonly GetCompanyValuationSeriesQueryValidator _validator = new();
 
     [Theory]
     [InlineData(ValuationPeriod.ThreeMonths)]
     [InlineData(ValuationPeriod.OneYear)]
     [InlineData(ValuationPeriod.FiveYears)]
-    public void Periodos_validos_pasan(ValuationPeriod p)
-        => _v.Validate(new GetCompanyValuationSeriesQuery(1, p)).IsValid.Should().BeTrue();
+    public void Validate_ValidPeriod_NoError(ValuationPeriod p)
+        => _validator.TestValidate(new GetCompanyValuationSeriesQuery(1, p)).ShouldNotHaveValidationErrorFor(x => x.Period);
 
     [Fact]
-    public void Periodo_fuera_de_enum_falla()
-        => _v.Validate(new GetCompanyValuationSeriesQuery(1, (ValuationPeriod)99)).IsValid.Should().BeFalse();
+    public void Validate_PeriodOutOfEnum_HasError()
+        => _validator.TestValidate(new GetCompanyValuationSeriesQuery(1, (ValuationPeriod)99)).ShouldHaveValidationErrorFor(x => x.Period);
 }
 ```
 
@@ -314,7 +313,7 @@ public class ValuationSeriesPeriodValidatorTests
 `GetValuationSeriesTests.cs`:
 ```csharp
     [Fact]
-    public async Task Series_PeriodoInvalido_400()
+    public async Task Series_InvalidPeriod_Returns400()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -322,7 +321,7 @@ public class ValuationSeriesPeriodValidatorTests
     }
 
     [Fact]
-    public async Task Series_OneYear_PuntosEnVentana_Ordenados_SummaryCoherente()
+    public async Task Series_OneYear_ReturnsPointsInWindow_OrderedWithCoherentSummary()
     {
         var (userId, email) = await SeedUserAsync();
         var client = AuthenticatedClient(userId, email);
@@ -536,18 +535,18 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
 
 `PortfolioRenameDeleteTests.cs` (dominio): construye una cartera vía `Portfolio.Create` + `AddHolding`/`SellShares` para montar los escenarios:
 ```csharp
-    [Fact] public void Rename_valido_cambia_nombre() { /* Create → Rename("X") → Name == "X" */ }
+    [Fact] public void Rename_ValidName_UpdatesName() { /* Create → Rename("X") → Name == "X" */ }
 
     [Fact]
-    public void Delete_conPosicionAbierta_lanza_HasOpenPositions()
+    public void Delete_WithOpenPosition_ThrowsHasOpenPositions()
     { /* AddHolding (sin vender) → OpenShares>0 → Delete(today) lanza PortfolioHasOpenPositionsDomainException */ }
 
     [Fact]
-    public void Delete_ventaReciente_lanza_FiscalGrace()
+    public void Delete_RecentSale_ThrowsFiscalGracePeriod()
     { /* AddHolding + SellShares total con sellDate reciente → Delete(hoy) lanza PortfolioWithinFiscalGracePeriodDomainException */ }
 
     [Fact]
-    public void Delete_ventaAntigua_o_sinVentas_soft_borra()
+    public void Delete_OldSaleOrNoSales_SoftDeletes()
     { /* cerrada con última venta ≥5 años (sellDate antigua) → Delete(hoy) → IdStatus == Deleted */ }
 ```
 > Usa `Portfolio.Create(1, "P", Currency.EUR)`, `AddHolding(...)`, `SellShares(...)` con `rate=1`, `rateDate`/`buyDate`/`sellDate` controladas. Para "venta antigua" pasa `sellDate` > 5 años atrás; el `today` es `DateOnly.FromDateTime(DateTime.UtcNow)`.
@@ -558,18 +557,18 @@ public class DeletePortfolioCommandHandler : IRequestHandler<DeletePortfolioComm
 
 `PortfolioRenameDeleteTests.cs` (integración, `PortfolioEndpointTestBase`):
 ```csharp
-    [Fact] public async Task Put_Renombra() { /* create → PUT {name:"Nueva"} 200 → GET detalle Name=="Nueva" */ }
+    [Fact] public async Task Put_ValidName_RenamesPortfolio() { /* create → PUT {name:"Nueva"} 200 → GET detalle Name=="Nueva" */ }
 
     [Fact]
-    public async Task Delete_ConPosicionAbierta_409_OpenPositions()
+    public async Task Delete_WithOpenPosition_Returns409_OpenPositions()
     { /* create + AddHolding → DELETE → 409, errors[0].code == "PORTFOLIO_HAS_OPEN_POSITIONS" */ }
 
     [Fact]
-    public async Task Delete_VentaReciente_409_FiscalGrace()
+    public async Task Delete_RecentSale_Returns409_FiscalGrace()
     { /* create + AddHolding + Sell total con sellDate reciente → DELETE → 409 "PORTFOLIO_WITHIN_FISCAL_GRACE" */ }
 
     [Fact]
-    public async Task Delete_VentaAntigua_200_DesapareceDeListados()
+    public async Task Delete_OldSale_Returns200_AndDisappearsFromListings()
     { /* create + AddHolding + Sell total con sellDate > 5 años atrás → DELETE 200 → GET /portfolios no la lista */ }
 ```
 > Para "venta antigua" siembra la `ExchangeRate` a esa `sellDate` antigua (determinismo multimoneda). Verifica el `Code` en `errors[0].code` del envelope.
@@ -692,7 +691,7 @@ En `PortfoliosController` (`summary` no colisiona con `{id:int}`):
 `GetInvestmentsSummaryTests.cs`: crea 2 carteras con holdings, verifica que `summary` coincide con la suma de los `performance`; sin carteras → todo 0, `PortfolioCount=0`.
 ```csharp
     [Fact]
-    public async Task Summary_AgregaVariasCarteras()
+    public async Task Summary_AggregatesMultiplePortfolios()
     {
         var (userId, email) = await SeedUserAsync(Currency.EUR);
         var client = AuthenticatedClient(userId, email);

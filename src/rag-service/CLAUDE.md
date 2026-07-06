@@ -1,1 +1,1 @@
-Usar: AGENTS.md dentro de este mismo directorio
+AGENTS.md

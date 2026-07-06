@@ -28,13 +28,15 @@ public class GetPortfolioPerformanceQueryHandler
     // Solo lotes abiertos (OpenShares > 0) para el desglose no realizado.
     private const string OPEN_HOLDINGS_QUERY = @"
 SELECT hv.IdHolding, hv.IdCompany, hv.Ticker, hv.OpenShares,
-       hv.CostBasis, hv.MarketValue, hv.UnrealizedPnL
+       hv.CostBasis, hv.MarketValue, hv.UnrealizedPnL,
+       hv.BuyOriginalCurrency, hv.CostBasisOriginal, hv.MarketValueOriginal, hv.UnrealizedPnLOriginal
 FROM (" + PortfolioSqlFragments.HOLDING_VALUATION + @") hv
 WHERE hv.IdPortfolio = @IdPortfolio AND hv.OpenShares > 0
 ORDER BY hv.BuyDate, hv.IdHolding;";
 
     private sealed record HoldingRow(int IdHolding, int IdCompany, string Ticker, decimal OpenShares,
-        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL);
+        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL,
+        string BuyOriginalCurrency, decimal CostBasisOriginal, decimal MarketValueOriginal, decimal UnrealizedPnLOriginal);
 
     public async Task<PortfolioPerformanceDto?> Handle(GetPortfolioPerformanceQuery request, CancellationToken cancellationToken)
     {
@@ -56,7 +58,8 @@ ORDER BY hv.BuyDate, hv.IdHolding;";
 
         var holdings = rows.Select(r => new HoldingPerformanceDto(
             r.IdHolding, r.IdCompany, r.Ticker, r.OpenShares, r.CostBasis, r.MarketValue, r.UnrealizedPnL,
-            r.CostBasis > 0m ? Math.Round(r.UnrealizedPnL / r.CostBasis * 100m, 2) : 0m)).ToList();
+            r.CostBasis > 0m ? Math.Round(r.UnrealizedPnL / r.CostBasis * 100m, 2) : 0m,
+            r.BuyOriginalCurrency, r.CostBasisOriginal, r.MarketValueOriginal, r.UnrealizedPnLOriginal)).ToList();
 
         var marketValue = holdings.Sum(h => h.MarketValue);
         var costBasis = holdings.Sum(h => h.CostBasis);

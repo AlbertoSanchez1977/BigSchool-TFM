@@ -1,1 +1,1 @@
-Usar: src\mobile\AGENTS.md
+AGENTS.md
