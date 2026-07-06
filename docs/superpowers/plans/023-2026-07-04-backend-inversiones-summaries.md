@@ -151,7 +151,7 @@ Serie de precio de la empresa (moneda de la empresa) en una ventana anclada a la
 - Test: `tests/BigSchool.Application.Tests/Validators/Investments/ValuationSeriesPeriodValidatorTests.cs`
 - Test: `tests/BigSchool.Integration.Tests/Investments/GetValuationSeriesTests.cs`
 
-- [ ] **Step 1: Enum `ValuationPeriod` (valor = nº de meses) + DTOs**
+- [x] **Step 1: Enum `ValuationPeriod` (valor = nº de meses) + DTOs**
 
 `ValuationPeriod.cs`:
 ```csharp
@@ -178,7 +178,7 @@ public record ValuationSeriesSummaryDto(decimal First, decimal Last, decimal Min
 public record ValuationSeriesDto(string Currency, IReadOnlyList<ValuationPointDto> Points, ValuationSeriesSummaryDto Summary);
 ```
 
-- [ ] **Step 2: Query + Validator (`IsInEnum`)**
+- [x] **Step 2: Query + Validator (`IsInEnum`)**
 
 `GetCompanyValuationSeriesQuery.cs`:
 ```csharp
@@ -204,7 +204,7 @@ public class GetCompanyValuationSeriesQueryValidator : AbstractValidator<GetComp
 }
 ```
 
-- [ ] **Step 3: Handler (`(int)Period` = meses; `First()`/`Last()`)**
+- [x] **Step 3: Handler (`(int)Period` = meses; `First()`/`Last()`)**
 
 `GetCompanyValuationSeriesQueryHandler.cs`:
 ```csharp
@@ -265,7 +265,7 @@ public class GetCompanyValuationSeriesQueryHandler : IRequestHandler<GetCompanyV
 }
 ```
 
-- [ ] **Step 4: Endpoint en `CompaniesController`**
+- [x] **Step 4: Endpoint en `CompaniesController`**
 
 Con `using BigSchool.Domain.Investments.Enums;` (+ usings de `GetCompanyValuationSeries`/`ValuationSeriesDto`):
 ```csharp
@@ -280,7 +280,7 @@ Con `using BigSchool.Domain.Investments.Enums;` (+ usings de `GetCompanyValuatio
 ```
 > El binding de query enlaza por nombre (`?period=OneYear`) o valor (`?period=12`). Un nombre desconocido (`?period=2y`) falla el binding → 400 automático ([ApiController]); un entero fuera de rango (`?period=99`) enlaza pero lo rechaza `IsInEnum` → 400.
 
-- [ ] **Step 5: Unit test del validator**
+- [x] **Step 5: Unit test del validator**
 
 `ValuationSeriesPeriodValidatorTests.cs` (estilo real: `TestValidate`/`ShouldHaveValidationErrorFor`, no `.Validate(...).IsValid`):
 ```csharp
@@ -308,7 +308,7 @@ public class ValuationSeriesPeriodValidatorTests
 }
 ```
 
-- [ ] **Step 6: E2E**
+- [x] **Step 6: E2E**
 
 `GetValuationSeriesTests.cs`:
 ```csharp
@@ -348,7 +348,7 @@ public class ValuationSeriesPeriodValidatorTests
 
 Run: `dotnet test tests/BigSchool.Integration.Tests --filter GetValuationSeries` → PASS.
 
-- [ ] **Step 7: Verde + Commit**
+- [x] **Step 7: Verde + Commit**
 ```bash
 git add -A && git commit -m "feat(investments): GET /companies/{id}/valuations/series?period (serie + summary, periodo enum)
 

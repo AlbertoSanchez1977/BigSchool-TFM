@@ -5,6 +5,7 @@ using BigSchool.Application.Investments.DTOs;
 using BigSchool.Application.Investments.Queries.GetCompanies;
 using BigSchool.Application.Investments.Queries.GetCompanyById;
 using BigSchool.Application.Investments.Queries.GetCompanyValuations;
+using BigSchool.Application.Investments.Queries.GetCompanyValuationSeries;
 using BigSchool.Domain.Investments.Enums;
 using BigSchool.Domain.SharedKernel.Enums;
 using MediatR;
@@ -77,5 +78,14 @@ public class CompaniesController : ControllerBase
         var command = new AddValuationCommand(id, body.Price, body.Date, body.Source);
         var result = await _mediator.Send(command);
         return Ok(ApiResponse<ValuationDto>.Success(result));
+    }
+
+    [HttpGet("{id:int}/valuations/series")]
+    [ProducesResponseType(typeof(ApiResponse<ValuationSeriesDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValuationsSeries(int id, [FromQuery] ValuationPeriod period = ValuationPeriod.OneYear)
+    {
+        var result = await _mediator.Send(new GetCompanyValuationSeriesQuery(id, period));
+        return Ok(ApiResponse<ValuationSeriesDto>.Success(result));
     }
 }
