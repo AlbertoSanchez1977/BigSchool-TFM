@@ -64,4 +64,10 @@ export const tokenStore = {
     if (!data) return
     tokenStore.save({ ...data, refreshCount: data.refreshCount + 1 })
   },
+
+  updateFullName(fullName: string): void {
+    const data = tokenStore.load()
+    if (!data) return
+    tokenStore.save({ ...data, fullName })
+  },
 }

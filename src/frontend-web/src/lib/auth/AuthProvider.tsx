@@ -29,6 +29,7 @@ export interface AuthContextValue {
   register(dto: RegisterDto): Promise<void>
   logout(): void
   refresh(): Promise<void>
+  updateFullName(fullName: string): void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -66,6 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setToken(null)
     setExpiresAt(null)
+  }, [])
+
+  // Sincroniza el fullName tras editar el perfil (PUT /users/me): actualiza tanto
+  // el estado en memoria (lo que pinta ProfileDropdown/navbar ya mismo) como
+  // localStorage (para que sobreviva a un refresh de página sin esperar al
+  // próximo login/refresh de token, que es lo único que hoy re-guarda tokenStore).
+  const updateFullName = useCallback((fullName: string) => {
+    tokenStore.updateFullName(fullName)
+    setUser((prev) => (prev ? { ...prev, fullName } : prev))
   }, [])
 
   const login = useCallback(async (dto: LoginDto) => {
@@ -156,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout, router])
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refresh }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refresh, updateFullName }}>
       {children}
     </AuthContext.Provider>
   )
