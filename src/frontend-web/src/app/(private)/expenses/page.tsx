@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TransactionSheet } from '@/components/transactions/transaction-sheet'
 import { CategoryBars } from '@/components/charts/category-bars'
-import { MonthlyStackedBars } from '@/components/charts/monthly-stacked-bars'
+import { MonthlyCategoryBars } from '@/components/charts/monthly-category-bars'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSummary } from '@/hooks/useSummary'
 import { useCategories } from '@/hooks/useCategories'
@@ -463,14 +463,18 @@ export default function ExpensesPage() {
             />
           )}
 
-          {/* ── Gráfica B: serie mensual apilada por categoría ───────────────── */}
+          {/* ── Gráfica B: una gráfica por categoría, meses en eje X, años agrupados ── */}
           <p className="mb-4 mt-8 text-sm text-muted-foreground">
-            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por mes — 4 años hasta {chartYear}
+            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por mes y categoría — 4 años hasta {chartYear}
             (importes en {currency}).
           </p>
 
           {monthly.isLoading && (
-            <Skeleton className="h-[340px] w-full rounded-lg" data-testid="monthly-chart-loading" />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" data-testid="monthly-chart-loading">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[260px] w-full rounded-lg" />
+              ))}
+            </div>
           )}
 
           {monthly.isError && (
@@ -483,13 +487,20 @@ export default function ExpensesPage() {
           )}
 
           {!monthly.isLoading && !monthly.isError && (
-            <MonthlyStackedBars
-              data={monthly.data}
-              type={chartType}
-              years={chart.data.years}
-              currency={currency}
-              emptyLabel={`No hay ${chartType === 'Expense' ? 'gastos' : 'ingresos'} en los últimos 4 años.`}
-            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {monthly.data.map((series) => (
+                <div key={series.category}>
+                  <p className="mb-2 text-sm font-medium">{MAIN_CATEGORY_LABEL[series.category]}</p>
+                  <MonthlyCategoryBars
+                    points={series.points}
+                    type={chartType}
+                    years={chart.data.years}
+                    currency={currency}
+                    emptyLabel="Sin datos en los últimos 4 años."
+                  />
+                </div>
+              ))}
+            </div>
           )}
 
         </TabsContent>

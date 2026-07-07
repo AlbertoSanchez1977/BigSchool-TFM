@@ -435,18 +435,25 @@ export function useMonthlySeries(type: TransactionType, referenceYear: number, o
 }
 ```
 
-- [x] **Step 8: Componente Gráfica B** — `src/components/charts/monthly-stacked-bars.tsx`: `BarChart`
+- [x] **Step 8: Componente Gráfica B** — ~~`src/components/charts/monthly-stacked-bars.tsx`: `BarChart`
   apilado (Recharts). Transformar `CategoryMonthlySeries[]` a filas por mes `{ label: "MMM YY",
   [category]: value }` (una fila por cada (año,mes) de la ventana). Una `<Bar stackId="a">` por
   categoría, color con la paleta `--chart-*` (ciclar si hay >4, usar el campo `income` o `expense`
   del punto según el `type`). Estado vacío (`emptyLabel`). Reusar el wrapper responsive y el tooltip
-  HTML de `components/charts/category-bars.tsx` como referencia de estilo.
+  HTML de `components/charts/category-bars.tsx` como referencia de estilo.~~
+  **Revisado tras revisión humana del PR #162** (el diseño original —una sola gráfica apilada por
+  categoría— no era el esperado): en su lugar, `src/components/charts/monthly-category-bars.tsx`
+  renderiza **una gráfica por categoría** (desagregada), con los **12 meses en el eje X** y **una
+  barra por año agrupada** dentro de cada mes (no apilada) — mismo patrón visual que
+  `category-bars.tsx` pero con los ejes girados (allí el eje X es la categoría y el año agrupa; aquí
+  el eje X es el mes). El componente `monthly-stacked-bars.tsx` se elimina.
 
 - [x] **Step 9: Pestaña Gráficas en `expenses/page.tsx`** — añadir un **selector de año de
   referencia** (máx = año actual) que alimenta ambas gráficas. Mantener el conmutador Gastos/Ingresos
   y la **Gráfica A actual** (`useCategoryChart` + `<CategoryBars>`) tal cual, pasándole el año
-  seleccionado. Debajo, añadir la **Gráfica B** (`useMonthlySeries` + `<MonthlyStackedBars>`), ambas
-  con `enabled: tab === 'charts'`. No se elimina ningún componente existente.
+  seleccionado. Debajo, añadir la **Gráfica B**: una rejilla con **una `<MonthlyCategoryBars>` por
+  cada categoría** de `useMonthlySeries`, ambas gráficas con `enabled: tab === 'charts'`. No se
+  elimina ningún componente existente de la Gráfica A.
 
 - [x] **Step 10: Verificar y commitear**
 
