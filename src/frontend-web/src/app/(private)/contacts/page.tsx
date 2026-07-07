@@ -4,6 +4,7 @@ import { Mail, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useContacts } from '@/hooks/useContacts'
 
 function formatDate(iso: string) {
@@ -14,9 +15,7 @@ function formatDate(iso: string) {
 }
 
 export default function ContactsPage() {
-  // TODO (deuda técnica backend): GET /contacts → ContactSubmission[]
-  // Actualmente lee de localStorage (demo local).
-  const { contacts } = useContacts()
+  const { contacts, isLoading, isError } = useContacts()
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 md:px-8">
@@ -32,7 +31,24 @@ export default function ContactsPage() {
         </Button>
       </div>
 
-      {contacts.length === 0 ? (
+      {isLoading && (
+        <div className="space-y-4" data-testid="loading-state">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-[88px] rounded-2xl" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && isError && (
+        <div
+          data-testid="error-state"
+          className="rounded-2xl border border-border bg-card py-10 text-center text-sm text-destructive"
+        >
+          No se pudieron cargar los mensajes. Inténtalo de nuevo más tarde.
+        </div>
+      )}
+
+      {!isLoading && !isError && contacts.length === 0 && (
         <div
           data-testid="empty-state"
           className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed py-24 text-center"
@@ -46,10 +62,12 @@ export default function ContactsPage() {
             .
           </p>
         </div>
-      ) : (
+      )}
+
+      {!isLoading && !isError && contacts.length > 0 && (
         <div className="space-y-4">
           {contacts.map((c) => (
-            <Card key={c.id}>
+            <Card key={c.idContact}>
               <CardContent className="pt-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 flex-col gap-1">
@@ -63,7 +81,7 @@ export default function ContactsPage() {
                     <p className="text-sm text-foreground/80 line-clamp-3">{c.message}</p>
                   </div>
                   <time className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(c.submittedAt)}
+                    {formatDate(c.createdAt)}
                   </time>
                 </div>
               </CardContent>
