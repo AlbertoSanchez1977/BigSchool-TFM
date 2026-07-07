@@ -87,7 +87,12 @@ export function RegisterForm({ onSwitchMode, onSuccess }: RegisterFormProps) {
           control={control}
           name="baseCurrency"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            // value nunca debe ser `undefined`: en el primer render (sin moneda
+            // elegida) React trataría el Select como "no controlado" y, al elegir
+            // una moneda, saltaría el aviso de "cambiar de no controlado a
+            // controlado". '' no coincide con ningún <SelectItem>, así que sigue
+            // sin haber preselección — solo evita el undefined inicial.
+            <Select value={field.value ?? ''} onValueChange={field.onChange}>
               <SelectTrigger id="reg-baseCurrency" className="w-full" data-testid="select-baseCurrency">
                 <SelectValue placeholder="Selecciona una moneda" />
               </SelectTrigger>
