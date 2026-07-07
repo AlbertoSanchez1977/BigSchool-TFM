@@ -480,10 +480,10 @@ en `AuthController.cs` (nombre exacto del campo: `baseCurrency`).
 - Modify: `src/components/auth/register-form.tsx` (Select de moneda + pasar el campo)
 - Test: `tests/unit/schemas/auth.test.ts`
 
-- [ ] **Step 1: Tipo** — en `src/types/auth.ts`, añadir a `RegisterDto`: `baseCurrency: Currency`
+- [x] **Step 1: Tipo** — en `src/types/auth.ts`, añadir a `RegisterDto`: `baseCurrency: Currency`
   (importar `Currency` de `@/types/enums`). Verificar el nombre exacto del campo contra el request.
 
-- [ ] **Step 2: Test que falla** — el schema exige `baseCurrency`:
+- [x] **Step 2: Test que falla** — el schema exige `baseCurrency`:
 
 ```typescript
 import { registerSchema } from '@/lib/schemas/auth'
@@ -497,23 +497,38 @@ it('acepta registro con moneda', () => {
 })
 ```
 
-- [ ] **Step 3: Verificar fallo** — `npm run test -- tests/unit/schemas/auth.test.ts` → FAIL.
+- [x] **Step 3: Verificar fallo** — `npm run test -- tests/unit/schemas/auth.test.ts` → FAIL.
 
-- [ ] **Step 4: Schema** — en `registerSchema` añadir dentro del `.object({...})`:
+- [x] **Step 4: Schema** — en `registerSchema` añadir dentro del `.object({...})`:
   `baseCurrency: z.enum(['EUR', 'USD', 'GBP', 'CHF', 'JPY'], { message: 'Selecciona una moneda' })`.
 
-- [ ] **Step 5: Verificar que pasa** — repetir Step 3 → PASS.
+- [x] **Step 5: Verificar que pasa** — repetir Step 3 → PASS.
 
-- [ ] **Step 6: UI en `register-form.tsx`** — añadir un campo `<Select>` (shadcn) de moneda entre
-  email y password. Como `Select` no es un `<input>` nativo, usar `Controller` de react-hook-form (o
-  `setValue`), igual que el `Select` de empresa en `investments/[id]/page.tsx`. Pasar el valor en
-  `onSubmit`: `registerUser({ email, password, fullName, baseCurrency: data.baseCurrency })`. Opciones:
-  las 5 de `Currency`.
+- [x] **Step 6: UI en `register-form.tsx`** — añadir un campo `<Select>` (shadcn) de moneda entre
+  email y password. Como `Select` no es un `<input>` nativo, usar `Controller` de react-hook-form
+  (mismo patrón que el `Select` de moneda ya existente en `transaction-sheet.tsx`, no el combobox de
+  empresa que aún no existe). Pasar el valor en `onSubmit`. Opciones: las 5 de `Currency`.
+  **Cambio respecto al plan**: en vez de repetir el array `['EUR','USD','GBP','CHF','JPY']` una
+  tercera vez (ya estaba duplicado en `transaction-sheet.tsx`), se centraliza en
+  `types/enums.ts` como `export const CURRENCIES = [...] as const` (un union type de TS no existe en
+  runtime, así que hace falta el array `as const` para poder iterarlo en un `<Select>`/`z.enum()`) y
+  `Currency` pasa a derivarse de él (`typeof CURRENCIES[number]`). `transaction-sheet.tsx` y
+  `registerSchema` se actualizan para importar la misma constante — una sola fuente de verdad.
 
-- [ ] **Step 7: Verificar E2E** — si existe flujo Playwright de registro, seleccionar moneda y
-  ajustar el test. `npm run test:e2e`.
+- [x] **Step 7: Verificar E2E** — **bug real encontrado y corregido** (no solo ajuste de test): el
+  panel flotante de login/registro (`navbar-public.tsx`) cierra al detectar un click "fuera" de su
+  `authAreaRef`; el desplegable del `<Select>` de moneda se pinta en un **Portal** (fuera del árbol
+  DOM del panel), así que elegir cualquier moneda se interpretaba como "click fuera" y **cerraba el
+  panel entero antes de enviar el formulario** — afecta a usuarios reales, no solo a los tests.
+  Corregido en `handleOutside` ignorando los clicks dentro de `[data-slot="select-content"]`. Además,
+  el test "contraseñas no coinciden" necesitó también seleccionar moneda: el `.refine()` de
+  `confirmPassword===password` en Zod **no se ejecuta si el resto del `.object()` ya falló** (aquí,
+  por `baseCurrency` ausente), así que sin moneda el error de "no coinciden" nunca llegaba a
+  generarse. Ajustados los 3 specs que registran un usuario (`login.spec.ts`, `create-expense.spec.ts`,
+  `sell-holding.spec.ts`) para seleccionar `EUR` tras rellenar el formulario. `npm run test:e2e:local`
+  (config local, backend+frontend ya en marcha) → 9+2 tests PASS.
 
-- [ ] **Step 8: Commit + PR**
+- [x] **Step 8: Commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test

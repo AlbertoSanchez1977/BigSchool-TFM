@@ -34,7 +34,16 @@ export function NavbarPublic() {
   useEffect(() => {
     if (!panelOpen) return
     function handleOutside(e: MouseEvent) {
-      if (authAreaRef.current && !authAreaRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement
+      // Los <Select> del panel (p.ej. moneda base del registro) pintan su desplegable
+      // en un Portal, fuera del DOM de authAreaRef (para no quedar recortados por
+      // overflow). Sin este chequeo, elegir una opción se interpreta como "click
+      // fuera" y cierra el panel entero antes de que el usuario pueda enviar el
+      // formulario. data-slot="select-content" es el marcador que pone shadcn/Base UI
+      // en el desplegable — target.closest lo encuentra aunque el nodo esté fuera
+      // del árbol de authAreaRef, porque closest() sube por el DOM real, no por React.
+      if (target.closest('[data-slot="select-content"]')) return
+      if (authAreaRef.current && !authAreaRef.current.contains(target)) {
         setPanelOpen(false)
       }
     }

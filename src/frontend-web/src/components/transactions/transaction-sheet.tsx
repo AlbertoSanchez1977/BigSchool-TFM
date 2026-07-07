@@ -24,6 +24,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { useAuth } from '@/hooks/useAuth'
 import { TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL } from '@/lib/transactions/labels'
 import type { Transaction } from '@/types/transactions'
+import { CURRENCIES } from '@/types/enums'
 import type { MainCategory, TransactionType } from '@/types/enums'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -35,8 +36,6 @@ interface TransactionSheetProps {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'JPY'] as const
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]

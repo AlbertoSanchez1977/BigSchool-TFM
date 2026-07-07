@@ -30,6 +30,8 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel('Email', { exact: true }).fill(email)
   await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
   await page.getByLabel('Repetir contraseña').fill(PASSWORD)
+  await page.getByTestId('select-baseCurrency').click()
+  await page.getByRole('option', { name: 'EUR' }).click()
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
   // Esperar redirección post-registro al dashboard
   await page.waitForURL('**/dashboard', { timeout: 10_000 })

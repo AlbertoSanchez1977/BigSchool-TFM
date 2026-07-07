@@ -1,14 +1,18 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { registerSchema, type RegisterFormValues } from '@/lib/schemas/auth'
 import { ApiError } from '@/lib/apiClient'
+import { CURRENCIES } from '@/types/enums'
 
 interface RegisterFormProps {
   onSwitchMode: () => void
@@ -21,13 +25,19 @@ export function RegisterForm({ onSwitchMode, onSuccess }: RegisterFormProps) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) })
 
   async function onSubmit(data: RegisterFormValues) {
     try {
-      await registerUser({ email: data.email, password: data.password, fullName: data.fullName })
+      await registerUser({
+        email: data.email,
+        password: data.password,
+        fullName: data.fullName,
+        baseCurrency: data.baseCurrency,
+      })
       onSuccess()
       router.push('/dashboard')
     } catch (err) {
@@ -68,6 +78,34 @@ export function RegisterForm({ onSwitchMode, onSuccess }: RegisterFormProps) {
         />
         {errors.email && (
           <p className="text-xs text-destructive">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="reg-baseCurrency">Moneda base</Label>
+        <Controller
+          control={control}
+          name="baseCurrency"
+          render={({ field }) => (
+            // value nunca debe ser `undefined`: en el primer render (sin moneda
+            // elegida) React trataría el Select como "no controlado" y, al elegir
+            // una moneda, saltaría el aviso de "cambiar de no controlado a
+            // controlado". '' no coincide con ningún <SelectItem>, así que sigue
+            // sin haber preselección — solo evita el undefined inicial.
+            <Select value={field.value ?? ''} onValueChange={field.onChange}>
+              <SelectTrigger id="reg-baseCurrency" className="w-full" data-testid="select-baseCurrency">
+                <SelectValue placeholder="Selecciona una moneda" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.baseCurrency && (
+          <p className="text-xs text-destructive">{errors.baseCurrency.message}</p>
         )}
       </div>
 

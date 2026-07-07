@@ -957,7 +957,32 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - **Rediseño de la Gráfica B tras revisión humana del PR #162**: la primera implementación (`monthly-stacked-bars.tsx`) mostraba **una sola gráfica** con los 12 meses × 4 años en el eje X y las categorías **apiladas** como segmentos — no era el diseño esperado. Corregido a **una gráfica por categoría** (desagregada, `monthly-category-bars.tsx`), cada una con los 12 meses en el eje X y **una barra por año agrupada** (no apilada) dentro de cada mes — mismo patrón visual que `category-bars.tsx` pero con los ejes girados (categoría↔mes). `expenses/page.tsx` renderiza ahora una rejilla de N gráficas (una por `MainCategory` del tipo) en vez de una única gráfica combinada.
 
 **Resultado / Estado:**
-- Task 2 completada (PR pendiente de apertura). `typecheck` limpio, 229/229 tests unitarios en verde.
+- Task 2 completada y mergeada (PR #162, PR #163 con el ajuste de rejilla). `typecheck` limpio, 229/229 tests unitarios en verde.
 
 **Siguiente paso:**
-- [ ] Task 3 — Moneda base obligatoria en Registro (módulo Auth).
+- [x] Task 3 — Moneda base obligatoria en Registro (módulo Auth).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 3 — Moneda base obligatoria en Registro (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth)
+
+**Actividades realizadas:**
+- Verificado contra `RegisterCommand(Email, Password, FullName, BaseCurrency)` y `AuthResponseDto` en el backend antes de tocar tipos. `baseCurrency` añadido a `RegisterDto` (types/auth.ts) y a `registerSchema` (`z.enum`, obligatorio, sin default) con TDD (test en rojo → schema → verde).
+- Selector de moneda (`<Select>` shadcn + `Controller` de react-hook-form, mismo patrón que el `Select` de moneda ya existente en `transaction-sheet.tsx`) añadido en `register-form.tsx` entre email y contraseña.
+- **Centralizado el catálogo de monedas**: existía duplicado (`transaction-sheet.tsx` tenía su propio `const CURRENCIES = [...] as const`; iba a añadir una tercera copia en el formulario de registro). Movido a `types/enums.ts` como `export const CURRENCIES = [...] as const`, con `Currency` derivado de él (`typeof CURRENCIES[number]`) — patrón TS para tener a la vez el tipo y el array iterable en runtime (un union type de TS, a diferencia de un enum de C#, no existe en el JS compilado). `transaction-sheet.tsx` y `registerSchema` importan ahora la misma constante.
+
+**Decisiones / Problemas encontrados:**
+- **Discrepancia plan vs. backend real**: el contexto del plan afirmaba "`AuthResponse` ya devuelve `currency`" — verificado que `AuthResponseDto` real es `(AccessToken, ExpiresAt, Email, FullName)`, **sin** campo de moneda. El frontend ya lo tenía documentado correctamente como deuda pendiente (`currency?: Currency` opcional con comentario TODO en `types/auth.ts`/`AuthProvider.tsx`), así que no hizo falta cambiar nada ahí — el alcance de esta tarea es solo el campo del *request*, no la respuesta.
+- **Bug real encontrado vía E2E (no solo ajuste de test)**: el panel flotante de login/registro (`navbar-public.tsx`) cierra al detectar un click "fuera" de su contenedor (`authAreaRef`, con un listener `mousedown` sobre `document`). El desplegable del nuevo `<Select>` de moneda se pinta en un **Portal** (Base UI lo monta fuera del árbol DOM del panel, directo en `<body>`, para no quedar recortado por `overflow`). Sin más, elegir cualquier moneda se interpretaba como "click fuera" y **cerraba el panel entero** antes de poder enviar el formulario — un bug que afectaría a cualquier usuario real intentando registrarse, no solo a los tests E2E que lo destaparon (`registro exitoso → redirige` y `login exitoso → redirige` colgaban 30s esperando un botón "Crear cuenta" que ya no existía). Corregido en `handleOutside` ignorando los clicks dentro de `[data-slot="select-content"]` (el marcador que pone el propio componente Select en su desplegable).
+- **Zod `.refine()` de nivel-objeto no corre si el `.object()` base ya falló**: el test E2E "contraseñas no coinciden" dejó de pasar al añadir `baseCurrency` obligatorio, porque sin moneda el objeto completo ya es inválido y Zod **no evalúa** el `.refine((data) => data.password === data.confirmPassword)` — así que el error de "no coinciden" nunca se generaba. Ajustado ese test para también seleccionar moneda antes de comprobar el error de contraseñas.
+- Ajustados los 3 specs Playwright que registran un usuario (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts`) para seleccionar `EUR` tras "Repetir contraseña".
+
+**Resultado / Estado:**
+- Task 3 completada. `typecheck` limpio, 231/231 tests unitarios en verde, E2E local (`login.spec.ts` 9/9, `create-expense.spec.ts` 1/1, `sell-holding.spec.ts` 1/1) en verde contra backend+frontend ya en marcha.
+
+**Siguiente paso:**
+- [ ] Task 4 — Perfil: GET/PUT /users/me (módulo Auth).
