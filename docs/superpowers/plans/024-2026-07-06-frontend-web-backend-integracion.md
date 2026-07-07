@@ -549,7 +549,10 @@ git add -A && git commit -m "feat(auth): selector de moneda base obligatorio en 
 - Modify: `src/app/(private)/profile/page.tsx` (datos reales + PUT)
 - Test: `tests/unit/hooks/useProfile.test.tsx`
 
-- [ ] **Step 1: Tipos** — `src/types/users.ts`:
+- [x] **Step 1: Tipos** — `src/types/users.ts`: verificado que `UserProfileDto` real es
+  `(int IdUser, string Email, string FullName, string BaseCurrency, DateTime? LastLoginDate)` — un
+  DTO de query Dapper, `BaseCurrency` es `string` en C# (no el enum), pero se sigue tipando como
+  `Currency` en TS porque el valor en runtime es siempre un código válido.
 
 ```typescript
 import type { Currency } from './enums'
@@ -566,7 +569,7 @@ export interface UpdateUserDto {
 }
 ```
 
-- [ ] **Step 2: Servicio** — `src/services/userService.ts`:
+- [x] **Step 2: Servicio** — `src/services/userService.ts`:
 
 ```typescript
 import { api } from '@/lib/api'
@@ -577,8 +580,9 @@ export const userService = {
 }
 ```
 
-- [ ] **Step 3: Test que falla + hook** — `useProfile.test.tsx` (mock `@/lib/api`), luego
-  `src/hooks/useProfile.ts`:
+- [x] **Step 3: Test que falla + hook** — `useProfile.test.tsx` (mockeando `@/services/userService`,
+  no `@/lib/api` directamente — mismo patrón ya establecido en `useTransactions.test.tsx` y en las
+  Tasks 1/2), luego `src/hooks/useProfile.ts`:
 
 ```typescript
 'use client'
@@ -599,12 +603,17 @@ export function useUpdateProfile() {
 }
 ```
 
-- [ ] **Step 4: Página** — en `profile/page.tsx`: sustituir los `InfoRow` mock por `useProfile()`
+- [x] **Step 4: Página** — en `profile/page.tsx`: sustituir los `InfoRow` mock por `useProfile()`
   (mostrar `email`, `baseCurrency`, `lastLoginDate` formateada; estados loading/error). En `onSubmit`
   llamar `useUpdateProfile().mutate({ fullName, password: values.password || null }, { onSuccess,
   onError: (e) => mostrar ApiError.message })`. Quitar los comentarios `TODO (deuda técnica)`.
+  **Añadido, no estaba en el plan**: `ProfileDropdown`/navbar leen `fullName` de `AuthProvider`
+  (memoria + `localStorage.bs_full_name`), no de esta query — sin sincronizarlo, tras editar el
+  nombre seguirían mostrando el viejo hasta el próximo login/refresh de token. Nuevo método
+  `useAuth().updateFullName(fullName)` (y `tokenStore.updateFullName`, mismo patrón read-modify-write
+  que `incrementRefreshCount`) llamado en el `onSuccess` de la mutación.
 
-- [ ] **Step 5: Verificar y commit + PR**
+- [x] **Step 5: Verificar y commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test

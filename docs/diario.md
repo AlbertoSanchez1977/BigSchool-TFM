@@ -982,7 +982,31 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - Ajustados los 3 specs Playwright que registran un usuario (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts`) para seleccionar `EUR` tras "Repetir contraseña".
 
 **Resultado / Estado:**
-- Task 3 completada. `typecheck` limpio, 231/231 tests unitarios en verde, E2E local (`login.spec.ts` 9/9, `create-expense.spec.ts` 1/1, `sell-holding.spec.ts` 1/1) en verde contra backend+frontend ya en marcha.
+- Task 3 completada y mergeada (PR #164). `typecheck` limpio, 231/231 tests unitarios en verde, E2E local (`login.spec.ts` 9/9, `create-expense.spec.ts` 1/1, `sell-holding.spec.ts` 1/1) en verde contra backend+frontend ya en marcha.
+- **Fix de seguimiento en el mismo PR**: React avisaba de que el `<Select>` de moneda pasaba de "no controlado" a "controlado" (por diseño, `field.value` empieza en `undefined` — sin preselección). Corregido con `value={field.value ?? ''}` (`''` no coincide con ningún `<SelectItem>`, así que la UX no cambia; el componente es controlado desde el primer render).
 
 **Siguiente paso:**
-- [ ] Task 4 — Perfil: GET/PUT /users/me (módulo Auth).
+- [x] Task 4 — Perfil: GET/PUT /users/me (módulo Auth).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 4 — Perfil: GET/PUT /users/me (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth)
+
+**Actividades realizadas:**
+- Verificado `UsersController.cs` + `UserProfileDto(IdUser, Email, FullName, BaseCurrency, LastLoginDate)` antes de tocar tipos: es un DTO de query Dapper, `BaseCurrency` es `string` en C# (no pasa por el enum), aunque se sigue tipando `Currency` en TS porque el valor de runtime es siempre un código válido — como ya advertía el plan.
+- Nuevos `types/users.ts`, `services/userService.ts`, `hooks/useProfile.ts` (`useProfile` + `useUpdateProfile`, esta última con `setQueryData` en vez de invalidar, porque `PUT /users/me` ya devuelve el `UserProfile` completo actualizado). TDD: `tests/unit/useProfile.test.tsx` en rojo (mockeando `@/services/userService`, no `@/lib/api`, mismo patrón que Tasks 1/2) antes de implementar.
+- `profile/page.tsx` reescrita: `InfoRow` mock → `useProfile()` con estados carga/error; formulario pre-rellenado vía `useEffect` + `reset()` cuando llegan los datos async (mismo patrón que `transaction-sheet.tsx` al abrir en modo edición). `onSubmit` llama `useUpdateProfile().mutate(...)` con `toast.error(ApiError.message)` en fallo. Retirados los comentarios `TODO (deuda técnica)`.
+
+**Decisiones / Problemas encontrados:**
+- **Bug de sincronización encontrado antes de escribir código** (aviso del humano, no mío): `ProfileDropdown`/navbar pintan el `fullName` que vive en `AuthProvider` (estado en memoria + `localStorage.bs_full_name`), **no** el de esta query nueva. Sin engancharlo, tras editar el nombre en `/profile` la cabecera seguiría mostrando el nombre viejo hasta el próximo login o refresco de token — un cabo suelto que no estaba en el plan original. Añadido `tokenStore.updateFullName(fullName)` (mismo patrón read-modify-write que `incrementRefreshCount`, ya existente) y `useAuth().updateFullName(fullName)` (actualiza `tokenStore` + el `user` en memoria de `AuthProvider`), llamado en el `onSuccess` de `useUpdateProfile`. TDD en ambas capas (`tokenStore.test.ts`, `authProvider.test.tsx`) antes de implementar.
+- Sin E2E: el perfil no está en la lista de flujos críticos del `AGENTS.md` del módulo (login, crear gasto, ver gráficas, vender holding); cubierto solo con unitarios (hooks + hidratación de `AuthProvider`).
+
+**Resultado / Estado:**
+- Task 4 completada. `typecheck` limpio, 239/239 tests unitarios en verde.
+
+**Siguiente paso:**
+- [ ] Task 5 — Componente de paginación reutilizable + lista de carteras (transversal).
