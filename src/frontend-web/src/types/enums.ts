@@ -20,5 +20,10 @@ export type MainCategory =
   | 'Dividends'
   | 'Other'
 
-// Currency (BigSchool.Domain.Enums.Currency). El nombre = código ISO 4217 alpha-3.
-export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'JPY'
+// Currency (BigSchool.Domain.SharedKernel.Enums.Currency). El nombre = código ISO 4217 alpha-3.
+// Un union type de TS no existe en runtime (a diferencia de un enum de C#, que sí puedes
+// recorrer con Enum.GetValues<T>()). Por eso declaramos primero el array con `as const`
+// (valores reales, iterables) y derivamos el tipo de él — así solo hay una fuente de verdad
+// para "cuáles son las monedas soportadas", usable tanto en tipos como en <Select> o z.enum().
+export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'JPY'] as const
+export type Currency = (typeof CURRENCIES)[number]

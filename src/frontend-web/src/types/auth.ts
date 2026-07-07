@@ -6,11 +6,12 @@ export interface LoginDto {
   password: string
 }
 
-// POST /api/v1/auth/register → RegisterCommand
+// POST /api/v1/auth/register → RegisterCommand(Email, Password, FullName, BaseCurrency)
 export interface RegisterDto {
   email: string
   password: string
   fullName: string
+  baseCurrency: Currency
 }
 
 // Respuesta de login/register/refresh → AuthResponseDto.
