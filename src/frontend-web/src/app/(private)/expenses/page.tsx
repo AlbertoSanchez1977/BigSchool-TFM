@@ -11,10 +11,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TransactionSheet } from '@/components/transactions/transaction-sheet'
 import { CategoryBars } from '@/components/charts/category-bars'
+import { MonthlyCategoryBars } from '@/components/charts/monthly-category-bars'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSummary } from '@/hooks/useSummary'
 import { useCategories } from '@/hooks/useCategories'
 import { useCategoryChart } from '@/hooks/useCategoryChart'
+import { useMonthlySeries } from '@/hooks/useMonthlySeries'
 import {
   TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL, formatAmount, formatDate,
 } from '@/lib/transactions/labels'
@@ -72,18 +74,21 @@ export default function ExpensesPage() {
   const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  // Pestañas: listado (por defecto) vs gráficas. El tipo de la gráfica (gasto/ingreso).
+  // Pestañas: listado (por defecto) vs gráficas. Tipo (gasto/ingreso) y año de
+  // referencia (desplaza la ventana de 4 años) comparten ambas gráficas.
   const [tab, setTab] = useState<'list' | 'charts'>('list')
   const [chartType, setChartType] = useState<TransactionType>('Expense')
+  const [chartYear, setChartYear] = useState(now.getFullYear())
 
   const { from, to } = monthRange(year, month)
 
   const { data, isLoading, isError } = useTransactions({ from, to, page, pageSize })
   const summaryQ = useSummary(from, to)
 
-  // Datos de la gráfica (últimos 4 años). Diferido hasta abrir la pestaña (enabled).
-  // El hook es la costura que oculta si la agregación es cliente (hoy) o backend (futuro).
-  const chart = useCategoryChart(chartType, now.getFullYear(), { enabled: tab === 'charts' })
+  // Datos de las gráficas (ventana de 4 años terminando en chartYear). Diferido hasta
+  // abrir la pestaña (enabled) — React Query cachea cada serie por separado.
+  const chart = useCategoryChart(chartType, chartYear, { enabled: tab === 'charts' })
+  const monthly = useMonthlySeries(chartType, chartYear, { enabled: tab === 'charts' })
 
   // El listado trae idSubCategory como número; resolvemos su nombre con /categories.
   // Map<idSubCategory, name> construido una vez (useMemo) a partir de todas las categorías.
@@ -388,29 +393,52 @@ export default function ExpensesPage() {
         {/* ════════════ Pestaña GRÁFICAS ════════════ */}
         <TabsContent value="charts">
 
-          {/* Conmutador Gastos / Ingresos */}
-          <div className="mb-6 inline-flex rounded-lg border border-border p-0.5" role="tablist" aria-label="Tipo de gráfica">
-            {(['Expense', 'Income'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={chartType === t}
-                onClick={() => setChartType(t)}
-                data-testid={`chart-type-${t}`}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                  chartType === t
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            {/* Conmutador Gastos / Ingresos */}
+            <div className="inline-flex rounded-lg border border-border p-0.5" role="tablist" aria-label="Tipo de gráfica">
+              {(['Expense', 'Income'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={chartType === t}
+                  onClick={() => setChartType(t)}
+                  data-testid={`chart-type-${t}`}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    chartType === t
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {TRANSACTION_TYPE_LABEL[t]}s
+                </button>
+              ))}
+            </div>
+
+            {/* Selector de año de referencia (desplaza la ventana de 4 años; máx = año actual) */}
+            <div className="flex items-center gap-2" data-testid="chart-year-selector">
+              <Button
+                variant="outline" size="icon"
+                onClick={() => setChartYear((y) => y - 1)}
+                aria-label="Año anterior"
               >
-                {TRANSACTION_TYPE_LABEL[t]}s
-              </button>
-            ))}
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[56px] text-center text-sm font-medium">{chartYear}</span>
+              <Button
+                variant="outline" size="icon"
+                onClick={() => setChartYear((y) => y + 1)}
+                disabled={chartYear >= now.getFullYear()}
+                aria-label="Año siguiente"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
+          {/* ── Gráfica A: barras agrupadas por categoría × año ──────────────── */}
           <p className="mb-4 text-sm text-muted-foreground">
-            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por categoría — últimos 4 años
+            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por categoría — 4 años hasta {chartYear}
             (importes en {currency}).
           </p>
 
@@ -433,6 +461,46 @@ export default function ExpensesPage() {
               currency={currency}
               emptyLabel={`No hay ${chartType === 'Expense' ? 'gastos' : 'ingresos'} en los últimos 4 años.`}
             />
+          )}
+
+          {/* ── Gráfica B: una gráfica por categoría, meses en eje X, años agrupados ── */}
+          <p className="mb-4 mt-8 text-sm text-muted-foreground">
+            {chartType === 'Expense' ? 'Gastos' : 'Ingresos'} por mes y categoría — 4 años hasta {chartYear}
+            (importes en {currency}).
+          </p>
+
+          {monthly.isLoading && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" data-testid="monthly-chart-loading">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[260px] w-full rounded-lg" />
+              ))}
+            </div>
+          )}
+
+          {monthly.isError && (
+            <div
+              className="rounded-lg border border-border bg-card py-16 text-center text-sm text-destructive"
+              data-testid="monthly-chart-error"
+            >
+              Error al cargar los datos de la gráfica. Inténtalo de nuevo.
+            </div>
+          )}
+
+          {!monthly.isLoading && !monthly.isError && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {monthly.data.map((series) => (
+                <div key={series.category}>
+                  <p className="mb-2 text-sm font-medium">{MAIN_CATEGORY_LABEL[series.category]}</p>
+                  <MonthlyCategoryBars
+                    points={series.points}
+                    type={chartType}
+                    years={chart.data.years}
+                    currency={currency}
+                    emptyLabel="Sin datos en los últimos 4 años."
+                  />
+                </div>
+              ))}
+            </div>
           )}
 
         </TabsContent>

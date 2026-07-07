@@ -277,7 +277,7 @@ Luxuries, Education, Amortizations`; ingreso = `Salary, Rentals, Dividends, Othe
 - **Conservar sin tocar**: `src/components/charts/category-bars.tsx`, `src/lib/charts/aggregateByCategory.ts`
 - Test: `tests/unit/hooks/useCategoryChart.test.tsx` (reescribir aserciones), `tests/unit/hooks/useMonthlySeries.test.tsx`
 
-- [ ] **Step 1: Tipos + constante de categorías por tipo**
+- [x] **Step 1: Tipos + constante de categorías por tipo**
 
 `src/types/transactions.ts` (añadir):
 ```typescript
@@ -300,7 +300,7 @@ export const CATEGORIES_BY_TYPE: Record<TransactionType, MainCategory[]> = {
 }
 ```
 
-- [ ] **Step 2: Métodos de servicio** — `src/services/transactionService.ts` (añadir métodos e
+- [x] **Step 2: Métodos de servicio** — `src/services/transactionService.ts` (añadir métodos e
   imports de `CategoryTotal`, `MonthlyChartPoint`, `MainCategory`):
 
 ```typescript
@@ -318,7 +318,7 @@ async monthly(from: string, to: string, type: TransactionType, category?: MainCa
 },
 ```
 
-- [ ] **Step 3: Reescribir el test de `useCategoryChart`** — ahora debe afirmar 4 llamadas a
+- [x] **Step 3: Reescribir el test de `useCategoryChart`** — ahora debe afirmar 4 llamadas a
   `by-category` (una por año) y el mapeo a `CategoryAggregation`:
 
 ```tsx
@@ -334,9 +334,9 @@ it('pide by-category una vez por año de la ventana de 4 y mapea a CategoryAggre
 })
 ```
 
-- [ ] **Step 4: Verificar fallo** — `npm run test -- tests/unit/hooks/useCategoryChart.test.tsx` → FAIL.
+- [x] **Step 4: Verificar fallo** — `npm run test -- tests/unit/hooks/useCategoryChart.test.tsx` → FAIL.
 
-- [ ] **Step 5: Reescribir el cuerpo de `useCategoryChart.ts`** (misma firma y mismo output; la página
+- [x] **Step 5: Reescribir el cuerpo de `useCategoryChart.ts`** (misma firma y mismo output; la página
   y `category-bars.tsx` no se tocan):
 
 ```typescript
@@ -400,10 +400,10 @@ export function useCategoryChart(
 }
 ```
 
-- [ ] **Step 6: Verificar que pasa** — repetir Step 4 → PASS. La Gráfica A ya funciona contra el
+- [x] **Step 6: Verificar que pasa** — repetir Step 4 → PASS. La Gráfica A ya funciona contra el
   backend sin tocar `category-bars.tsx` ni la página.
 
-- [ ] **Step 7: Test + implementación `useMonthlySeries.ts`** — para el tipo dado, una query por cada
+- [x] **Step 7: Test + implementación `useMonthlySeries.ts`** — para el tipo dado, una query por cada
   `MainCategory` de `CATEGORIES_BY_TYPE[type]` sobre la ventana de 4 años (`from` = 1-ene del año más
   antiguo, `to` = 31-dic del año de referencia). Test: 7 llamadas para `Expense`. Implementación:
 
@@ -435,20 +435,27 @@ export function useMonthlySeries(type: TransactionType, referenceYear: number, o
 }
 ```
 
-- [ ] **Step 8: Componente Gráfica B** — `src/components/charts/monthly-stacked-bars.tsx`: `BarChart`
+- [x] **Step 8: Componente Gráfica B** — ~~`src/components/charts/monthly-stacked-bars.tsx`: `BarChart`
   apilado (Recharts). Transformar `CategoryMonthlySeries[]` a filas por mes `{ label: "MMM YY",
   [category]: value }` (una fila por cada (año,mes) de la ventana). Una `<Bar stackId="a">` por
   categoría, color con la paleta `--chart-*` (ciclar si hay >4, usar el campo `income` o `expense`
   del punto según el `type`). Estado vacío (`emptyLabel`). Reusar el wrapper responsive y el tooltip
-  HTML de `components/charts/category-bars.tsx` como referencia de estilo.
+  HTML de `components/charts/category-bars.tsx` como referencia de estilo.~~
+  **Revisado tras revisión humana del PR #162** (el diseño original —una sola gráfica apilada por
+  categoría— no era el esperado): en su lugar, `src/components/charts/monthly-category-bars.tsx`
+  renderiza **una gráfica por categoría** (desagregada), con los **12 meses en el eje X** y **una
+  barra por año agrupada** dentro de cada mes (no apilada) — mismo patrón visual que
+  `category-bars.tsx` pero con los ejes girados (allí el eje X es la categoría y el año agrupa; aquí
+  el eje X es el mes). El componente `monthly-stacked-bars.tsx` se elimina.
 
-- [ ] **Step 9: Pestaña Gráficas en `expenses/page.tsx`** — añadir un **selector de año de
+- [x] **Step 9: Pestaña Gráficas en `expenses/page.tsx`** — añadir un **selector de año de
   referencia** (máx = año actual) que alimenta ambas gráficas. Mantener el conmutador Gastos/Ingresos
   y la **Gráfica A actual** (`useCategoryChart` + `<CategoryBars>`) tal cual, pasándole el año
-  seleccionado. Debajo, añadir la **Gráfica B** (`useMonthlySeries` + `<MonthlyStackedBars>`), ambas
-  con `enabled: tab === 'charts'`. No se elimina ningún componente existente.
+  seleccionado. Debajo, añadir la **Gráfica B**: una rejilla con **una `<MonthlyCategoryBars>` por
+  cada categoría** de `useMonthlySeries`, ambas gráficas con `enabled: tab === 'charts'`. No se
+  elimina ningún componente existente de la Gráfica A.
 
-- [ ] **Step 10: Verificar y commitear**
+- [x] **Step 10: Verificar y commitear**
 
 ```bash
 npm run lint && npm run typecheck && npm run test
@@ -456,7 +463,7 @@ git add -A
 git commit -m "feat(finance): migrar gráfica por categoría al backend (fix límite 100) y añadir serie mensual apilada"
 ```
 
-- [ ] **Step 11: PR** a `develop`.
+- [x] **Step 11: PR** a `develop`.
 
 ---
 

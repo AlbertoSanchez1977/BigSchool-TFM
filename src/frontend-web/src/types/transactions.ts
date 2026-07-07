@@ -88,3 +88,11 @@ export interface MonthlyChartPoint {
   income: number
   expense: number
 }
+
+// GET /api/v1/transactions/by-category → CategoryTotalDto (Dapper: mainCategory YA viene
+// como nombre string — el handler hace `((MainCategory)IdMainCategory).ToString()`).
+export interface CategoryTotal {
+  idMainCategory: number
+  mainCategory: MainCategory
+  total: number
+}
