@@ -885,3 +885,53 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 **Siguiente paso:**
 - [ ] Frontend-web: consumir los endpoints de backend ya cerrados (Notifications, User/Registro, Finance, Investments) — la deuda técnica de backend que los bloqueaba está resuelta.
+
+---
+
+## 2026-07-06 — Frontend-Web: diseño de la Iteración 2 — integración con el Backend (Spec 011, Plan 024)
+
+### Fase: Diseño
+
+**Módulo**: frontend-web
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/011-2026-07-06-frontend-web-backend-integracion-design.md` y plan `docs/superpowers/plans/024-2026-07-06-frontend-web-backend-integracion.md`: cierran, desde el lado del Frontend-Web, la deuda técnica de backend registrada en `docs/04-backend-tech-debt.md` (puntos 1-4, ya resueltos por los planes 020-023).
+- Plan estructurado en 9 tareas ordenadas por prioridad, cada una **1 rama `feature/024-frontend-integracion-taskN` = 1 PR = revisión humana**, cubriendo Notifications, Finance (2 gráficas nativas), Auth (moneda + perfil), paginación reutilizable, Investments (renombrar/borrar cartera, holdings `*Original`, summary global) y las pantallas nuevas de "Mercado" (Companies + Valuations).
+
+**Decisiones clave (spec 011 §4):**
+- **Nav "Mercado"**: Companies/Valuations (catálogo global, sin `IdUser`) reciben una entrada propia de navegación (`/market`); Contactos/Emails (vistas de administración) se acceden desde el `ProfileDropdown`, no desde el nav principal.
+- **Perfil** sale de "fuera de alcance MVP": dos PRs adyacentes (T3a moneda en registro, T3b perfil leer/editar).
+- **Gráficas de Finance = 2 gráficas nativas** sobre ventana de 4 años: la Gráfica A actual (barras por categoría × año) **no cambia de aspecto ni componente**; solo se reescribe el cuerpo de `useCategoryChart` para tirar de `by-category` (4 llamadas, una por año), lo que además **arregla un bug real** (el límite de 100 filas del paginado impedía agregar los 4 años completos en cliente). Gráfica B (nueva): barras apiladas por mes, `monthly` filtrado solo por Tipo.
+- **Renombrar/borrar cartera** en la cabecera de la vista de detalle; el borrado respeta los guards fiscales del backend (409 si hay holdings abiertos).
+- **Holdings `*Original`**: se materializan los campos que el `PerformanceTab` ya pintaba con fallback `—`; `GET /portfolios/summary` alimenta el mini-resumen del Dashboard.
+- **Selector de empresa (añadir holding)** pasa a combobox con typeahead sobre `GET /companies?pageSize=100` filtrado en cliente (deuda documentada: sin `?search=` server-side).
+- **Deuda que queda** (documentada, sin botones muertos): Companies sin `PUT/DELETE`; Valuations sin `GET{id}` ni `DELETE`; búsqueda server-side de empresas pendiente.
+
+**Resultado / Estado:**
+- Spec 011 y plan 024 aprobados y mergeados (PR #160).
+- Arranca la ejecución tarea a tarea con revisión humana entre tareas.
+
+**Siguiente paso:**
+- [ ] Task 1 — Contactos + Emails a endpoints reales (módulo Notifications).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 1 — Contactos + Emails a endpoints reales (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Notifications)
+
+**Actividades realizadas:**
+- `useContacts`/`useEmails` migrados de `localStorage`/mock en memoria a TanStack Query real contra `GET/POST /contacts` y `GET /emails`. Nuevos `types/notifications.ts` y `services/notificationService.ts`. `contact-form.tsx` pasa a `POST /contacts` real (toast de éxito/error); `contacts/page.tsx` y `emails/page.tsx` añaden estados de carga (Skeleton) y error, además del vacío ya existente. Retirados los restos de mock (`loadContacts`/`saveContact`/`ContactSubmission`/`LS_KEY`).
+- TDD estricto: tests reescritos primero (`tests/unit/useContacts.test.tsx`, `useEmails.test.tsx`), verificados en rojo (7/7 fallando por el motivo correcto — los hooks viejos no llamaban al service) antes de implementar.
+
+**Decisiones / Problemas encontrados:**
+- **Los DTO reales del backend difieren de lo asumido en el plan** (verificado contra `Controllers/Notifications/*` y `Application/Notifications/DTOs/*` antes de escribir los tipos, como manda la norma del plan): `EmailLogListItemDto` no tiene `body` ni `status`, usa `recipient`/`sentAt` (no `toAddress`/`createdAt`) y `type` viaja como **número crudo** (Dapper, sin `JsonStringEnumConverter`: 1=Welcome, 2=Contact). `GET /contacts` y `GET /emails` están **paginados** (el plan no lo contemplaba); de momento se piden con `pageSize=100` sin controles de paginación en la UI — el componente reutilizable llega en la Task 5.
+- **Gap preexistente detectado (no introducido en esta tarea)**: `eslint` no está instalado como dependencia en `frontend-web` pese a existir el script `lint` en `package.json` — `npm run lint` no es ejecutable. Confirmado con `git diff` que `package.json`/`pnpm-lock.yaml` no se han tocado. Decisión consensuada con el humano: se deja como deuda aparte, fuera de alcance de este plan.
+
+**Resultado / Estado:**
+- Task 1 completada y mergeada (PR #161). `typecheck` limpio, 221/221 tests unitarios en verde.
+
+**Siguiente paso:**
+- [ ] Task 2 — Finance: migrar Gráfica A al backend (fix del límite de 100) + añadir Gráfica B (módulo Finance).

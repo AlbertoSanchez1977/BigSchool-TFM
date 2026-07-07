@@ -105,7 +105,7 @@ tarea solo cambia las fuentes de datos. **Verifica primero** `ContactDto` y `Ema
 - Modify: `src/app/(private)/emails/page.tsx` (consumir query)
 - Test: `tests/unit/hooks/useContacts.test.tsx`, `tests/unit/hooks/useEmails.test.tsx`
 
-- [ ] **Step 1: Tipos espejo del backend** — `src/types/notifications.ts`:
+- [x] **Step 1: Tipos espejo del backend** — `src/types/notifications.ts`:
 
 ```typescript
 // Espejo de ContactDto / EmailLogDto (Notifications). Verificar campos y forma de fecha
@@ -137,7 +137,7 @@ export interface EmailLog {
 }
 ```
 
-- [ ] **Step 2: Servicio** — `src/services/notificationService.ts`:
+- [x] **Step 2: Servicio** — `src/services/notificationService.ts`:
 
 ```typescript
 import { api } from '@/lib/api'
@@ -150,7 +150,7 @@ export const notificationService = {
 }
 ```
 
-- [ ] **Step 3: Escribir tests que fallan** — `tests/unit/hooks/useContacts.test.tsx` y
+- [x] **Step 3: Escribir tests que fallan** — `tests/unit/hooks/useContacts.test.tsx` y
   `useEmails.test.tsx`. Mockear `@/lib/api`, envolver en `QueryClientProvider` de test:
 
 ```tsx
@@ -180,10 +180,10 @@ describe('useContacts', () => {
 })
 ```
 
-- [ ] **Step 4: Verificar que fallan** — `npm run test -- tests/unit/hooks/useContacts.test.tsx`.
+- [x] **Step 4: Verificar que fallan** — `npm run test -- tests/unit/hooks/useContacts.test.tsx`.
   Esperado: FAIL (el hook aún lee `localStorage`).
 
-- [ ] **Step 5: Reescribir `useContacts.ts`** — reemplazar todo el fichero por query + mutation:
+- [x] **Step 5: Reescribir `useContacts.ts`** — reemplazar todo el fichero por query + mutation:
 
 ```typescript
 'use client'
@@ -207,7 +207,7 @@ export function useCreateContact() {
 }
 ```
 
-- [ ] **Step 6: Reescribir `useEmails.ts`**:
+- [x] **Step 6: Reescribir `useEmails.ts`**:
 
 ```typescript
 'use client'
@@ -220,19 +220,19 @@ export function useEmails() {
 }
 ```
 
-- [ ] **Step 7: Actualizar `contact-form.tsx`** — sustituir el `saveContact` de `localStorage` por
+- [x] **Step 7: Actualizar `contact-form.tsx`** — sustituir el `saveContact` de `localStorage` por
   `useCreateContact()`; en `onSubmit` llamar `mutate(values, { onSuccess: toast.success, onError:
   (e) => toast.error(e.message) })`. Mantener el diseño y los estados del formulario.
 
-- [ ] **Step 8: Actualizar `contacts/page.tsx` y `emails/page.tsx`** — consumir los hooks nuevos y
+- [x] **Step 8: Actualizar `contacts/page.tsx` y `emails/page.tsx`** — consumir los hooks nuevos y
   añadir estados **loading** (Skeleton) y **error** (además del vacío ya existente). `emails/page.tsx`
   deja de recibir `user`; ajustar `formatDate`/campos al DTO real (`createdAt`, `toAddress`,
   `subject`, `type`).
 
-- [ ] **Step 9: Retirar restos de mock** — eliminar `LS_KEY`/`loadContacts`/`saveContact` y la
+- [x] **Step 9: Retirar restos de mock** — eliminar `LS_KEY`/`loadContacts`/`saveContact` y la
   interfaz `ContactSubmission` (grep global para asegurar que nadie los importa).
 
-- [ ] **Step 10: Verificar y commitear**
+- [x] **Step 10: Verificar y commitear**
 
 ```bash
 npm run lint && npm run typecheck && npm run test
@@ -240,7 +240,7 @@ git add src/types/notifications.ts src/services/notificationService.ts src/hooks
 git commit -m "feat(notifications): conectar contactos y emails con el backend real"
 ```
 
-- [ ] **Step 11: Abrir PR** a `develop` (skill `feature-branch-workflow`).
+- [x] **Step 11: Abrir PR** a `develop` (skill `feature-branch-workflow`).
 
 ---
 
