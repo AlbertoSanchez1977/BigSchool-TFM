@@ -639,7 +639,7 @@ reutilizable y aplicarlo a la lista de carteras. `GET /portfolios` pasa a pagina
 - Modify: `src/app/(private)/expenses/page.tsx` (usar `<Pagination>` en vez del bloque inline)
 - Test: `tests/unit/components/pagination.test.tsx`
 
-- [ ] **Step 1: Tipo compartido** — `src/types/pagination.ts`:
+- [x] **Step 1: Tipo compartido** — `src/types/pagination.ts`:
 
 ```typescript
 export interface PageMeta { page: number; pageSize: number; totalCount: number; totalPages: number }
@@ -647,10 +647,10 @@ export interface PageMeta { page: number; pageSize: number; totalCount: number; 
 Reexportar desde `transactions.ts` para no romper imports existentes:
 `export type { PageMeta } from './pagination'` (y eliminar la definición duplicada de `PageMeta` allí).
 
-- [ ] **Step 2: Test que falla** — `pagination.test.tsx`: renderiza rango "1–20 de 45", Anterior
+- [x] **Step 2: Test que falla** — `pagination.test.tsx`: renderiza rango "1–20 de 45", Anterior
   deshabilitado en page 1, click en Siguiente llama `onPageChange(2)`.
 
-- [ ] **Step 3: Componente** — `src/components/ui/pagination.tsx`:
+- [x] **Step 3: Componente** — `src/components/ui/pagination.tsx`:
 
 ```tsx
 'use client'
@@ -685,23 +685,25 @@ export function Pagination({ page, pageSize, totalCount, totalPages, onPageChang
 }
 ```
 
-- [ ] **Step 4: Verificar que pasa** el test.
+- [x] **Step 4: Verificar que pasa** el test.
 
-- [ ] **Step 5: Servicio + tipo paginado** — en `portfolios.ts` añadir
-  `import type { PageMeta } from './pagination'` y
-  `export interface PagedPortfolios { items: PortfolioListItem[]; meta: PageMeta }`. En
-  `portfolioService.list({page,pageSize})` usar `api.getWithMeta<PortfolioListItem[]>('/portfolios?...')`
-  y mapear `meta` igual que `transactionService.list`.
+- [x] **Step 5: Servicio + tipo paginado** — en `portfolios.ts` añadido `PagedPortfolios`;
+  `portfolioService.list({page,pageSize})` usa `api.getWithMeta<PortfolioListItem[]>('/portfolios?...')`,
+  mapeado igual que `transactionService.list`. Verificado `GET /portfolios` real (acepta
+  `page`/`pageSize`, ya devolvía `meta` que el frontend simplemente ignoraba hasta ahora).
 
-- [ ] **Step 6: Hook** — `usePortfolios({ page, pageSize })` con `queryKey: ['portfolios', page, pageSize]`.
-  `useCreatePortfolio` invalida `['portfolios']` (prefijo).
+- [x] **Step 6: Hook** — `usePortfolios({ page, pageSize })` con `queryKey: ['portfolios', page, pageSize]`.
+  `useCreatePortfolio` invalida `['portfolios']` (prefijo, sin cambios — TanStack Query ya hacía match
+  parcial de queryKey).
 
-- [ ] **Step 7: Páginas** — en `investments/page.tsx`: `const [page, setPage] = useState(1)`;
-  consumir `data.items`; añadir `<Pagination ... onPageChange={setPage} />`. En `expenses/page.tsx`:
-  reemplazar el bloque de paginación inline por `<Pagination page={page} pageSize={pageSize}
-  totalCount={data.meta.totalCount} totalPages={data.meta.totalPages} onPageChange={setPage} />`.
+- [x] **Step 7: Páginas** — `investments/page.tsx`: `page` state + `<Pagination>`, consumiendo
+  `data.items`. `expenses/page.tsx`: bloque inline sustituido por `<Pagination>`.
+  **No estaba en el plan**: `dashboard/page.tsx` también consumía `usePortfolios()` (sin argumentos,
+  esperando un array) para el mini-resumen de inversiones — roto por el cambio de firma/shape.
+  Ajustado a `usePortfolios({ page: 1, pageSize: 100 })` + `.items` (es un widget de resumen, no un
+  listado paginado; no lleva `<Pagination>` propia).
 
-- [ ] **Step 8: Verificar y commit + PR**
+- [x] **Step 8: Verificar y commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test && npm run test:e2e

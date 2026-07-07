@@ -9,6 +9,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Pagination } from '@/components/ui/pagination'
 import { TransactionSheet } from '@/components/transactions/transaction-sheet'
 import { CategoryBars } from '@/components/charts/category-bars'
 import { MonthlyCategoryBars } from '@/components/charts/monthly-category-bars'
@@ -363,29 +364,14 @@ export default function ExpensesPage() {
       )}
 
       {/* ── Paginación ─────────────────────────────────────────────────────── */}
-      {data && data.meta.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, data.meta.totalCount)} de{' '}
-            {data.meta.totalCount}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline" size="sm"
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" /> Anterior
-            </Button>
-            <Button
-              variant="outline" size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= data.meta.totalPages}
-            >
-              Siguiente <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      {data && (
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={data.meta.totalCount}
+          totalPages={data.meta.totalPages}
+          onPageChange={setPage}
+        />
       )}
 
         </TabsContent>

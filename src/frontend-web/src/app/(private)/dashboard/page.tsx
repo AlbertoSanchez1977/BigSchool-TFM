@@ -87,10 +87,13 @@ export default function DashboardPage() {
   const from = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
   const to   = today.toISOString().split('T')[0]
 
-  const { data: summary,    isLoading: summaryLoading    } = useSummary(from, to)
-  const { data: rawPoints,  isLoading: chartLoading      } = useMonthlyChart(currentYear)
-  const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios()
-  const { data: recentTxns, isLoading: txnsLoading       } = useTransactions({ page: 1, pageSize: 5 })
+  const { data: summary,       isLoading: summaryLoading    } = useSummary(from, to)
+  const { data: rawPoints,     isLoading: chartLoading      } = useMonthlyChart(currentYear)
+  // El mini-resumen quiere todas las carteras del usuario; pageSize alto en vez de
+  // paginar aquí (es un widget de dashboard, no un listado — la Pagination real vive en /investments).
+  const { data: portfoliosPage, isLoading: portfoliosLoading } = usePortfolios({ page: 1, pageSize: 100 })
+  const portfolios = portfoliosPage?.items
+  const { data: recentTxns,    isLoading: txnsLoading       } = useTransactions({ page: 1, pageSize: 5 })
 
   // Solo mostramos hasta el mes actual — meses futuros ni barras ni línea plana
   const monthlyPoints    = useMemo(

@@ -1,14 +1,26 @@
 import { api } from '@/lib/api'
 import type {
   PortfolioListItem, Portfolio, PortfolioDetail, PortfolioPerformance,
-  CreatePortfolioDto, SellSharesDto, SellSharesResult,
+  CreatePortfolioDto, SellSharesDto, SellSharesResult, PagedPortfolios,
 } from '@/types/portfolios'
+import type { PageMeta } from '@/types/pagination'
 
 export const portfolioService = {
 
-  // GET /portfolios → PortfolioListItemDto[]
-  async list(): Promise<PortfolioListItem[]> {
-    return api.get<PortfolioListItem[]>('/portfolios')
+  // GET /portfolios?page&pageSize → PortfolioListItemDto[] (paginado)
+  async list({ page, pageSize }: { page: number; pageSize: number }): Promise<PagedPortfolios> {
+    const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) }).toString()
+    const result = await api.getWithMeta<PortfolioListItem[]>(`/portfolios?${qs}`)
+    const m = result.meta as PageMeta
+    return {
+      items: result.data ?? [],
+      meta: {
+        page:       m?.page       ?? 1,
+        pageSize:   m?.pageSize   ?? pageSize,
+        totalCount: m?.totalCount ?? 0,
+        totalPages: m?.totalPages ?? 1,
+      },
+    }
   },
 
   // GET /portfolios/{id} → PortfolioDetailDto

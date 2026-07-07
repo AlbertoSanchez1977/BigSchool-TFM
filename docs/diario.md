@@ -1006,7 +1006,31 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - Sin E2E: el perfil no está en la lista de flujos críticos del `AGENTS.md` del módulo (login, crear gasto, ver gráficas, vender holding); cubierto solo con unitarios (hooks + hidratación de `AuthProvider`).
 
 **Resultado / Estado:**
-- Task 4 completada. `typecheck` limpio, 239/239 tests unitarios en verde.
+- Task 4 completada y mergeada (PR #165). `typecheck` limpio, 239/239 tests unitarios en verde.
 
 **Siguiente paso:**
-- [ ] Task 5 — Componente de paginación reutilizable + lista de carteras (transversal).
+- [x] Task 5 — Componente de paginación reutilizable + lista de carteras (transversal).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 5 — Paginación reutilizable + lista de carteras (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (transversal)
+
+**Actividades realizadas:**
+- `types/pagination.ts` (`PageMeta` compartido, reexportado desde `transactions.ts` para no romper imports existentes). `components/ui/pagination.tsx` (TDD: 7 tests en rojo → componente → verde) extraído tal cual del bloque inline que ya vivía en `expenses/page.tsx`.
+- Verificado `GET /portfolios` real: ya aceptaba `page`/`pageSize` y devolvía `meta` — el frontend simplemente lo ignoraba hasta ahora. `portfolioService.list({page,pageSize})` migrado a `api.getWithMeta` (mismo patrón que `transactionService.list`); `usePortfolios({page,pageSize})` con `queryKey: ['portfolios', page, pageSize]`.
+- `investments/page.tsx`: estado `page` + `<Pagination>`. `expenses/page.tsx`: bloque de paginación inline (duplicado histórico) sustituido por el componente.
+
+**Decisiones / Problemas encontrados:**
+- **Consumidor no listado en el plan roto por el cambio de firma**: `dashboard/page.tsx` también llamaba a `usePortfolios()` (sin argumentos, esperando un array plano) para el mini-resumen de inversiones — el `tsc --noEmit` lo cazó de inmediato. Es un widget de resumen (no un listado), así que se ajustó a `usePortfolios({ page: 1, pageSize: 100 })` + `.items`, sin `<Pagination>` propia — mismo criterio que Contactos/Emails en la Task 1 (pageSize alto para vistas que no necesitan paginar de verdad).
+- Tests existentes adaptados a la nueva firma/shape (`usePortfolios.test.tsx`, `portfolioService.test.ts`): no es TDD de comportamiento nuevo, es la misma disciplina que en Task 2 con `expensesPage.test.tsx` — el mock pasa de devolver un array a `{ items, meta }`.
+- E2E completo en local (no solo el subconjunto afectado): 11/11 en verde (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts` — esta última ejercita `investments/page.tsx` al crear la cartera de la venta).
+
+**Resultado / Estado:**
+- Task 5 completada. `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
+
+**Siguiente paso:**
+- [ ] Task 6 — Renombrar / borrar cartera (módulo Investments).
