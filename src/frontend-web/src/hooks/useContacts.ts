@@ -1,40 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { notificationService } from '@/services/notificationService'
+import type { CreateContactDto } from '@/types/notifications'
 
-export interface ContactSubmission {
-  id: string
-  fullName: string
-  email: string
-  message: string
-  submittedAt: string
-}
+const CONTACTS_KEY = ['contacts'] as const
 
-const LS_KEY = 'contact_submissions'
-
-export function loadContacts(): ContactSubmission[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    return raw ? (JSON.parse(raw) as ContactSubmission[]) : []
-  } catch {
-    return []
-  }
-}
-
-export function saveContact(submission: Omit<ContactSubmission, 'id' | 'submittedAt'>): ContactSubmission {
-  // TODO (deuda técnica backend): POST /contact { fullName, email, message }
-  // En producción este endpoint guarda en BD y dispara un email simulado.
-  const entry: ContactSubmission = {
-    ...submission,
-    id: crypto.randomUUID(),
-    submittedAt: new Date().toISOString(),
-  }
-  const existing = loadContacts()
-  localStorage.setItem(LS_KEY, JSON.stringify([entry, ...existing]))
-  return entry
-}
-
+// Lectura: GET /contacts (listado de mensajes recibidos, vista de administración).
 export function useContacts() {
-  const [contacts] = useState<ContactSubmission[]>(loadContacts)
-  return { contacts }
+  const q = useQuery({ queryKey: CONTACTS_KEY, queryFn: () => notificationService.listContacts() })
+  return { contacts: q.data ?? [], isLoading: q.isLoading, isError: q.isError }
+}
+
+// Escritura: POST /contacts (público, lo usa el formulario de la landing).
+// Al crear un contacto invalidamos la lista para que la vista de administración se refresque.
+export function useCreateContact() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateContactDto) => notificationService.createContact(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CONTACTS_KEY }),
+  })
 }
