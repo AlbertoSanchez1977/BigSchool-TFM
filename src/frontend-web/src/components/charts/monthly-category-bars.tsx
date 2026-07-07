@@ -87,7 +87,7 @@ export function MonthlyCategoryBars({ points, type, years, currency = 'EUR', emp
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 8, right: 4, left: -16, bottom: 0 }} barGap={2}>
+          <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }} barGap={2}>
             <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="month"
@@ -101,7 +101,6 @@ export function MonthlyCategoryBars({ points, type, years, currency = 'EUR', emp
               axisLine={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               tickFormatter={kFmt}
-              width={40}
             />
             <Tooltip cursor={{ fill: 'var(--muted)' }} content={<ChartTooltip />} />
             {years.map((year, i) => (

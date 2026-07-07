@@ -487,7 +487,7 @@ export default function ExpensesPage() {
           )}
 
           {!monthly.isLoading && !monthly.isError && (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-1">
               {monthly.data.map((series) => (
                 <div key={series.category}>
                   <p className="mb-2 text-sm font-medium">{MAIN_CATEGORY_LABEL[series.category]}</p>
