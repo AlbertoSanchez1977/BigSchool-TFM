@@ -1143,5 +1143,18 @@ bloqueo de scroll real aunque no fuera la causa de este síntoma concreto).
 **Resultado / Estado:**
 - `typecheck` limpio, 261/261 tests unitarios en verde (+8 nuevos: `useCompaniesList`/`useCompanyDetail`/`useCreateCompany`/`company-combobox`), 11/11 E2E local en verde.
 
+### Addendum — Centralización de `DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE`
+
+Pregunta del humano tras revisar la PR: ¿`PAGE_SIZE = 20` es un estándar de todas las parrillas?
+¿Lo centralizamos junto con el `100` de las vistas "todo sin paginar"? Verificado por grep: sí,
+son los dos únicos valores usados en todo el frontend (20 para listados reales con `<Pagination>`,
+100 para vistas que piden "todo lo razonable"). Añadidos `DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE` en
+`types/pagination.ts` (mismo patrón que `types/enums.ts`: el fichero de tipos también aloja las
+constantes runtime relacionadas) y sustituidos los 6 literales sueltos: `investments/page.tsx`,
+`market/page.tsx`, `expenses/page.tsx` (los tres `= 20`), `dashboard/page.tsx`, `holdingsService.ts`
+y `notificationService.ts` (los tres `= 100`, este último eliminando su propio alias local
+`LIST_PAGE_SIZE`). Refactor puro, sin cambio de comportamiento. `typecheck` limpio, 261/261 tests
+unitarios y 11/11 E2E en verde tras el cambio.
+
 **Siguiente paso:**
 - [ ] Task 9 — Valuations: listado + crear + gráfico de serie (módulo Investments).

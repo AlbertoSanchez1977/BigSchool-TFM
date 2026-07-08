@@ -25,6 +25,7 @@ import {
   MAIN_CATEGORY_LABEL,
   formatAmount, formatPct, colorPnL, signPnL,
 } from '@/lib/transactions/labels'
+import { MAX_PAGE_SIZE } from '@/types/pagination'
 
 const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 const MONTH_NAMES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -91,7 +92,7 @@ export default function DashboardPage() {
   const { data: rawPoints,     isLoading: chartLoading      } = useMonthlyChart(currentYear)
   // El mini-resumen quiere todas las carteras del usuario; pageSize alto en vez de
   // paginar aquí (es un widget de dashboard, no un listado — la Pagination real vive en /investments).
-  const { data: portfoliosPage, isLoading: portfoliosLoading } = usePortfolios({ page: 1, pageSize: 100 })
+  const { data: portfoliosPage, isLoading: portfoliosLoading } = usePortfolios({ page: 1, pageSize: MAX_PAGE_SIZE })
   const portfolios = portfoliosPage?.items
   // Agregado real del backend (GET /portfolios/summary) — sustituye la suma en cliente
   // que antes hacía derivePortfolioTotals sobre la lista de carteras.

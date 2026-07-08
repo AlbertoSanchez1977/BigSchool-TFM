@@ -23,6 +23,7 @@ import {
 } from '@/lib/transactions/labels'
 import type { Transaction } from '@/types/transactions'
 import type { TransactionType } from '@/types/enums'
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
 
 // ── Helpers de fecha ──────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ export default function ExpensesPage() {
   const [year,  setYear]  = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [page,  setPage]  = useState(1)
-  const pageSize = 20
+  const pageSize = DEFAULT_PAGE_SIZE
 
   // Estado del Sheet: undefined = modo crear; Transaction = modo editar
   const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined)

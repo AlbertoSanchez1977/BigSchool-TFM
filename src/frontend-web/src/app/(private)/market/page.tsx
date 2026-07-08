@@ -23,6 +23,7 @@ import { useCreateCompany } from '@/hooks/useCreateCompany'
 import { formatAmount } from '@/lib/transactions/labels'
 import { SECTOR_LABEL } from '@/lib/investments/labels'
 import { CURRENCIES, SECTORS, MARKETS } from '@/types/enums'
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
 import type { CompanyListItem } from '@/types/companies'
 
 // ── Schema Zod del formulario "Nueva empresa" ─────────────────────────────────
@@ -230,12 +231,10 @@ function CompanyCard({ company }: { company: CompanyListItem }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 20
-
 export default function MarketPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useCompaniesList({ page, pageSize: PAGE_SIZE })
+  const { data, isLoading, isError } = useCompaniesList({ page, pageSize: DEFAULT_PAGE_SIZE })
   const companies = data?.items
 
   return (
@@ -299,7 +298,7 @@ export default function MarketPage() {
           {data && (
             <Pagination
               page={page}
-              pageSize={PAGE_SIZE}
+              pageSize={DEFAULT_PAGE_SIZE}
               totalCount={data.meta.totalCount}
               totalPages={data.meta.totalPages}
               onPageChange={setPage}
