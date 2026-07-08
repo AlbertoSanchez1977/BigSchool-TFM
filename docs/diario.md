@@ -1118,4 +1118,30 @@ bloqueo de scroll real aunque no fuera la causa de este síntoma concreto).
 **Rediseño de la card de holding en Performance (feedback del humano sobre el PR #168, antes de mergear):** iterado en varias rondas cortas hasta llegar a: cabecera con ticker+moneda+"N acciones" agrupados a la izquierda y la rentabilidad pegada al borde derecho (el valor `+X,XX %` con el mismo tamaño/color que los valores del grid, la palabra "Rentabilidad" en gris pequeño a juego con "acciones"); el grid pasa de 3×3 a solo 2 filas (base siempre, original solo si `buyOriginalCurrency !== baseCurrency` — si coinciden sería literalmente repetir la fila anterior). Cambio puramente presentacional (sin tocar hooks/tipos/servicios); verificado con `typecheck` + suite completa + E2E de venta de holding en cada ronda.
 
 **Siguiente paso:**
-- [ ] Task 8 — Pantallas "Mercado": Companies (listado/detalle/crear) + combobox (módulo Investments).
+- [x] Task 8 — Pantallas "Mercado": Companies (listado/detalle/crear) + combobox (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 8 — Pantallas "Mercado" (Companies) + combobox de empresa (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `CompaniesController.cs` antes de tocar tipos: **desviación real del plan** — `GET /companies/{id}` devuelve la misma `CompanyListItemDto` que el listado (no un `Company` distinto). `Company` pasa a ser el DTO de comando (`POST /companies` → `CompanyDto`), mismo patrón `comando vs query` que `Portfolio`/`PortfolioListItem`. `Sector` (11 valores) y `Market` (14 valores) verificados campo a campo contra los enums reales y centralizados en `types/enums.ts` (patrón `as const` + tipo derivado, igual que `CURRENCIES`); traducción de `Sector` en `lib/investments/labels.ts` nuevo.
+- `companyService.ts`, `useCompaniesList`/`useCompanyDetail`/`useCreateCompany` (TDD). `components/ui/combobox.tsx` (genérico, shadcn `Command`+`Popover`) y `components/market/company-combobox.tsx` (fuente `useCompanies()`, 10 resultados iniciales, filtro cliente por ticker/nombre). Sustituido el `<Select>` de empresa en `AddHoldingModal` por el combobox.
+- Páginas `/market` (listado paginado + modal "Nueva empresa") y `/market/[id]` (detalle con breadcrumb `← Mercado` — **confirmado con el humano** antes de escribir el fichero que sigue el patrón maestro-detalle de página completa, no modal, igual que `/investments/[id]`). Entrada de nav "Mercado" en `navbar-private.tsx`.
+
+**Decisiones / Problemas encontrados:**
+- **Query key factory** (`lib/queryKeys.ts`) tras pregunta del humano sobre duplicación: `usePortfolios.ts` y `usePortfolioMutations.ts` ya declaraban cada uno su propia `PORTFOLIOS_KEY = ['portfolios']` por separado — divergencia real, no hipotética. Creados `portfolioKeys`/`companyKeys`; retrofit de los 5 hooks de portfolios/companies existentes (refactor puro, mismos valores de key, toda la suite sigue en verde sin tocar los tests). Deuda anotada en el propio fichero: `useProfile`, `useCategoryChart`/`useMonthlySeries`, `useTransactions` se migran cuando se toquen.
+- **`npx shadcn@latest add command` se quedó colgado** esperando confirmación interactiva para sobrescribir `button.tsx` (ya personalizado con variantes propias) — sin stdin disponible en un proceso de fondo, no se pudo responder; por defecto respondió "no" y completó sin escribir `command.tsx`. Escrito a mano (wrapper de `cmdk`, que sí quedó instalado como dependencia por el intento del CLI).
+- **jsdom no implementa `ResizeObserver` ni `Element.scrollIntoView`**, que `cmdk` usa internamente — sin polyfill, cualquier test que montara el combobox lanzaba `ReferenceError`/`TypeError` en el segundo test en adelante (no en el primero, "solo mostrar placeholder", que no llega a montar la lista). Añadidos stubs mínimos en `tests/setup.ts`.
+- **"10 resultados iniciales" del combobox**: resuelto con un prop `initialResultsLimit` en el combobox base — mientras no hay texto escrito se recorta la lista antes de pintarla; en cuanto hay búsqueda, se pasa la lista completa y el filtro propio de `cmdk` hace el resto (compara contra `item.label`, no `item.value` — el id real viaja por closure en `onSelect`, no por el argumento que devuelve `cmdk`).
+- E2E: tras sustituir el `<Select>` por el combobox, `sell-holding.spec.ts` rompió en el paso "seleccionar empresa" (buscaba `data-testid="select-company"`, que el combobox no exponía) — añadido un prop `data-testid` pasante en el combobox base. Un fallo puntual de `login.spec.ts` (panel de registro sin cerrar) no se reprodujo en un rerun aislado — descartado como flake, no relacionado con esta tarea.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 261/261 tests unitarios en verde (+8 nuevos: `useCompaniesList`/`useCompanyDetail`/`useCreateCompany`/`company-combobox`), 11/11 E2E local en verde.
+
+**Siguiente paso:**
+- [ ] Task 9 — Valuations: listado + crear + gráfico de serie (módulo Investments).

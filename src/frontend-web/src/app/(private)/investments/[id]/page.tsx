@@ -18,9 +18,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import {
@@ -30,10 +27,10 @@ import {
   usePortfolioDetail, useAddHolding, useUpdateHoldingNotes, useDeleteHolding,
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
-import { useCompanies } from '@/hooks/useCompanies'
 import {
   RenamePortfolioModal, DeletePortfolioModal,
 } from '@/components/investments/portfolio-action-modals'
+import { CompanyCombobox } from '@/components/market/company-combobox'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
@@ -87,8 +84,7 @@ function Field({
 function AddHoldingModal({
   portfolioId, open, onClose,
 }: { portfolioId: number; open: boolean; onClose: () => void }) {
-  const addMutation            = useAddHolding(portfolioId)
-  const { data: companies = [] } = useCompanies()
+  const addMutation = useAddHolding(portfolioId)
 
   const form = useForm<AddHoldingForm>({
     resolver: zodResolver(addHoldingSchema),
@@ -126,39 +122,10 @@ function AddHoldingModal({
               control={form.control}
               name="idCompany"
               render={({ field }) => (
-                <Select
-                  value={field.value != null ? String(field.value) : ''}
-                  onValueChange={(v) => field.onChange(Number(v))}
-                  // Select es modal por defecto (bloquea scroll + interacción fuera de él);
-                  // anidado dentro de un Dialog (también modal) provoca que, al cerrarse el
-                  // Select tras elegir, su propio desbloqueo de scroll pise momentáneamente
-                  // el bloqueo del Dialog padre — se ve como un parpadeo en móvil. El Dialog
-                  // ya bloquea la interacción exterior, así que el Select anidado no necesita
-                  // repetirlo.
-                  modal={false}
-                >
-                  <SelectTrigger id="idCompany" className="w-full" data-testid="select-company">
-                    <SelectValue placeholder="Selecciona empresa…">
-                      {(v: string) => {
-                        const c = companies.find((co) => String(co.idCompany) === v)
-                        return c ? `${c.ticker} — ${c.name}` : 'Selecciona empresa…'
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    {companies.map((c) => (
-                      <SelectItem key={c.idCompany} value={String(c.idCompany)}>
-                        <span className="font-mono text-xs text-muted-foreground">{c.ticker}</span>
-                        {' '}{c.name}
-                        {c.lastPrice != null && (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            · {formatAmount(c.lastPrice, c.currency)}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CompanyCombobox
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                />
               )}
             />
           </Field>

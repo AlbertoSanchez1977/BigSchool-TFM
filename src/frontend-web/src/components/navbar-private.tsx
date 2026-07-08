@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LineChart, Menu, X, LayoutDashboard, Wallet, TrendingUp, ScanLine } from 'lucide-react'
+import { LineChart, Menu, X, LayoutDashboard, Wallet, TrendingUp, Building2, ScanLine } from 'lucide-react'
 import { ProfileDropdown } from '@/components/auth/profile-dropdown'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/dashboard',   label: 'Dashboard',         icon: LayoutDashboard },
   { href: '/expenses',    label: 'Gastos e ingresos', icon: Wallet },
   { href: '/investments', label: 'Inversiones',        icon: TrendingUp },
+  { href: '/market',      label: 'Mercado',            icon: Building2 },
   { href: '/ai-scanner',  label: 'AI Scanner',         icon: ScanLine },
 ]
 
