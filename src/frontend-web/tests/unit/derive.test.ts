@@ -3,7 +3,6 @@ import {
   deriveMonthlyPoints,
   deriveCumulativeBalance,
   deriveSavingsRate,
-  derivePortfolioTotals,
 } from '@/lib/dashboard/derive'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -107,44 +106,5 @@ describe('deriveSavingsRate', () => {
 
   it('devuelve 100 cuando el gasto es 0', () => {
     expect(deriveSavingsRate(1000, 0)).toBeCloseTo(100)
-  })
-})
-
-// ── derivePortfolioTotals ─────────────────────────────────────────────────────
-
-describe('derivePortfolioTotals', () => {
-
-  it('devuelve ceros y returnPct null cuando no hay carteras', () => {
-    const t = derivePortfolioTotals([])
-    expect(t.marketValue).toBe(0)
-    expect(t.costBasis).toBe(0)
-    expect(t.totalPnL).toBe(0)
-    expect(t.returnPct).toBeNull()
-  })
-
-  it('suma marketValue, costBasis, unrealizedPnL, totalPnL y realizedPnL', () => {
-    const t = derivePortfolioTotals([
-      { marketValue: 1000, costBasis: 900,  unrealizedPnL: 100, totalPnL: 150, realizedPnL: 50 },
-      { marketValue: 2000, costBasis: 1800, unrealizedPnL: 200, totalPnL: 300, realizedPnL: 100 },
-    ])
-    expect(t.marketValue).toBe(3000)
-    expect(t.costBasis).toBe(2700)
-    expect(t.unrealizedPnL).toBe(300)
-    expect(t.totalPnL).toBe(450)
-    expect(t.realizedPnL).toBe(150)
-  })
-
-  it('calcula returnPct = totalPnL / costBasis * 100', () => {
-    const t = derivePortfolioTotals([
-      { marketValue: 1200, costBasis: 1000, unrealizedPnL: 200, totalPnL: 200, realizedPnL: 0 },
-    ])
-    expect(t.returnPct).toBeCloseTo(20)
-  })
-
-  it('devuelve returnPct null si costBasis es 0', () => {
-    const t = derivePortfolioTotals([
-      { marketValue: 0, costBasis: 0, unrealizedPnL: 0, totalPnL: 0, realizedPnL: 0 },
-    ])
-    expect(t.returnPct).toBeNull()
   })
 })

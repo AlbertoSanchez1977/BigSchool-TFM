@@ -2,7 +2,7 @@ import { api } from '@/lib/api'
 import type {
   PortfolioListItem, Portfolio, PortfolioDetail, PortfolioPerformance,
   CreatePortfolioDto, SellSharesDto, SellSharesResult, PagedPortfolios,
-  RenamePortfolioDto,
+  RenamePortfolioDto, PortfoliosSummary,
 } from '@/types/portfolios'
 import type { PageMeta } from '@/types/pagination'
 
@@ -52,5 +52,10 @@ export const portfolioService = {
   // DELETE /portfolios/{id} → 409 si hay holdings abiertos (guard fiscal, ver ApiError.message)
   async remove(id: number): Promise<void> {
     await api.delete<void>(`/portfolios/${id}`)
+  },
+
+  // GET /portfolios/summary → InvestmentsSummaryDto
+  async summary(): Promise<PortfoliosSummary> {
+    return api.get<PortfoliosSummary>('/portfolios/summary')
   },
 }
