@@ -726,20 +726,13 @@ detalle** (`investments/[id]`). **Verifica** los request/response de `PUT`/`DELE
 - Modify: `src/app/(private)/investments/[id]/page.tsx` (acciones en cabecera + modales)
 - Test: `tests/unit/hooks/usePortfolioMutations.test.tsx`
 
-- [ ] **Step 1: Tipo + servicio**
+- [x] **Step 1: Tipo + servicio** — **desviación del plan**: `PUT /portfolios/{id}` real devuelve
+  `ApiResponse.Success()` **sin data** (`RenamePortfolioCommand : IRequest`, no `IRequest<T>`), no un
+  `Portfolio` como asumía el snippet. `rename`/`remove` tipados `Promise<void>`.
 
-```typescript
-// types/portfolios.ts
-export interface RenamePortfolioDto { name: string }
-```
-```typescript
-// portfolioService.ts (añadir)
-rename: (id: number, data: RenamePortfolioDto) => api.put<Portfolio>(`/portfolios/${id}`, data),
-remove: (id: number) => api.delete<void>(`/portfolios/${id}`),
-```
-
-- [ ] **Step 2: Test que falla + hooks** — verificar antes la `queryKey` real del detalle en
-  `usePortfolioDetail` (en `useHoldings.ts`) y usarla en la invalidación. `usePortfolioMutations.ts`:
+- [x] **Step 2: Test que falla + hooks** — verificada la `queryKey` real del detalle en
+  `usePortfolioDetail` (`useHoldings.ts`): `['portfolios', id]` (no `['portfolio', id]` como
+  apuntaba el comentario del snippet). Usada tal cual en `usePortfolioMutations.ts`:
 
 ```typescript
 'use client'
@@ -768,15 +761,20 @@ export function useDeletePortfolio() {
 Test: mock `@/lib/api`; comprobar que `rename` hace `put('/portfolios/1', {name})` y `remove` hace
 `delete('/portfolios/1')`.
 
-- [ ] **Step 3: UI en la cabecera de `investments/[id]/page.tsx`** — junto al breadcrumb añadir un
-  `DropdownMenu` (⋯) con "Renombrar" y "Eliminar":
-  - **Renombrar**: modal centrado (patrón `CreatePortfolioModal` de `investments/page.tsx`) con el
-    nombre precargado → `useRenamePortfolio(portfolioId).mutate({ name })`, toast, cerrar.
+- [x] **Step 3: UI en la cabecera de `investments/[id]/page.tsx`** — `DropdownMenu` (⋯, icono
+  `MoreVertical`, mismo componente que `profile-dropdown.tsx`) junto al botón "Añadir holding", con
+  "Renombrar" y "Eliminar":
+  - **Renombrar**: modal centrado con el nombre precargado → `useRenamePortfolio(portfolioId).mutate({
+    name })`, toast, cerrar.
   - **Eliminar**: modal de confirmación → `useDeletePortfolio().mutate(portfolioId, { onSuccess:
-    () => router.push('/investments'), onError: (e) => toast.error(e.message) })`. El 409 del guard
-    fiscal llega como `ApiError.message`; mostrarlo tal cual.
+    () => router.push('/investments'), onError: (e) => toast.error(e instanceof ApiError ? e.message
+    : ...) })`. El 409 del guard fiscal llega como `ApiError.message`; se muestra tal cual.
+  **Ajuste sobre el plan**: el `DropdownMenuTrigger` de Base UI ya es en sí mismo el elemento
+  interactivo (como en `profile-dropdown.tsx`) — se estiliza con `buttonVariants({ variant: 'outline',
+  size: 'icon' })` en vez de anidar un `<Button>` dentro con un `render` prop (evita depender de si
+  `Menu.Trigger` soporta ese patrón de composición, sin verificarlo primero).
 
-- [ ] **Step 4: Verificar y commit + PR**
+- [x] **Step 4: Verificar y commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test

@@ -7,10 +7,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import {
-  ChevronLeft, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
+  ChevronLeft, MoreVertical, Pencil, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,11 +24,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   usePortfolioDetail, useAddHolding, useUpdateHoldingNotes, useDeleteHolding,
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
 import { useCompanies } from '@/hooks/useCompanies'
+import { useRenamePortfolio, useDeletePortfolio } from '@/hooks/usePortfolioMutations'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
+import { ApiError } from '@/lib/apiClient'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
 // ── Schemas Zod ───────────────────────────────────────────────────────────────
@@ -54,6 +60,11 @@ const sellSchemaBase = z.object({
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type SellForm = z.infer<typeof sellSchemaBase>
+
+const renamePortfolioSchema = z.object({
+  name: z.string().min(1, 'El nombre es obligatorio').max(100, 'Máximo 100 caracteres'),
+})
+type RenamePortfolioForm = z.infer<typeof renamePortfolioSchema>
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -594,14 +605,105 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
   )
 }
 
+// ── Modal: Renombrar cartera ──────────────────────────────────────────────────
+
+function RenamePortfolioModal({
+  portfolioId, currentName, open, onClose,
+}: { portfolioId: number; currentName: string; open: boolean; onClose: () => void }) {
+  const renameMutation = useRenamePortfolio(portfolioId)
+
+  const form = useForm<RenamePortfolioForm>({
+    resolver: zodResolver(renamePortfolioSchema),
+    defaultValues: { name: currentName },
+  })
+
+  function onSubmit(values: RenamePortfolioForm) {
+    renameMutation.mutate(values, {
+      onSuccess: () => { toast.success('Cartera renombrada'); onClose() },
+      onError:   (e) => toast.error(e instanceof ApiError ? e.message : 'Error al renombrar'),
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="p-6 sm:max-w-sm">
+        <DialogHeader className="mb-4">
+          <DialogTitle>Renombrar cartera</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Field label="Nombre" htmlFor="rename-portfolio-name"
+            error={form.formState.errors.name?.message}>
+            <Input
+              id="rename-portfolio-name"
+              data-testid="input-rename-portfolio"
+              {...form.register('name')}
+            />
+          </Field>
+          <Button type="submit" className="w-full" disabled={renameMutation.isPending}
+            data-testid="btn-confirm-rename">
+            {renameMutation.isPending ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Modal: Eliminar cartera (confirmación) ────────────────────────────────────
+// El backend aplica un guard fiscal: 409 si la cartera tiene holdings abiertos.
+// Ese mensaje llega tal cual en ApiError.message y se muestra sin reinterpretarlo.
+
+function DeletePortfolioModal({
+  portfolioId, open, onClose,
+}: { portfolioId: number; open: boolean; onClose: () => void }) {
+  const router = useRouter()
+  const deleteMutation = useDeletePortfolio()
+
+  function handleDelete() {
+    deleteMutation.mutate(portfolioId, {
+      onSuccess: () => {
+        toast.success('Cartera eliminada')
+        router.push('/investments')
+      },
+      onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Error al eliminar la cartera'),
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="p-6 sm:max-w-sm">
+        <DialogHeader className="mb-2">
+          <DialogTitle>Eliminar cartera</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          ¿Eliminar esta cartera? Esta acción no se puede deshacer. Si tiene holdings abiertos,
+          el backend rechazará el borrado.
+        </p>
+        <div className="mt-4 flex gap-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}
+            disabled={deleteMutation.isPending}>
+            Cancelar
+          </Button>
+          <Button type="button" variant="destructive" className="flex-1" onClick={handleDelete}
+            disabled={deleteMutation.isPending} data-testid="btn-confirm-delete-portfolio">
+            {deleteMutation.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function HoldingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const portfolioId = Number(id)
 
-  const [addOpen, setAddOpen] = useState(false)
-  const [tab, setTab]         = useState<'holdings' | 'performance'>('holdings')
+  const [addOpen, setAddOpen]       = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [tab, setTab]               = useState<'holdings' | 'performance'>('holdings')
 
   const { data: portfolio, isLoading, isError } = usePortfolioDetail(portfolioId)
 
@@ -632,17 +734,44 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
           {isLoading && <Skeleton className="h-6 w-32 shrink-0" />}
         </div>
 
-        {tab === 'holdings' && (
-          <Button
-            onClick={() => setAddOpen(true)}
-            data-testid="btn-add-holding"
-            aria-label="Añadir holding"
-            className="shrink-0"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Añadir holding</span>
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {tab === 'holdings' && (
+            <Button
+              onClick={() => setAddOpen(true)}
+              data-testid="btn-add-holding"
+              aria-label="Añadir holding"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Añadir holding</span>
+            </Button>
+          )}
+
+          {portfolio && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Más acciones"
+                data-testid="btn-portfolio-menu"
+                className={buttonVariants({ variant: 'outline', size: 'icon' })}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setRenameOpen(true)} data-testid="menu-rename-portfolio">
+                  <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Renombrar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  data-testid="menu-delete-portfolio"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs: Holdings | Performance ─────────────────────────────────── */}
@@ -717,12 +846,27 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
         </TabsContent>
       </Tabs>
 
-      {/* Modal añadir holding — montado condicionalmente */}
+      {/* Modales — montados condicionalmente */}
       {addOpen && (
         <AddHoldingModal
           portfolioId={portfolioId}
           open={addOpen}
           onClose={() => setAddOpen(false)}
+        />
+      )}
+      {renameOpen && portfolio && (
+        <RenamePortfolioModal
+          portfolioId={portfolioId}
+          currentName={portfolio.name}
+          open={renameOpen}
+          onClose={() => setRenameOpen(false)}
+        />
+      )}
+      {deleteOpen && (
+        <DeletePortfolioModal
+          portfolioId={portfolioId}
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
         />
       )}
     </div>

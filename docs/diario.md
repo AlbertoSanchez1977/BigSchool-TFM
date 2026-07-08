@@ -1030,7 +1030,30 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - E2E completo en local (no solo el subconjunto afectado): 11/11 en verde (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts` — esta última ejercita `investments/page.tsx` al crear la cartera de la venta).
 
 **Resultado / Estado:**
-- Task 5 completada. `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
+- Task 5 completada y mergeada (PR #166). `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
 
 **Siguiente paso:**
-- [ ] Task 6 — Renombrar / borrar cartera (módulo Investments).
+- [x] Task 6 — Renombrar / borrar cartera (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 6 — Renombrar / borrar cartera (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `PUT/DELETE /portfolios/{id}` en `PortfoliosController.cs` antes de tocar tipos: **desviación real del plan** — `RenamePortfolioCommand : IRequest` (sin genérico), el endpoint devuelve `ApiResponse.Success()` sin `data`, no un `Portfolio` como asumía el snippet. `rename`/`remove` en `portfolioService.ts` tipados `Promise<void>`.
+- Verificada la `queryKey` real del detalle (`usePortfolioDetail` en `useHoldings.ts`): `['portfolios', id]` — el snippet del plan apuntaba `['portfolio', id]` (singular) como aproximación a verificar; usada la real en `usePortfolioMutations.ts` (`useRenamePortfolio`, `useDeletePortfolio`, TDD). Ambas invalidan el detalle y la lista de carteras (`['portfolios']` prefijo).
+- `investments/[id]/page.tsx`: `DropdownMenu` (⋯, mismo componente que `profile-dropdown.tsx`) junto al botón "Añadir holding" con "Renombrar" (modal centrado, nombre precargado) y "Eliminar" (modal de confirmación, navega a `/investments` al éxito). El 409 del guard fiscal (holdings abiertos) llega como `ApiError.message` y se muestra tal cual, sin reinterpretarlo.
+
+**Decisiones / Problemas encontrados:**
+- **Ajuste de composición sobre el plan**: el `DropdownMenuTrigger` de Base UI ya es en sí mismo el elemento interactivo (confirmado mirando cómo lo usa `profile-dropdown.tsx`: children directos, sin envolver un `<Button>`). En vez de anidar `<Button variant="outline" size="icon">` dentro con un `render` prop (sin verificar si `Menu.Trigger` soporta ese patrón de composición), se estiliza el propio trigger con `buttonVariants({ variant: 'outline', size: 'icon' })` — mismo resultado visual, sin apostar por una API no confirmada.
+- Sin sorpresas de diseño visual: el patrón de modal centrado y el `DropdownMenu` ya estaban establecidos en el codebase (`CreatePortfolioModal`, `profile-dropdown.tsx`); esta tarea fue puro cableado siguiendo esos patrones.
+
+**Resultado / Estado:**
+- Task 6 completada. `typecheck` limpio, 251/251 tests unitarios en verde. E2E `sell-holding.spec.ts` (ejercita `investments/[id]/page.tsx`) en verde tras el cambio de cabecera.
+
+**Siguiente paso:**
+- [ ] Task 7 — Holdings `*Original` + summary global en Dashboard (módulo Investments).
