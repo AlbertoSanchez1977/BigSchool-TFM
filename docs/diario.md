@@ -1113,6 +1113,9 @@ bloqueo de scroll real aunque no fuera la causa de este síntoma concreto).
 
 **Resultado / Estado:**
 - `typecheck` limpio, 253/253 tests unitarios en verde (+3 nuevos de `usePortfoliosSummary`, -4 de `derivePortfolioTotals` retirado), 11/11 E2E local en verde.
+- Añadido al mismo PR #168.
+
+**Rediseño de la card de holding en Performance (feedback del humano sobre el PR #168, antes de mergear):** iterado en varias rondas cortas hasta llegar a: cabecera con ticker+moneda+"N acciones" agrupados a la izquierda y la rentabilidad pegada al borde derecho (el valor `+X,XX %` con el mismo tamaño/color que los valores del grid, la palabra "Rentabilidad" en gris pequeño a juego con "acciones"); el grid pasa de 3×3 a solo 2 filas (base siempre, original solo si `buyOriginalCurrency !== baseCurrency` — si coinciden sería literalmente repetir la fila anterior). Cambio puramente presentacional (sin tocar hooks/tipos/servicios); verificado con `typecheck` + suite completa + E2E de venta de holding en cada ronda.
 
 **Siguiente paso:**
 - [ ] Task 8 — Pantallas "Mercado": Companies (listado/detalle/crear) + combobox (módulo Investments).

@@ -533,47 +533,43 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
         ))}
       </div>
 
-      {/* Cards por holding — 3 columnas: base | original | mercado+% */}
+      {/* Cards por holding — cabecera (ticker · rentabilidad · acciones) + grid base/original */}
       {perf.holdings.length > 0 ? (
         <div className="flex flex-col gap-3">
           {perf.holdings.map((h: HoldingPerformance) => {
             const origCur = h.buyOriginalCurrency
+            const hasOriginal = origCur !== cur
 
             return (
               <div key={h.idHolding} className="rounded-lg border border-border bg-card p-4">
-                {/* Cabecera */}
+                {/* Cabecera: ticker + moneda + acciones agrupados a la izquierda;
+                    rentabilidad sola, pegada al borde derecho. Mismo tamaño de texto
+                    que "acciones" — el color (colorPnL) ya la distingue visualmente. */}
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-semibold">{h.ticker}</span>
-                    {origCur !== cur && (
+                    {hasOriginal && (
                       <span className="text-xs text-muted-foreground">{origCur}</span>
                     )}
+                    <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
+                  <span>
+                    <span className={`text-sm font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
+                      {signPnL(h.unrealizedPnLPct)}{formatPct(h.unrealizedPnLPct, 2)}
+                    </span>
+                    <span className="text-xs text-muted-foreground"> Rentabilidad</span>
+                  </span>
                 </div>
 
-                {/* Grid 3 col × 3 filas */}
+                {/* Fila base — siempre visible */}
                 <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Coste base</p>
                     <p className="font-medium tabular-nums">{formatAmount(h.costBasis, cur)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Coste original</p>
-                    <p className="font-medium tabular-nums">
-                      {formatAmount(h.costBasisOriginal, origCur)}
-                    </p>
-                  </div>
-                  <div>
                     <p className="text-xs text-muted-foreground">Valor mercado</p>
                     <p className="font-medium tabular-nums">{formatAmount(h.marketValue, cur)}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Valor mercado original</p>
-                    <p className="font-medium tabular-nums">
-                      {formatAmount(h.marketValueOriginal, origCur)}
-                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">PnL base</p>
@@ -581,19 +577,31 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
                       {signPnL(h.unrealizedPnL)}{formatAmount(h.unrealizedPnL, cur)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">PnL original</p>
-                    <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLOriginal)}`}>
-                      {signPnL(h.unrealizedPnLOriginal)}{formatAmount(h.unrealizedPnLOriginal, origCur)}
-                    </p>
-                  </div>
 
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rentabilidad</p>
-                    <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
-                      {signPnL(h.unrealizedPnLPct)}{formatPct(h.unrealizedPnLPct, 2)}
-                    </p>
-                  </div>
+                  {/* Fila original — solo si la moneda de la empresa difiere de la base
+                      (si coinciden, sería literalmente repetir la fila anterior) */}
+                  {hasOriginal && (
+                    <>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Coste original</p>
+                        <p className="font-medium tabular-nums">
+                          {formatAmount(h.costBasisOriginal, origCur)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Valor mercado original</p>
+                        <p className="font-medium tabular-nums">
+                          {formatAmount(h.marketValueOriginal, origCur)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">PnL original</p>
+                        <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLOriginal)}`}>
+                          {signPnL(h.unrealizedPnLOriginal)}{formatAmount(h.unrealizedPnLOriginal, origCur)}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )
