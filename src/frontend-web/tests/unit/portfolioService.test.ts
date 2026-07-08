@@ -4,11 +4,13 @@ import { ApiError } from '@/lib/apiClient'
 // ── Mock del singleton api ────────────────────────────────────────────────────
 const mockGet = vi.fn()
 const mockPost = vi.fn()
+const mockGetWithMeta = vi.fn()
 
 vi.mock('@/lib/api', () => ({
   api: {
     get:  (...args: unknown[]) => mockGet(...args),
     post: (...args: unknown[]) => mockPost(...args),
+    getWithMeta: (...args: unknown[]) => mockGetWithMeta(...args),
   },
 }))
 
@@ -36,39 +38,42 @@ describe('portfolioService.list', () => {
 
   beforeEach(() => vi.resetAllMocks())
 
-  it('llama a GET /portfolios', async () => {
-    mockGet.mockResolvedValue([])
+  it('llama a GET /portfolios con page y pageSize', async () => {
+    mockGetWithMeta.mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, totalCount: 0, totalPages: 0 } })
 
-    await portfolioService.list()
+    await portfolioService.list({ page: 1, pageSize: 20 })
 
-    expect(mockGet).toHaveBeenCalledWith('/portfolios')
+    const [path] = mockGetWithMeta.mock.calls[0] as [string]
+    expect(path).toContain('page=1')
+    expect(path).toContain('pageSize=20')
   })
 
-  it('devuelve la lista de carteras correctamente', async () => {
+  it('devuelve items + meta correctamente', async () => {
     const items = [makeListItem(), makeListItem({ idPortfolio: 2, name: 'USA tech' })]
-    mockGet.mockResolvedValue(items)
+    mockGetWithMeta.mockResolvedValue({ data: items, meta: { page: 1, pageSize: 20, totalCount: 2, totalPages: 1 } })
 
-    const result = await portfolioService.list()
+    const result = await portfolioService.list({ page: 1, pageSize: 20 })
 
-    expect(result).toHaveLength(2)
-    expect(result[0].name).toBe('Mi cartera')
-    expect(result[1].name).toBe('USA tech')
+    expect(result.items).toHaveLength(2)
+    expect(result.items[0].name).toBe('Mi cartera')
+    expect(result.items[1].name).toBe('USA tech')
+    expect(result.meta.totalCount).toBe(2)
   })
 
-  it('devuelve lista vacía si el backend devuelve []', async () => {
-    mockGet.mockResolvedValue([])
+  it('devuelve items vacíos si el backend devuelve []', async () => {
+    mockGetWithMeta.mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, totalCount: 0, totalPages: 0 } })
 
-    const result = await portfolioService.list()
+    const result = await portfolioService.list({ page: 1, pageSize: 20 })
 
-    expect(result).toEqual([])
+    expect(result.items).toEqual([])
   })
 
   it('propaga ApiError cuando la api falla', async () => {
-    mockGet.mockRejectedValue(
+    mockGetWithMeta.mockRejectedValue(
       new ApiError('UNAUTHORIZED', 'Sesión expirada', undefined, 401)
     )
 
-    await expect(portfolioService.list()).rejects.toBeInstanceOf(ApiError)
+    await expect(portfolioService.list({ page: 1, pageSize: 20 })).rejects.toBeInstanceOf(ApiError)
   })
 })
 

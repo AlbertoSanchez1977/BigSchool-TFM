@@ -7,10 +7,10 @@ import type { CreatePortfolioDto } from '@/types/portfolios'
 
 const PORTFOLIOS_KEY = ['portfolios'] as const
 
-export function usePortfolios() {
+export function usePortfolios({ page, pageSize }: { page: number; pageSize: number }) {
   return useQuery({
-    queryKey: PORTFOLIOS_KEY,
-    queryFn:  () => portfolioService.list(),
+    queryKey: [...PORTFOLIOS_KEY, page, pageSize],
+    queryFn:  () => portfolioService.list({ page, pageSize }),
   })
 }
 
@@ -19,6 +19,7 @@ export function useCreatePortfolio() {
   return useMutation({
     mutationFn: (data: CreatePortfolioDto) => portfolioService.create(data),
     onSuccess: () => {
+      // Prefijo ['portfolios'] invalida todas las páginas cacheadas (['portfolios', page, pageSize]).
       qc.invalidateQueries({ queryKey: PORTFOLIOS_KEY })
     },
   })

@@ -3,8 +3,10 @@
 // la devuelven como enum (JsonStringEnumConverter → string con el nombre del miembro).
 
 import type { Currency } from './enums'
+import type { PageMeta } from './pagination'
 
 // ── GET /portfolios → PortfolioListItemDto (Dapper: currency como string) ────────
+// Paginado (page/pageSize + meta), igual que /transactions.
 export interface PortfolioListItem {
   idPortfolio: number
   name: string
@@ -14,6 +16,11 @@ export interface PortfolioListItem {
   costBasis: number
   unrealizedPnL: number
   totalPnL: number
+}
+
+export interface PagedPortfolios {
+  items: PortfolioListItem[]
+  meta: PageMeta
 }
 
 // ── POST /portfolios → PortfolioDto (comando: currency tipada) ────────────────────

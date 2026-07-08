@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
+import { Pagination } from '@/components/ui/pagination'
 import { usePortfolios, useCreatePortfolio } from '@/hooks/usePortfolios'
 import { formatAmount } from '@/lib/transactions/labels'
 import type { PortfolioListItem } from '@/types/portfolios'
@@ -143,9 +144,13 @@ function PortfolioCard({ portfolio }: { portfolio: PortfolioListItem }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 20
+
 export default function InvestmentsPage() {
   const [modalOpen, setModalOpen] = useState(false)
-  const { data: portfolios, isLoading, isError } = usePortfolios()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isError } = usePortfolios({ page, pageSize: PAGE_SIZE })
+  const portfolios = data?.items
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
@@ -199,11 +204,22 @@ export default function InvestmentsPage() {
 
       {/* Lista de cards */}
       {!isLoading && !isError && portfolios && portfolios.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {portfolios.map((p) => (
-            <PortfolioCard key={p.idPortfolio} portfolio={p} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            {portfolios.map((p) => (
+              <PortfolioCard key={p.idPortfolio} portfolio={p} />
+            ))}
+          </div>
+          {data && (
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              totalCount={data.meta.totalCount}
+              totalPages={data.meta.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
       )}
 
       {/* Modal de creación — montado condicionalmente */}
