@@ -204,12 +204,17 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
           {/* Tipo — ancho completo (gobierna las categorías disponibles) */}
+          {/* Los 4 <Select> de este formulario llevan modal={false}: Select es modal por
+              defecto (bloquea scroll + interacción fuera de él); anidado dentro de este
+              Dialog (también modal) provocaba un parpadeo al cerrarse el Select — su propio
+              desbloqueo de scroll pisaba momentáneamente el del Dialog padre, más visible en
+              móvil. El Dialog ya bloquea la interacción exterior. */}
           <Field label="Tipo" htmlFor="type">
             <Controller
               control={form.control}
               name="type"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={field.onChange} modal={false}>
                   <SelectTrigger id="type" className="w-full" data-testid="select-type">
                     <SelectValue>
                       {(v: TransactionType) => TRANSACTION_TYPE_LABEL[v]}
@@ -268,6 +273,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                       field.onChange(v)
                       setValue('idSubCategory', null)
                     }}
+                    modal={false}
                   >
                     <SelectTrigger id="idMainCategory" className="w-full" data-testid="select-category">
                       <SelectValue>
@@ -300,6 +306,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                       onValueChange={(v) =>
                         field.onChange(v === '__none__' ? null : Number(v))
                       }
+                      modal={false}
                     >
                       <SelectTrigger id="idSubCategory" className="w-full">
                         <SelectValue placeholder="Ninguna">
@@ -331,7 +338,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
               control={form.control}
               name="currency"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={field.onChange} modal={false}>
                   <SelectTrigger id="currency" className="w-full" data-testid="select-currency">
                     <SelectValue />
                   </SelectTrigger>

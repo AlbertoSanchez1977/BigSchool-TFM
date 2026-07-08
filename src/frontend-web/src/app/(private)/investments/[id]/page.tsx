@@ -31,9 +31,10 @@ import {
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
 import { useCompanies } from '@/hooks/useCompanies'
-import { useRenamePortfolio, useDeletePortfolio } from '@/hooks/usePortfolioMutations'
+import {
+  RenamePortfolioModal, DeletePortfolioModal,
+} from '@/components/investments/portfolio-action-modals'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
-import { ApiError } from '@/lib/apiClient'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
 // ── Schemas Zod ───────────────────────────────────────────────────────────────
@@ -60,11 +61,6 @@ const sellSchemaBase = z.object({
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type SellForm = z.infer<typeof sellSchemaBase>
-
-const renamePortfolioSchema = z.object({
-  name: z.string().min(1, 'El nombre es obligatorio').max(100, 'Máximo 100 caracteres'),
-})
-type RenamePortfolioForm = z.infer<typeof renamePortfolioSchema>
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -133,6 +129,13 @@ function AddHoldingModal({
                 <Select
                   value={field.value != null ? String(field.value) : ''}
                   onValueChange={(v) => field.onChange(Number(v))}
+                  // Select es modal por defecto (bloquea scroll + interacción fuera de él);
+                  // anidado dentro de un Dialog (también modal) provoca que, al cerrarse el
+                  // Select tras elegir, su propio desbloqueo de scroll pise momentáneamente
+                  // el bloqueo del Dialog padre — se ve como un parpadeo en móvil. El Dialog
+                  // ya bloquea la interacción exterior, así que el Select anidado no necesita
+                  // repetirlo.
+                  modal={false}
                 >
                   <SelectTrigger id="idCompany" className="w-full" data-testid="select-company">
                     <SelectValue placeholder="Selecciona empresa…">
@@ -605,100 +608,14 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
   )
 }
 
-// ── Modal: Renombrar cartera ──────────────────────────────────────────────────
-
-function RenamePortfolioModal({
-  portfolioId, currentName, open, onClose,
-}: { portfolioId: number; currentName: string; open: boolean; onClose: () => void }) {
-  const renameMutation = useRenamePortfolio(portfolioId)
-
-  const form = useForm<RenamePortfolioForm>({
-    resolver: zodResolver(renamePortfolioSchema),
-    defaultValues: { name: currentName },
-  })
-
-  function onSubmit(values: RenamePortfolioForm) {
-    renameMutation.mutate(values, {
-      onSuccess: () => { toast.success('Cartera renombrada'); onClose() },
-      onError:   (e) => toast.error(e instanceof ApiError ? e.message : 'Error al renombrar'),
-    })
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="p-6 sm:max-w-sm">
-        <DialogHeader className="mb-4">
-          <DialogTitle>Renombrar cartera</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <Field label="Nombre" htmlFor="rename-portfolio-name"
-            error={form.formState.errors.name?.message}>
-            <Input
-              id="rename-portfolio-name"
-              data-testid="input-rename-portfolio"
-              {...form.register('name')}
-            />
-          </Field>
-          <Button type="submit" className="w-full" disabled={renameMutation.isPending}
-            data-testid="btn-confirm-rename">
-            {renameMutation.isPending ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ── Modal: Eliminar cartera (confirmación) ────────────────────────────────────
-// El backend aplica un guard fiscal: 409 si la cartera tiene holdings abiertos.
-// Ese mensaje llega tal cual en ApiError.message y se muestra sin reinterpretarlo.
-
-function DeletePortfolioModal({
-  portfolioId, open, onClose,
-}: { portfolioId: number; open: boolean; onClose: () => void }) {
-  const router = useRouter()
-  const deleteMutation = useDeletePortfolio()
-
-  function handleDelete() {
-    deleteMutation.mutate(portfolioId, {
-      onSuccess: () => {
-        toast.success('Cartera eliminada')
-        router.push('/investments')
-      },
-      onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Error al eliminar la cartera'),
-    })
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="p-6 sm:max-w-sm">
-        <DialogHeader className="mb-2">
-          <DialogTitle>Eliminar cartera</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          ¿Eliminar esta cartera? Esta acción no se puede deshacer. Si tiene holdings abiertos,
-          el backend rechazará el borrado.
-        </p>
-        <div className="mt-4 flex gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={onClose}
-            disabled={deleteMutation.isPending}>
-            Cancelar
-          </Button>
-          <Button type="button" variant="destructive" className="flex-1" onClick={handleDelete}
-            disabled={deleteMutation.isPending} data-testid="btn-confirm-delete-portfolio">
-            {deleteMutation.isPending ? 'Eliminando…' : 'Sí, eliminar'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 // ── Página principal ──────────────────────────────────────────────────────────
+// RenamePortfolioModal / DeletePortfolioModal viven en
+// components/investments/portfolio-action-modals.tsx (compartidos con el listado).
 
 export default function HoldingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const portfolioId = Number(id)
+  const router = useRouter()
 
   const [addOpen, setAddOpen]       = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
@@ -867,6 +784,7 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
           portfolioId={portfolioId}
           open={deleteOpen}
           onClose={() => setDeleteOpen(false)}
+          onDeleted={() => router.push('/investments')}
         />
       )}
     </div>
