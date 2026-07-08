@@ -859,61 +859,53 @@ y el request de `POST /companies` en `CompaniesController.cs`.
 - Modify: `src/services/holdingsService.ts` (`listCompanies` con `?pageSize=100`)
 - Test: `tests/unit/hooks/useCompaniesList.test.tsx`, `tests/unit/components/company-combobox.test.tsx`
 
-- [ ] **Step 1: Tipos** — en `companies.ts` añadir (verificar contra `CompanyDto`):
+- [x] **Step 1: Tipos** — **desviación real del plan**: `GET /companies/{id}` devuelve la **misma**
+  `CompanyListItemDto` que el listado (no un `Company` distinto) — verificado en
+  `CompaniesController.cs`. `Company` pasa a ser el DTO de **comando** (`POST /companies` →
+  `CompanyDto`: sector/market/currency tipados como enum, sin `lastPrice`/`lastValuationDate`),
+  mismo patrón que `Portfolio` (comando) vs `PortfolioListItem` (query) en `types/portfolios.ts`.
+  `Sector`/`Market` verificados campo a campo contra los enums reales del backend (11 y 14 valores)
+  y centralizados en `types/enums.ts` (mismo patrón `as const` + tipo derivado que `CURRENCIES`),
+  no en `types/companies.ts` — es el fichero ya establecido como fuente única de "reflejos de enums
+  del backend". Traducción de `Sector` en `lib/investments/labels.ts` (`SECTOR_LABEL`); `Market`
+  (códigos de bolsa) no se traduce.
 
-```typescript
-import type { PageMeta } from './pagination'
-export interface Company {           // GET /companies/{id}
-  idCompany: number
-  name: string
-  ticker: string
-  sector: string | null
-  market: string | null
-  currency: string
-  lastPrice: number | null
-  lastValuationDate: string | null
-}
-export interface CreateCompanyDto {  // POST /companies (verificar campos requeridos)
-  name: string
-  ticker: string
-  sector?: string | null
-  market?: string | null
-  currency: string
-}
-export interface PagedCompanies { items: CompanyListItem[]; meta: PageMeta }
-```
+- [x] **Step 2: Servicio** — `companyService.ts` con `listPaged`/`getById`/`create`. Añadido también
+  `lib/queryKeys.ts` (factory de query keys, `companyKeys`/`portfolioKeys`) tras feedback del humano:
+  cada hook declarando su propia key local (p. ej. `['portfolios']` repetido en tres ficheros
+  distintos) es una fuente real de divergencia. Retrofit de `usePortfolios.ts`/`usePortfolioMutations.ts`/
+  `useHoldings.ts`/`usePortfoliosSummary.ts`/`useCompanies.ts` a la factory (refactor puro, mismos
+  valores de key, sin cambio de comportamiento). **Deuda anotada**: el resto de hooks (`useProfile`,
+  `useCategoryChart`/`useMonthlySeries`, `useTransactions`) se migran cuando se toquen, no de una sentada.
 
-- [ ] **Step 2: Servicio** — `companyService.ts`: `listPaged({page,pageSize})` con `getWithMeta`,
-  `getById(id)`, `create(dto)`. Además, en `holdingsService.listCompanies` cambiar a
-  `api.get<CompanyListItem[]>('/companies?pageSize=100')` (comentar: filtro server-side = deuda).
+- [x] **Step 3: Hooks + tests** — `useCompaniesList`/`useCompanyDetail`/`useCreateCompany` (TDD),
+  usando `companyKeys` de la factory.
 
-- [ ] **Step 3: Hooks + tests** — `useCompaniesList({page,pageSize})` (paginado), `useCompanyDetail(id)`,
-  `useCreateCompany()` (invalida `['companies']`). Tests con mock de api.
+- [x] **Step 4: Combobox base** — `npx shadcn@latest add command` se quedó esperando confirmación
+  interactiva para sobrescribir `button.tsx` (ya personalizado) y no la recibió — se escribió
+  `command.tsx` a mano (wrapper de `cmdk`, ya instalado como dependencia por el intento del CLI).
+  jsdom no implementa `ResizeObserver` ni `Element.scrollIntoView` (los usa `cmdk` internamente) —
+  añadidos polyfills mínimos en `tests/setup.ts`.
 
-- [ ] **Step 4: Combobox base** — `src/components/ui/combobox.tsx` usando shadcn `Command` +
-  `Popover`. Si el bloque `command` no existe, instalarlo: `npx shadcn@latest add command`. API:
-  `items`, `value`, `onChange`, `placeholder`, render de cada item.
+- [x] **Step 5: `company-combobox.tsx`** — TDD. El "10 resultados iniciales" se resolvió añadiendo
+  `initialResultsLimit` al combobox base: mientras no hay texto escrito se recorta la lista a N antes
+  de pintarla; en cuanto hay búsqueda, se pasa la lista completa y el filtro propio de `cmdk` (que
+  compara contra `item.label`, no `item.value` — el value real viaja por closure en `onSelect`) hace
+  el resto.
 
-- [ ] **Step 5: `company-combobox.tsx`** — envuelve el combobox base: fuente = `useCompanies()`
-  (`?pageSize=100`), muestra 10 resultados iniciales y filtra en cliente por `ticker`/`name`. Emite
-  `idCompany`. Test: escribir filtra la lista.
+- [x] **Step 6: Usar el combobox en AddHoldingModal** — sustituido, con `data-testid="select-company"`
+  reexpuesto desde el combobox base (prop `data-testid`) para no romper el E2E existente.
 
-- [ ] **Step 6: Usar el combobox en AddHoldingModal** — en `investments/[id]/page.tsx` reemplazar el
-  `<Select>` de empresa por `<CompanyCombobox value={idCompany} onChange={...} />` (mantener el
-  `Controller` de react-hook-form).
+- [x] **Step 7: Página listado `/market`** — implementado tal cual, con el `<Select modal={false}>`
+  ya establecido (Task 6) para sector/moneda del formulario de creación.
 
-- [ ] **Step 7: Página listado `/market`** — cabecera con botón "Nueva empresa" (modal →
-  `useCreateCompany`), tabla/cards de empresas (ticker, nombre, sector, último precio), `<Pagination>`
-  de la Task 5, estados loading/error/empty. Click en fila → `router.push('/market/{id}')`.
+- [x] **Step 8: Página detalle `/market/[id]`** — confirmado con el humano antes de escribir el
+  fichero: es una **página con breadcrumb** (patrón maestro-detalle ya establecido en
+  `/investments/[id]`), no un modal — el modal centrado es solo para la acción "Nueva empresa".
 
-- [ ] **Step 8: Página detalle `/market/[id]`** — breadcrumb `← Mercado`, cabecera con
-  ticker/nombre/moneda/último precio (`useCompanyDetail`). Dejar un contenedor para serie/valoraciones
-  (Task 9). **Sin** botones editar/borrar (deuda: sin PUT/DELETE) — comentar la costura.
+- [x] **Step 9: Nav "Mercado"** — añadido.
 
-- [ ] **Step 9: Nav "Mercado"** — en `navbar-private.tsx` añadir `{ href: '/market', label: 'Mercado',
-  icon: Building2 }` (lucide) al array `navItems` (desktop + móvil ya iteran ese array).
-
-- [ ] **Step 10: Verificar y commit + PR**
+- [x] **Step 10: Verificar y commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test && npm run test:e2e

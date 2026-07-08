@@ -27,3 +27,22 @@ export type MainCategory =
 // para "cuáles son las monedas soportadas", usable tanto en tipos como en <Select> o z.enum().
 export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'JPY'] as const
 export type Currency = (typeof CURRENCIES)[number]
+
+// Sector (BigSchool.Domain.Investments.Enums.Sector) — verificado el listado completo
+// contra el enum real. Array + tipo derivado, mismo patrón que CURRENCIES (para poder
+// iterarlo en <Select>/z.enum()). Traducción al español en lib/investments/labels.ts
+// (SECTOR_LABEL) — aquí solo viven los valores en bruto que viajan por la API.
+export const SECTORS = [
+  'Technology', 'Financials', 'Energy', 'Retail', 'Automotive',
+  'Healthcare', 'RealEstate', 'Utilities', 'ConsumerGoods', 'Industrials', 'Other',
+] as const
+export type Sector = (typeof SECTORS)[number]
+
+// Market (BigSchool.Domain.Investments.Enums.Market) — códigos de bolsa, no se traducen.
+export const MARKETS = [
+  'NYSE', 'NASDAQ', 'TSX', 'CSE', 'TSXV',
+  'LSE', 'AquisExchange', 'CboeUK',
+  'Frankfurt', 'Xetra', 'BorseStuttgart', 'BorseMunchen',
+  'EuronextParis', 'BME',
+] as const
+export type Market = (typeof MARKETS)[number]

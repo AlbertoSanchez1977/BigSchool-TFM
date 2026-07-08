@@ -18,6 +18,7 @@ import { Pagination } from '@/components/ui/pagination'
 import {
   RenamePortfolioModal, DeletePortfolioModal,
 } from '@/components/investments/portfolio-action-modals'
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
 import { usePortfolios, useCreatePortfolio } from '@/hooks/usePortfolios'
 import { formatAmount } from '@/lib/transactions/labels'
 import type { PortfolioListItem } from '@/types/portfolios'
@@ -204,12 +205,10 @@ function PortfolioCard({ portfolio }: { portfolio: PortfolioListItem }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 20
-
 export default function InvestmentsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = usePortfolios({ page, pageSize: PAGE_SIZE })
+  const { data, isLoading, isError } = usePortfolios({ page, pageSize: DEFAULT_PAGE_SIZE })
   const portfolios = data?.items
 
   return (
@@ -273,7 +272,7 @@ export default function InvestmentsPage() {
           {data && (
             <Pagination
               page={page}
-              pageSize={PAGE_SIZE}
+              pageSize={DEFAULT_PAGE_SIZE}
               totalCount={data.meta.totalCount}
               totalPages={data.meta.totalPages}
               onPageChange={setPage}
