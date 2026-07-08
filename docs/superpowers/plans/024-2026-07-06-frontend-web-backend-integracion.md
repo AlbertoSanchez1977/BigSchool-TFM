@@ -798,23 +798,13 @@ git add -A && git commit -m "feat(investments): renombrar y borrar cartera (guar
 - Modify: `src/app/(private)/dashboard/page.tsx` (mini-resumen desde `/portfolios/summary`)
 - Test: `tests/unit/hooks/usePortfoliosSummary.test.tsx`
 
-- [ ] **Step 1: Tipos** — en `HoldingPerformance` quitar el bloque `TODO` y, **si el backend garantiza
-  los campos**, dejarlos como presentes (no opcionales); añadir `marketValueOriginal: number`. Añadir
-  el tipo del summary global (verificar campos reales contra el DTO):
+- [x] **Step 1: Tipos** — verificado `HoldingPerformanceDto` real: los 4 campos `*Original`
+  (`BuyOriginalCurrency`, `CostBasisOriginal`, `MarketValueOriginal`, `UnrealizedPnLOriginal`) son
+  **no-nullable** en el backend, confirmado; quitado el `TODO` y los `?`, añadido `marketValueOriginal:
+  number`. **Desviación del plan**: `InvestmentsSummaryDto` real tiene un campo extra,
+  `PortfolioCount: int`, que el snippet del plan no incluía — añadido a `PortfoliosSummary`.
 
-```typescript
-export interface PortfoliosSummary {
-  baseCurrency: string
-  marketValue: number
-  costBasis: number
-  unrealizedPnL: number
-  realizedPnL: number
-  totalPnL: number
-  returnPct: number
-}
-```
-
-- [ ] **Step 2: Servicio + hook**
+- [x] **Step 2: Servicio + hook**
 
 ```typescript
 // portfolioService.ts
@@ -831,15 +821,18 @@ export function usePortfoliosSummary() {
 ```
 Test: mock api, comprobar `get('/portfolios/summary')`.
 
-- [ ] **Step 3: `PerformanceTab`** — añadir la celda "Valor mercado original"
-  (`h.marketValueOriginal`, formateado en `origCur`) al grid de cada holding. Ajustar los
-  `!`/fallbacks si los campos pasan a no-opcionales.
+- [x] **Step 3: `PerformanceTab`** — añadida la celda "Valor mercado original" (grid de 3×3 en vez
+  de 3×2). Retirados los `!`/fallbacks `— ` de coste/PnL original: al ser campos garantizados por el
+  backend, se renderizan directamente sin condicional.
 
-- [ ] **Step 4: Dashboard** — verificar en `dashboard/page.tsx` qué usa hoy el mini-resumen de
-  inversiones (probablemente `/portfolios/{id}/performance`) y sustituirlo por `usePortfoliosSummary()`.
-  Mostrar valor mercado / realizado / no realizado / % con estados loading/error.
+- [x] **Step 4: Dashboard** — el mini-resumen usaba `derivePortfolioTotals` (suma en cliente sobre
+  `usePortfolios`, no `/portfolios/{id}/performance`). Sustituido por `usePortfoliosSummary()`;
+  `portfolioCur` pasa a leer `invSummary.baseCurrency` en vez de `portfolios[0].realizedPnLCurrency`
+  (más correcto: no depende de que exista al menos 1 cartera en la página actual). `derivePortfolioTotals`
+  y su tipo `PortfolioTotals` **eliminados** de `lib/dashboard/derive.ts` (código muerto sin más
+  consumidores) junto con sus tests — decisión confirmada con el humano antes de borrar.
 
-- [ ] **Step 5: Verificar y commit + PR**
+- [x] **Step 5: Verificar y commit + PR**
 
 ```bash
 npm run lint && npm run typecheck && npm run test

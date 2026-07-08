@@ -115,10 +115,9 @@ export interface PortfolioPerformance {
   holdings: HoldingPerformance[]
 }
 
-// Elemento de HoldingPerformanceDto (sin companyName — solo ticker)
-// TODO (deuda técnica): el endpoint GET /portfolios/{id}/performance debe añadir los campos
-// de moneda original para evitar que el frontend los calcule a partir del detalle de cartera.
-// Ver BigSchool.Application.DTOs.Investments.HoldingPerformanceDto — pending backend iteration.
+// Elemento de HoldingPerformanceDto (sin companyName — solo ticker). Los campos
+// *Original (moneda de la empresa, sin conversión FX) ya los envía el backend
+// siempre — verificado contra HoldingPerformanceDto real (Investments/DTOs).
 export interface HoldingPerformance {
   idHolding: number
   idCompany: number
@@ -128,11 +127,25 @@ export interface HoldingPerformance {
   marketValue: number
   unrealizedPnL: number
   unrealizedPnLPct: number           // campo real: UnrealizedPnLPct (≠ returnPct)
-  // Campos pendientes de backend — undefined hasta que el endpoint los materialice
-  buyOriginalCurrency?: string
-  costBasisOriginal?: number         // coste de acciones abiertas en moneda original
-  marketValueOriginal?: number       // valor de mercado en moneda original
-  unrealizedPnLOriginal?: number     // PnL no realizado en moneda original
+  buyOriginalCurrency: string
+  costBasisOriginal: number          // coste de acciones abiertas en moneda original
+  marketValueOriginal: number        // valor de mercado en moneda original
+  unrealizedPnLOriginal: number      // PnL no realizado en moneda original
+}
+
+// ── GET /portfolios/summary → InvestmentsSummaryDto ──────────────────────────────
+// Agregado en moneda base de todas las carteras activas del usuario (market
+// value/cost basis/unrealized de holdings abiertos + realized/portfolioCount
+// de todas las carteras).
+export interface PortfoliosSummary {
+  baseCurrency: string
+  marketValue: number
+  costBasis: number
+  unrealizedPnL: number
+  realizedPnL: number
+  totalPnL: number
+  returnPct: number
+  portfolioCount: number
 }
 
 // ── Body de POST /portfolios/{id}/sales (SellSharesRequest) ──────────────────────

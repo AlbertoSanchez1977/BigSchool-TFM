@@ -1077,7 +1077,42 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 **Resultado / Estado:**
 - `typecheck` limpio, 254/254 tests unitarios en verde (+3 nuevos), 11/11 E2E local en verde (incluye `create-expense.spec.ts`, que ejercita los 4 Selects corregidos de `transaction-sheet.tsx`).
-- Añadido al mismo PR #167 (aún sin mergear) — no se abre un PR nuevo, es feedback sobre la misma tarea.
+- Añadido al mismo PR #167, mergeado.
+
+**Investigación adicional del parpadeo (post-merge, antes de Task 7):** `modal={false}` no lo arregló.
+Con "Paint flashing" de DevTools se confirmó que el problema real es el propio popup del `Select`: en
+su primer render sube desde abajo ocupando casi toda la pantalla y luego se reajusta a su altura
+correcta (no es la página entera repintándose, es el popup con una altura inicial incorrecta).
+Descartado que fuera cosa de `next dev`: se reproduce igual con `next build && next start` en local.
+**Pero no se reproduce en un iPhone 13 real (Chrome)**, ni siquiera en la release de producción
+anterior a estos cambios (el `Select` de empresa ya existía desde el MVP). Conclusión: parece un
+artefacto de la emulación de móvil de Chrome DevTools, no un bug real en dispositivo — **aparcado por
+decisión del humano** ("al final de la iteración lo miraré con calma"), sin más cambios de código
+por ahora. Queda `modal={false}` en los Select afectados (correcto igualmente, evita un doble
+bloqueo de scroll real aunque no fuera la causa de este síntoma concreto).
 
 **Siguiente paso:**
-- [ ] Task 7 — Holdings `*Original` + summary global en Dashboard (módulo Investments).
+- [x] Task 7 — Holdings `*Original` + summary global en Dashboard (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 7 — Holdings `*Original` + summary global en Dashboard (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `HoldingPerformanceDto` real: los 4 campos `*Original` son **no-nullable** en el backend (confirmado, no solo "probablemente presentes" como decía el `TODO`) — retirados el comentario de deuda técnica y los `?`/fallbacks `—` en `types/portfolios.ts` y en el grid de `PerformanceTab` (`investments/[id]/page.tsx`), que pasa de 3×2 a 3×3 celdas añadiendo "Valor mercado original".
+- `usePortfoliosSummary()` (TDD) contra `GET /portfolios/summary` (`portfolioService.summary()`). **Desviación del plan**: `InvestmentsSummaryDto` real tiene un campo `PortfolioCount` que el snippet no incluía — añadido a `PortfoliosSummary`.
+- `dashboard/page.tsx`: el mini-resumen de inversiones usaba `derivePortfolioTotals` (suma en cliente sobre `usePortfolios`, no sobre `/portfolios/{id}/performance` como sugería el contexto del plan) — sustituido por `usePortfoliosSummary()`. `portfolioCur` pasa a leer `invSummary.baseCurrency` en vez de `portfolios[0].realizedPnLCurrency` (no depende de que haya al menos 1 cartera en la página cargada).
+
+**Decisiones / Problemas encontrados:**
+- **Limpieza de código muerto confirmada con el humano antes de ejecutar**: al dejar de usarse, `derivePortfolioTotals`/`PortfolioTotals` (`lib/dashboard/derive.ts`) se quedaban sin consumidores. Antes de borrar, el humano preguntó explícitamente si eso significaba perder el rendimiento total de cartera en el Dashboard — aclarado que no: el dato se sigue mostrando, solo cambia de dónde sale (antes sumado en el navegador, ahora servido ya calculado por el backend). Confirmado el borrado (a diferencia de `aggregateByCategory.ts` en la Task 2, que sí se mantuvo por decisión explícita).
+- **E2E inicialmente en rojo por servidor de desarrollo frío, no por el código**: `sell-holding.spec.ts` falló 3 veces seguidas con timeouts crecientes (`waitForURL` a `/dashboard`, luego a `/investments/{id}`, luego el toast de venta) porque no había ningún `next dev` corriendo de fondo — Playwright arrancaba uno nuevo en frío cada vez y Turbopack compila cada ruta bajo demanda en su primera visita (con aviso explícito de "Slow filesystem detected" en los logs). Cada reintento llegaba más lejos según se iban precompilando rutas; con el dev server ya caliente, la suite completa (11/11) pasó en verde. Ninguno de los cambios de esta tarea tocaba las rutas que fallaban (registro, creación de cartera) — quedó descartado como regresión real.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 253/253 tests unitarios en verde (+3 nuevos de `usePortfoliosSummary`, -4 de `derivePortfolioTotals` retirado), 11/11 E2E local en verde.
+
+**Siguiente paso:**
+- [ ] Task 8 — Pantallas "Mercado": Companies (listado/detalle/crear) + combobox (módulo Investments).
