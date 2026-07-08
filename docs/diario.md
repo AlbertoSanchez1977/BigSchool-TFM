@@ -1030,7 +1030,54 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 - E2E completo en local (no solo el subconjunto afectado): 11/11 en verde (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts` — esta última ejercita `investments/page.tsx` al crear la cartera de la venta).
 
 **Resultado / Estado:**
-- Task 5 completada. `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
+- Task 5 completada y mergeada (PR #166). `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
 
 **Siguiente paso:**
-- [ ] Task 6 — Renombrar / borrar cartera (módulo Investments).
+- [x] Task 6 — Renombrar / borrar cartera (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 6 — Renombrar / borrar cartera (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `PUT/DELETE /portfolios/{id}` en `PortfoliosController.cs` antes de tocar tipos: **desviación real del plan** — `RenamePortfolioCommand : IRequest` (sin genérico), el endpoint devuelve `ApiResponse.Success()` sin `data`, no un `Portfolio` como asumía el snippet. `rename`/`remove` en `portfolioService.ts` tipados `Promise<void>`.
+- Verificada la `queryKey` real del detalle (`usePortfolioDetail` en `useHoldings.ts`): `['portfolios', id]` — el snippet del plan apuntaba `['portfolio', id]` (singular) como aproximación a verificar; usada la real en `usePortfolioMutations.ts` (`useRenamePortfolio`, `useDeletePortfolio`, TDD). Ambas invalidan el detalle y la lista de carteras (`['portfolios']` prefijo).
+- `investments/[id]/page.tsx`: `DropdownMenu` (⋯, mismo componente que `profile-dropdown.tsx`) junto al botón "Añadir holding" con "Renombrar" (modal centrado, nombre precargado) y "Eliminar" (modal de confirmación, navega a `/investments` al éxito). El 409 del guard fiscal (holdings abiertos) llega como `ApiError.message` y se muestra tal cual, sin reinterpretarlo.
+
+**Decisiones / Problemas encontrados:**
+- **Ajuste de composición sobre el plan**: el `DropdownMenuTrigger` de Base UI ya es en sí mismo el elemento interactivo (confirmado mirando cómo lo usa `profile-dropdown.tsx`: children directos, sin envolver un `<Button>`). En vez de anidar `<Button variant="outline" size="icon">` dentro con un `render` prop (sin verificar si `Menu.Trigger` soporta ese patrón de composición), se estiliza el propio trigger con `buttonVariants({ variant: 'outline', size: 'icon' })` — mismo resultado visual, sin apostar por una API no confirmada.
+- Sin sorpresas de diseño visual: el patrón de modal centrado y el `DropdownMenu` ya estaban establecidos en el codebase (`CreatePortfolioModal`, `profile-dropdown.tsx`); esta tarea fue puro cableado siguiendo esos patrones.
+
+**Resultado / Estado:**
+- Task 6 completada. `typecheck` limpio, 251/251 tests unitarios en verde. E2E `sell-holding.spec.ts` (ejercita `investments/[id]/page.tsx`) en verde tras el cambio de cabecera.
+
+**Siguiente paso:**
+- [ ] Feedback adicional del humano sobre el PR #167 (ver entrada siguiente).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 6 (revisión) — iconos en listado + fix de parpadeo móvil
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments, Transactions)
+
+**Actividades realizadas (feedback del humano sobre el PR #167, antes de mergear):**
+1. **Renombrar/borrar también desde el listado de carteras** (`investments/page.tsx`): extraídos `RenamePortfolioModal`/`DeletePortfolioModal` de `investments/[id]/page.tsx` a `components/investments/portfolio-action-modals.tsx` (compartidos entre el listado y el detalle, en vez de duplicar el código de los modales). `DeletePortfolioModal` gana un callback opcional `onDeleted` — el detalle navega a `/investments` al borrar, el listado no necesita navegar (la lista se refresca sola vía invalidación de query).
+   - `PortfolioCard` deja de ser un `<button>` — un `<button>` (editar/borrar) dentro de otro `<button>` (la card) es HTML inválido y el navegador rompe el anidado. Pasa a ser un `<div role="button" tabIndex={0}>` con `onKeyDown` (Enter/Espacio) para no perder accesibilidad de teclado. Los iconos de editar/borrar llevan `stopPropagation()` para no disparar la navegación de la card al clicar.
+2. **Parpadeo en móvil al elegir empresa en "Añadir holding"**: diagnosticado como un conflicto de "modales anidados" — `Select` de Base UI es `modal={true}` por defecto (bloquea scroll de página + interacción exterior), y al estar anidado dentro de un `Dialog` (también modal), el desbloqueo de scroll del `Select` al cerrarse pisaba momentáneamente el bloqueo del `Dialog` padre, causando un parpadeo visible — más notorio en móvil por el redimensionado de la barra de direcciones. Corregido con `modal={false}` en el `Select` del combobox de empresa (`investments/[id]/page.tsx`) y, proactivamente, en los 4 `<Select>` de `transaction-sheet.tsx` (mismo patrón exacto: Select anidado en Dialog, aunque no reportado explícitamente para ese formulario).
+
+**Decisiones / Problemas encontrados:**
+- Verificado en el código fuente de `@base-ui/react` (`SelectRoot.js`, `SelectRoot.d.ts`) que `modal: true` es el default documentado ("document page scroll is locked and pointer interactions on outside elements are disabled") — no fue necesario reproducir visualmente el bug para confirmar la causa raíz, la lectura del código y el comportamiento reportado (desaparición momentánea) encajaban con precisión.
+- Test nuevo (`investmentsPage.test.tsx`, no existía cobertura previa para esta página) verificando que los iconos de editar/borrar abren su modal **sin** disparar la navegación de la card (`router.push` no debe llamarse).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 254/254 tests unitarios en verde (+3 nuevos), 11/11 E2E local en verde (incluye `create-expense.spec.ts`, que ejercita los 4 Selects corregidos de `transaction-sheet.tsx`).
+- Añadido al mismo PR #167 (aún sin mergear) — no se abre un PR nuevo, es feedback sobre la misma tarea.
+
+**Siguiente paso:**
+- [ ] Task 7 — Holdings `*Original` + summary global en Dashboard (módulo Investments).

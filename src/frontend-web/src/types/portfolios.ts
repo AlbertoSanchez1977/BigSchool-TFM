@@ -23,6 +23,12 @@ export interface PagedPortfolios {
   meta: PageMeta
 }
 
+// Body de PUT /portfolios/{id} (RenamePortfolioRequest) — la respuesta es un
+// ApiResponse sin data (el controller solo hace await + Ok(ApiResponse.Success())).
+export interface RenamePortfolioDto {
+  name: string
+}
+
 // ── POST /portfolios → PortfolioDto (comando: currency tipada) ────────────────────
 export interface Portfolio {
   idPortfolio: number

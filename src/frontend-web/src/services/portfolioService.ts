@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import type {
   PortfolioListItem, Portfolio, PortfolioDetail, PortfolioPerformance,
   CreatePortfolioDto, SellSharesDto, SellSharesResult, PagedPortfolios,
+  RenamePortfolioDto,
 } from '@/types/portfolios'
 import type { PageMeta } from '@/types/pagination'
 
@@ -41,5 +42,15 @@ export const portfolioService = {
   // POST /portfolios/{id}/sales → SellSharesResultDto (SellSharesRequest del controller)
   async sellShares(id: number, data: SellSharesDto): Promise<SellSharesResult> {
     return api.post<SellSharesResult>(`/portfolios/${id}/sales`, data)
+  },
+
+  // PUT /portfolios/{id} → sin data (ApiResponse.Success() vacío)
+  async rename(id: number, data: RenamePortfolioDto): Promise<void> {
+    await api.put<void>(`/portfolios/${id}`, data)
+  },
+
+  // DELETE /portfolios/{id} → 409 si hay holdings abiertos (guard fiscal, ver ApiError.message)
+  async remove(id: number): Promise<void> {
+    await api.delete<void>(`/portfolios/${id}`)
   },
 }

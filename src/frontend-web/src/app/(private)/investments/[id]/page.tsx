@@ -7,10 +7,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import {
-  ChevronLeft, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
+  ChevronLeft, MoreVertical, Pencil, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,10 +24,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   usePortfolioDetail, useAddHolding, useUpdateHoldingNotes, useDeleteHolding,
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
 import { useCompanies } from '@/hooks/useCompanies'
+import {
+  RenamePortfolioModal, DeletePortfolioModal,
+} from '@/components/investments/portfolio-action-modals'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
@@ -122,6 +129,13 @@ function AddHoldingModal({
                 <Select
                   value={field.value != null ? String(field.value) : ''}
                   onValueChange={(v) => field.onChange(Number(v))}
+                  // Select es modal por defecto (bloquea scroll + interacción fuera de él);
+                  // anidado dentro de un Dialog (también modal) provoca que, al cerrarse el
+                  // Select tras elegir, su propio desbloqueo de scroll pise momentáneamente
+                  // el bloqueo del Dialog padre — se ve como un parpadeo en móvil. El Dialog
+                  // ya bloquea la interacción exterior, así que el Select anidado no necesita
+                  // repetirlo.
+                  modal={false}
                 >
                   <SelectTrigger id="idCompany" className="w-full" data-testid="select-company">
                     <SelectValue placeholder="Selecciona empresa…">
@@ -595,13 +609,18 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
 }
 
 // ── Página principal ──────────────────────────────────────────────────────────
+// RenamePortfolioModal / DeletePortfolioModal viven en
+// components/investments/portfolio-action-modals.tsx (compartidos con el listado).
 
 export default function HoldingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const portfolioId = Number(id)
+  const router = useRouter()
 
-  const [addOpen, setAddOpen] = useState(false)
-  const [tab, setTab]         = useState<'holdings' | 'performance'>('holdings')
+  const [addOpen, setAddOpen]       = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [tab, setTab]               = useState<'holdings' | 'performance'>('holdings')
 
   const { data: portfolio, isLoading, isError } = usePortfolioDetail(portfolioId)
 
@@ -632,17 +651,44 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
           {isLoading && <Skeleton className="h-6 w-32 shrink-0" />}
         </div>
 
-        {tab === 'holdings' && (
-          <Button
-            onClick={() => setAddOpen(true)}
-            data-testid="btn-add-holding"
-            aria-label="Añadir holding"
-            className="shrink-0"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Añadir holding</span>
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {tab === 'holdings' && (
+            <Button
+              onClick={() => setAddOpen(true)}
+              data-testid="btn-add-holding"
+              aria-label="Añadir holding"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Añadir holding</span>
+            </Button>
+          )}
+
+          {portfolio && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Más acciones"
+                data-testid="btn-portfolio-menu"
+                className={buttonVariants({ variant: 'outline', size: 'icon' })}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setRenameOpen(true)} data-testid="menu-rename-portfolio">
+                  <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Renombrar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  data-testid="menu-delete-portfolio"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs: Holdings | Performance ─────────────────────────────────── */}
@@ -717,12 +763,28 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
         </TabsContent>
       </Tabs>
 
-      {/* Modal añadir holding — montado condicionalmente */}
+      {/* Modales — montados condicionalmente */}
       {addOpen && (
         <AddHoldingModal
           portfolioId={portfolioId}
           open={addOpen}
           onClose={() => setAddOpen(false)}
+        />
+      )}
+      {renameOpen && portfolio && (
+        <RenamePortfolioModal
+          portfolioId={portfolioId}
+          currentName={portfolio.name}
+          open={renameOpen}
+          onClose={() => setRenameOpen(false)}
+        />
+      )}
+      {deleteOpen && (
+        <DeletePortfolioModal
+          portfolioId={portfolioId}
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => router.push('/investments')}
         />
       )}
     </div>
