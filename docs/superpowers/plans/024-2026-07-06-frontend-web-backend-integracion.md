@@ -931,52 +931,66 @@ summary). Sin `GET{id}` ni `DELETE` de valoración (deuda: costura documentada).
 - Modify: `src/app/(private)/market/[id]/page.tsx` (integrar serie + listado + alta)
 - Test: `tests/unit/hooks/useValuations.test.tsx`
 
-- [ ] **Step 1: Tipos** (verificar contra los DTO reales):
+- [x] **Step 1: Tipos** (verificar contra los DTO reales):
 
-```typescript
-import type { PageMeta } from './pagination'
-export interface ValuationSeriesPoint { date: string; price: number }
-export interface ValuationSeries {
-  currency: string
-  points: ValuationSeriesPoint[]
-  min: number; max: number; last: number; changePct: number   // confirmar nombres del summary DTO
-}
-export interface CreateValuationDto { price: number; date: string; source?: string | null }
-export interface PagedValuations { items: ValuationListItem[]; meta: PageMeta }
-export type ValuationPeriod = '3m' | '6m' | '1y' | '3y' | '5y'
-```
+  **Desviaciones reales confirmadas contra `CompaniesController.cs`/DTOs** (verificado con
+  subagente antes de escribir tipos, no de memoria):
+  - Ruta base real es `/api/v1/companies/...`.
+  - La lista (`ValuationListItemDto`, Dapper) trae `priceCurrency: string`; el DTO de creación
+    (`ValuationDto`) trae `currency` como enum `Currency` tipado — dos nombres/formas distintas
+    para el mismo concepto, documentado en comentario en `types/companies.ts`.
+  - El body de `POST` (`AddValuationRequest`) **no lleva `currency`**: la hereda la empresa.
+  - El summary de la serie es `{ first, last, min, max, changePct }` (camelCase) — el plan
+    olvidaba `first`.
+  - `ValuationPeriod` es un enum de .NET cuyo valor subyacente es el nº de meses; el query
+    param `?period=` acepta el NOMBRE del miembro (`ThreeMonths`, `OneYear`…), **no** `'3m'/'1y'`
+    como asumía el borrador del plan. Tipo final: `'ThreeMonths'|'SixMonths'|'OneYear'|'ThreeYears'|'FiveYears'`,
+    con `VALUATION_PERIODS`/`VALUATION_PERIOD_LABEL` para la UI.
+  - Serie vacía: `points: []`, summary con todo a `0`, `currency: ""` (nunca `null`/ausente).
 
-- [ ] **Step 2: Servicio** — en `companyService.ts` añadir:
+  Implementado en `types/enums.ts` (`ValuationPeriod`, siguiendo el patrón de `Sector`/`Market`:
+  es un enum del dominio, no un tipo de recurso) y `types/companies.ts` (`Valuation`,
+  `CreateValuationDto`, `PagedValuations`, `ValuationSeriesPoint`, `ValuationSeriesSummary`,
+  `ValuationSeries` — `ValuationListItem` ya existía de Task 8). Etiqueta de periodo en
+  `lib/investments/labels.ts` (`VALUATION_PERIOD_LABEL`), mismo patrón que `SECTOR_LABEL`.
 
-```typescript
-listValuations: (id: number, page: number, pageSize: number) =>
-  api.getWithMeta<ValuationListItem[]>(`/companies/${id}/valuations?page=${page}&pageSize=${pageSize}`),
-createValuation: (id: number, data: CreateValuationDto) =>
-  api.post<ValuationListItem>(`/companies/${id}/valuations`, data),
-valuationSeries: (id: number, period: ValuationPeriod) =>
-  api.get<ValuationSeries>(`/companies/${id}/valuations/series?period=${period}`),
-```
+- [x] **Step 2: Servicio** — `listValuations`/`createValuation`/`valuationSeries` añadidos a
+  `companyService.ts`, con `period` viajando como el nombre del enum en la query string.
 
-- [ ] **Step 3: Hooks + tests** — `useValuations.ts`:
-  - `useValuations(id, page, pageSize)` → useQuery paginado (mapear meta).
-  - `useCreateValuation(id)` → mutation, invalida `['valuations', id]` y `['valuation-series', id]`.
-  - `useValuationSeries(id, period)` → useQuery con `queryKey: ['valuation-series', id, period]`.
-  Test: comprobar rutas y que `createValuation` invalida ambas keys.
+- [x] **Step 3: Hooks + tests** — `useValuations.ts` (TDD: test RED confirmado antes de crear el
+  fichero, luego GREEN). `valuationKeys` añadido a `lib/queryKeys.ts` (mismo patrón que
+  `portfolioKeys`/`companyKeys`); `useCreateValuation` invalida por prefijo
+  (`valuationKeys.all(id)` / `valuationKeys.seriesAll(id)`), cubriendo todas las páginas y
+  periodos cacheados sin necesidad de conocerlos. 5 tests nuevos en
+  `tests/unit/useValuations.test.tsx` (ruta real del proyecto: plano bajo `tests/unit/`, no
+  `tests/unit/hooks/` como sugería el plan).
 
-- [ ] **Step 4: Gráfico de serie** — `valuation-series-chart.tsx`: `LineChart` de Recharts con
-  `--chart-line`; selector de periodo (3m/6m/1y/3y/5y) que cambia `useValuationSeries`; fila de summary
-  (min/max/último/variación % con `text-positive/negative` según signo). Estados loading/error/empty.
-  Reusar el wrapper responsive de `components/charts/portfolio-chart.tsx` como referencia.
+- [x] **Step 4: Gráfico de serie** — `valuation-series-chart.tsx`: `LineChart` de Recharts con
+  `var(--chart-5)` (no existe una variable `--chart-line`; `--chart-5` es la que usan
+  `portfolio-chart.tsx` y el balance acumulado del Dashboard para líneas/áreas — "azul celeste
+  apagado" del design system). Selector de periodo como segmented-control (`role="tablist"`,
+  mismo patrón que el conmutador Gastos/Ingresos de `expenses/page.tsx`). Fila de summary con
+  4 celdas (Mínimo/Máximo/Último/Variación) usando `colorPnL`/`signPnL`/`formatPct` de
+  `lib/transactions/labels.ts`. Estados loading/error/empty (serie sin puntos).
 
-- [ ] **Step 5: Integrar en `/market/[id]`** — añadir: (a) el `valuation-series-chart`; (b) botón
-  "Nueva valoración" → modal (`price`, `date`, `source?`) con `useCreateValuation`; (c) listado
-  paginado de valoraciones (`useValuations` + `<Pagination>`), estados. **Sin** acciones ver/borrar
-  por valoración (deuda) — comentar la costura.
+- [x] **Step 5: Integrar en `/market/[id]`** — añadido `ValuationSeriesChart`, botón "Nueva
+  valoración" con modal (`price`/`date`/`source` opcional — sin selector de moneda, la hereda la
+  empresa) y listado paginado de valoraciones (tabla en desktop, tarjetas en móvil, mismo patrón
+  que `expenses/page.tsx`) con `<Pagination>` usando `DEFAULT_PAGE_SIZE`. Comentario explícito en
+  el código sobre la costura "sin ver/borrar valoración individual".
 
-- [ ] **Step 6: Verificar y commit + PR**
+- [x] **Step 6: Verificar y commit + PR**
+
+  **Desviación**: `npm run lint` no es ejecutable en este entorno — `eslint` no está declarado
+  como dependencia en `package.json` (deuda preexistente del proyecto, no introducida por esta
+  tarea; no se tocó `package.json`). `typecheck` limpio, 266/266 tests unitarios en verde
+  (+5 nuevos de `useValuations`), 11/11 E2E existentes en verde. Verificación visual manual en
+  navegador (dev server + backend reales): creada una empresa, confirmado el estado vacío del
+  gráfico/listado, dada de alta una valoración y confirmado que el summary (mín/máx/último/
+  variación), la fila de la tabla y el selector de periodo se actualizan correctamente
+  (capturas de pantalla revisadas, script de smoke ad hoc descartado tras la verificación).
 
 ```bash
-npm run lint && npm run typecheck && npm run test
 git add -A && git commit -m "feat(investments): valoraciones de empresa (listado, alta y gráfico de serie por periodo)"
 ```
 
