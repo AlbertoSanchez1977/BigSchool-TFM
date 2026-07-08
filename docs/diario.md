@@ -1157,4 +1157,29 @@ y `notificationService.ts` (los tres `= 100`, este último eliminando su propio 
 unitarios y 11/11 E2E en verde tras el cambio.
 
 **Siguiente paso:**
-- [ ] Task 9 — Valuations: listado + crear + gráfico de serie (módulo Investments).
+- [x] Task 9 — Valuations: listado + crear + gráfico de serie (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 9 — Valuations (listado, alta y gráfico de serie) (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `CompaniesController.cs`/DTOs reales con subagente antes de tocar tipos (varias desviaciones del borrador del plan, ver abajo). Tipos añadidos: `ValuationPeriod` en `types/enums.ts` (es un enum de dominio, mismo tratamiento que `Sector`/`Market`, no un DTO de recurso); `Valuation`, `CreateValuationDto`, `PagedValuations`, `ValuationSeriesPoint`, `ValuationSeriesSummary`, `ValuationSeries` en `types/companies.ts` (`ValuationListItem` ya existía de Task 8).
+- `companyService.ts` (`listValuations`/`createValuation`/`valuationSeries`), `hooks/useValuations.ts` (TDD: test RED confirmado antes de crear el fichero, 5 tests). `valuationKeys` añadido a `lib/queryKeys.ts`, invalidación por prefijo (`valuationKeys.all(id)`/`seriesAll(id)`) para cubrir todas las páginas y periodos cacheados sin enumerar cada combinación.
+- `components/market/valuation-series-chart.tsx`: `LineChart` de Recharts + selector de periodo (segmented control) + fila de summary (mínimo/máximo/último/variación %). Integrado en `/market/[id]` junto con el modal "Nueva valoración" y el listado paginado (tabla desktop / tarjetas móvil, mismo patrón que `expenses/page.tsx`).
+
+**Decisiones / Problemas encontrados:**
+- **Desviaciones reales confirmadas contra el backend** (no asumidas del borrador del plan): la lista de valoraciones (`ValuationListItemDto`, Dapper) trae la moneda como `priceCurrency: string`, mientras que el DTO de creación (`ValuationDto`) la trae como `currency` (enum tipado) — mismo concepto, dos nombres/formas distintas entre endpoints hermanos. El body de `POST /companies/{id}/valuations` **no lleva `currency`**: la hereda la empresa (`Company.Currency`), el backend construye el `Money` con ella. El summary de la serie es `{ first, last, min, max, changePct }` — el plan olvidaba `first`. Y lo más relevante: `ValuationPeriod` es un enum de .NET (valor subyacente = nº de meses) cuyo query param `?period=` acepta el **nombre del miembro** (`ThreeMonths`, `OneYear`…), no abreviaturas tipo `'3m'/'1y'` como asumía el plan — de haberlo dado por bueno sin verificar, todas las llamadas a la serie habrían devuelto 400.
+- **No existe la variable CSS `--chart-line`** que mencionaba el plan; el gráfico de línea usa `var(--chart-5)`, la misma que ya usan `portfolio-chart.tsx` (landing) y el balance acumulado del Dashboard — consistente con "azul celeste apagado" del design system.
+- **`npm run lint` no es ejecutable**: `eslint` no está declarado como dependencia en `package.json` — deuda preexistente del proyecto, no introducida por esta tarea (no se tocó `package.json`); se documenta pero no se investiga a fondo por estar fuera del alcance de Task 9.
+- Verificación visual manual en navegador (dev server :3000 + backend real :5285): creada una empresa nueva, confirmado el estado vacío del gráfico/listado, dada de alta una valoración vía el modal y confirmado que el summary, la fila de la tabla y el selector de periodo reflejan el dato correctamente. Guion de smoke ad hoc descartado tras la verificación (no forma parte de la suite).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 266/266 tests unitarios en verde (+5 nuevos: `useValuations`), 11/11 E2E local en verde. `npm run lint` no ejecutable (deuda preexistente, ver arriba).
+
+**Siguiente paso:**
+- [ ] Revisar y mergear PR de Task 9. Plan 024 completo (9/9 tareas) tras el merge.

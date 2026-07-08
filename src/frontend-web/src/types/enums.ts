@@ -46,3 +46,11 @@ export const MARKETS = [
   'EuronextParis', 'BME',
 ] as const
 export type Market = (typeof MARKETS)[number]
+
+// ValuationPeriod (BigSchool.Domain.Investments.Enums.ValuationPeriod) — el valor subyacente
+// en el backend es el nº de meses de la ventana, pero el query param `?period=` del binding de
+// ASP.NET Core acepta el NOMBRE del miembro (o el número), nunca abreviaturas tipo '3m'/'6m'.
+// Esas abreviaturas solo existen como etiqueta de UI (ver VALUATION_PERIOD_LABEL en
+// lib/investments/labels.ts).
+export const VALUATION_PERIODS = ['ThreeMonths', 'SixMonths', 'OneYear', 'ThreeYears', 'FiveYears'] as const
+export type ValuationPeriod = (typeof VALUATION_PERIODS)[number]
