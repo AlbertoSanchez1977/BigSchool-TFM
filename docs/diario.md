@@ -1182,4 +1182,40 @@ unitarios y 11/11 E2E en verde tras el cambio.
 - `typecheck` limpio, 266/266 tests unitarios en verde (+5 nuevos: `useValuations`), 11/11 E2E local en verde. `npm run lint` no ejecutable (deuda preexistente, ver arriba).
 
 **Siguiente paso:**
-- [ ] Revisar y mergear PR de Task 9. Plan 024 completo (9/9 tareas) tras el merge.
+- [x] Revisar y mergear PR de Task 9. Plan 024 completo (9/9 tareas) tras el merge.
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 1 — Favicon propio + retirada de Vercel Analytics (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web
+
+**Contexto**: primera tarea del plan 025, que corrige los hallazgos de la ronda de pruebas manuales
+(`docs/guia-pruebas-manuales-frontend.md`). Este bug (#2 del registro) eran tres 404 de consola en
+cada arranque: `icon.svg`, `icon-light-32x32.png` (referenciados en `metadata.icons` de `layout.tsx`
+pero sin los ficheros correspondientes en `public/`, que ni siquiera existe) y
+`/_vercel/insights/script.js` (Vercel Analytics activo en producción sin proyecto desplegado en
+Vercel).
+
+**Actividades realizadas:**
+- Creado `src/app/icon.svg` (32×32, fondo azul primario `#2f80d6`, trazo blanco con forma de línea
+  de cotización) — Next.js App Router lo detecta automáticamente como favicon file-based, sin
+  necesidad de declararlo en `metadata`.
+- `layout.tsx`: retirado el `import { Analytics } from '@vercel/analytics/next'`, el bloque
+  `metadata.icons` (apuntaba a PNGs inexistentes) y el `<Analytics />` condicional a producción.
+- `pnpm remove @vercel/analytics` — dependencia fuera de `package.json`/`pnpm-lock.yaml`.
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan: los tres cambios eran mecánicos y ya estaban acotados con precisión
+  en el plan tras la lectura previa del código real.
+
+**Resultado / Estado:**
+- `typecheck` y `next build` limpios; `/icon.svg` aparece en el listado de rutas del build,
+  confirmando que Next lo generó como favicon. Grep de `vercel` en `src/` sin resultados.
+  Verificación visual manual del humano: favicon nuevo visible en la pestaña, sin 404 de los tres
+  assets/script.
+
+**Siguiente paso:**
+- [ ] Task 2 — Fecha por defecto de "Nueva transacción" = periodo visible (Plan 025).
