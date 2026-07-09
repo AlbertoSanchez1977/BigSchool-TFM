@@ -25,3 +25,9 @@ export function defaultTransactionDate(
   const m = String(viewedMonth).padStart(2, '0')
   return `${viewedYear}-${m}-01`
 }
+
+// True si la fecha 'YYYY-MM-DD' NO es futura (hoy o anterior). Comparación lexicográfica,
+// válida para el formato ISO fecha. `today` inyectable para tests deterministas.
+export function isNotFuture(iso: string, today = new Date()): boolean {
+  return iso <= todayISO(today)
+}

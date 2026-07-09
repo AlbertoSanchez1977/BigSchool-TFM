@@ -315,7 +315,11 @@ propósito** (decisión de negocio).
 
 ### 3A · Backend
 
-- [ ] **Step 1: Escribir el test unitario del validador de compra (RED)** `.../Validators/Investments/AddHoldingCommandValidatorTests.cs`
+- [x] **Step 1: Escribir el test unitario del validador de compra (RED)** `.../Validators/Investments/AddHoldingCommandValidatorTests.cs`
+
+**Desviación**: nomenclatura de tests ajustada a la convención real del proyecto
+(`Validate_<Escenario>_NoError`/`HasError`, ver `RenamePortfolioCommandValidatorTests.cs`) en vez de
+`BuyDate_today_is_valid` del borrador del plan.
 
 ```csharp
 using System;
@@ -348,12 +352,14 @@ public class AddHoldingCommandValidatorTests
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla (RED)**
+- [x] **Step 2: Ejecutar y verificar que falla (RED)**
 
 Run (cwd `src/backend`): `dotnet test tests/BigSchool.Application.Tests --filter FullyQualifiedName~AddHoldingCommandValidatorTests`
 Expected: FAIL en `BuyDate_in_the_future_is_invalid` (aún no existe la regla).
 
-- [ ] **Step 3: Añadir la regla "no futura" en los 3 validadores**
+Confirmado: falló `Validate_BuyDateInFuture_HasError` (1 con error, 1 superado).
+
+- [x] **Step 3: Añadir la regla "no futura" en los 3 validadores**
 
 `AddHoldingCommandValidator.cs` — añade tras la regla de `BuyDate`:
 ```csharp
@@ -377,7 +383,7 @@ RuleFor(x => x.Date)
     .WithMessage("La fecha de la valoración no puede ser futura.");
 ```
 
-- [ ] **Step 4: Escribir los tests de venta y valoración** (misma estructura)
+- [x] **Step 4: Escribir los tests de venta y valoración** (misma estructura)
 
 `SellSharesCommandValidatorTests.cs`:
 ```csharp
@@ -443,12 +449,15 @@ public class AddValuationCommandValidatorTests
 }
 ```
 
-- [ ] **Step 5: Ejecutar los 3 tests de validadores y verificar que pasan (GREEN)**
+- [x] **Step 5: Ejecutar los 3 tests de validadores y verificar que pasan (GREEN)**
 
 Run (cwd `src/backend`): `dotnet test tests/BigSchool.Application.Tests --filter FullyQualifiedName~Validators.Investments`
 Expected: PASS (6 tests).
 
-- [ ] **Step 6: Añadir el caso E2E 400 "fecha futura" en los 3 endpoints**
+Confirmado: 13/13 (6 nuevos + 7 preexistentes en `Validators.Investments`). Suite completa de
+`Application.Tests`: 119/119.
+
+- [x] **Step 6: Añadir el caso E2E 400 "fecha futura" en los 3 endpoints**
 
 En cada fichero E2E existente, añade un test que envíe el request real con una fecha futura y espere
 `400 BadRequest` con `VALIDATION_ERROR`. Usa el patrón y helpers ya presentes en cada fichero
@@ -472,12 +481,14 @@ Replica el mismo test en `PostSaleTests.cs` (con `SellDate` futura sobre un hold
 `AddValuationTests.cs` (con `Date` futura). Reutiliza en cada uno el arrange del test principal del
 propio fichero; el único cambio es la fecha y la aserción de `400`.
 
-- [ ] **Step 7: Ejecutar la suite de integración de Investments (GREEN)**
+- [x] **Step 7: Ejecutar la suite de integración de Investments (GREEN)**
 
 Run (cwd `src/backend`): `dotnet test tests/BigSchool.Integration.Tests --filter FullyQualifiedName~Investments`
 Expected: PASS (incluidos los 3 nuevos casos 400). Requiere `bigschool-mysql` en marcha.
 
-- [ ] **Step 8: Commit backend**
+Confirmado: 73/73 en verde.
+
+- [x] **Step 8: Commit backend**
 
 ```bash
 git add src/backend/src/BigSchool.Application/Investments/Commands/AddHolding/AddHoldingCommandValidator.cs src/backend/src/BigSchool.Application/Investments/Commands/SellShares/SellSharesCommandValidator.cs src/backend/src/BigSchool.Application/Investments/Commands/AddValuation/AddValuationCommandValidator.cs src/backend/tests/BigSchool.Application.Tests/Validators/Investments/ src/backend/tests/BigSchool.Integration.Tests/Investments/PostHoldingTests.cs src/backend/tests/BigSchool.Integration.Tests/Investments/PostSaleTests.cs src/backend/tests/BigSchool.Integration.Tests/Investments/AddValuationTests.cs
@@ -486,7 +497,7 @@ git commit -m "feat(investments): rechazar fechas futuras en compra, venta y val
 
 ### 3B · Frontend
 
-- [ ] **Step 9: Ampliar el test de `dates.ts` con `isNotFuture` (RED)** — añade a `tests/unit/dates.test.ts`
+- [x] **Step 9: Ampliar el test de `dates.ts` con `isNotFuture` (RED)** — añade a `tests/unit/dates.test.ts`
 
 ```ts
 import { isNotFuture } from '@/lib/dates'
@@ -508,12 +519,14 @@ describe('isNotFuture', () => {
 })
 ```
 
-- [ ] **Step 10: Ejecutar y verificar que falla (RED)**
+- [x] **Step 10: Ejecutar y verificar que falla (RED)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: FAIL — `isNotFuture` no está exportado.
 
-- [ ] **Step 11: Añadir `isNotFuture` a** `src/frontend-web/src/lib/dates.ts`
+Confirmado: 3 fallos (`isNotFuture is not a function`) + 4 tests preexistentes en verde.
+
+- [x] **Step 11: Añadir `isNotFuture` a** `src/frontend-web/src/lib/dates.ts`
 
 ```ts
 // True si la fecha 'YYYY-MM-DD' NO es futura (hoy o anterior). Comparación lexicográfica,
@@ -523,12 +536,12 @@ export function isNotFuture(iso: string, today = new Date()): boolean {
 }
 ```
 
-- [ ] **Step 12: Ejecutar y verificar que pasa (GREEN)**
+- [x] **Step 12: Ejecutar y verificar que pasa (GREEN)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: PASS (7 tests: 4 de `defaultTransactionDate` + 3 de `isNotFuture`).
 
-- [ ] **Step 13: Aplicar refine + `max` en compra y venta** `src/frontend-web/src/app/(private)/investments/[id]/page.tsx`
+- [x] **Step 13: Aplicar refine + `max` en compra y venta** `src/frontend-web/src/app/(private)/investments/[id]/page.tsx`
 
 1. Añade el import: `import { todayISO, isNotFuture } from '@/lib/dates'` y **elimina** la función
    local `todayISO()` de este fichero (la sustituye la de `@/lib/dates`).
@@ -547,7 +560,7 @@ sellDate: z.string()
 4. Añade `max={todayISO()}` al `<Input>` de fecha de compra (`id="buyDate"`) y al de venta
    (`id="sell-date"`), junto a `type="date"`.
 
-- [ ] **Step 14: Aplicar refine + `max` en valoración** `src/frontend-web/src/app/(private)/market/[id]/page.tsx`
+- [x] **Step 14: Aplicar refine + `max` en valoración** `src/frontend-web/src/app/(private)/market/[id]/page.tsx`
 
 1. Añade el import: `import { todayISO, isNotFuture } from '@/lib/dates'` y **elimina** la función
    local `todayISO()` de este fichero.
@@ -559,7 +572,7 @@ date: z.string()
 ```
 3. Añade `max={todayISO()}` al `<Input>` de fecha (`id="valuation-date"`), junto a `type="date"`.
 
-- [ ] **Step 15: Verificar typecheck y suite frontend**
+- [x] **Step 15: Verificar typecheck y suite frontend**
 
 Run: `npm run typecheck`
 Expected: sin errores.
@@ -567,13 +580,21 @@ Expected: sin errores.
 Run: `npm run test -- --run`
 Expected: toda la suite en verde.
 
-- [ ] **Step 16: Verificación visual manual**
+Confirmado: `typecheck` limpio, 273/273 tests unitarios en verde (+3 nuevos de `isNotFuture`).
+E2E local: 11/11 en verde (un fallo de registro en la corrida completa, flake ya observado en
+tareas anteriores, no relacionado — pasó aislado en un rerun).
+
+- [x] **Step 16: Verificación visual manual**
 
 En una cartera, intenta **añadir un holding** y **vender** con fecha de mañana → el input impide
 elegir futuro (`max`) y, si se fuerza, el submit muestra el error de Zod. Repite creando una
 **valoración** en `/market/{id}`.
 
-- [ ] **Step 17: Commit frontend**
+**Confirmado por el humano** (comprobación visual manual): calendario bloqueado a futuro y error de
+Zod en los tres formularios (compra, venta, valoración); transacciones siguen aceptando fecha
+futura sin cambios, tal como se decidió.
+
+- [x] **Step 17: Commit frontend**
 
 ```bash
 git add src/frontend-web/src/lib/dates.ts src/frontend-web/tests/unit/dates.test.ts "src/frontend-web/src/app/(private)/investments/[id]/page.tsx" "src/frontend-web/src/app/(private)/market/[id]/page.tsx"

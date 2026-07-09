@@ -101,6 +101,25 @@ public class PostSaleTests : PortfolioEndpointTestBase
     }
 
     [Fact]
+    public async Task Sell_FutureSellDate_Returns400()
+    {
+        var (userId, email) = await SeedUserAsync(Currency.EUR);
+        var client = AuthenticatedClient(userId, email);
+        var portfolioId = await CreatePortfolioViaApiAsync(client);
+        await AddHoldingViaApiAsync(client, portfolioId, CompanySanEur, 100m, 4.0m, "2026-01-05");
+        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1).ToString("yyyy-MM-dd");
+
+        var response = await client.PostAsJsonAsync($"/api/v1/portfolios/{portfolioId}/sales", new
+        {
+            companyId = CompanySanEur, shares = 10m, sellPrice = 8.0m, sellDate = futureDate
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var env = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
+        env!.Errors.Should().Contain(e => e.Code == "VALIDATION_ERROR" && e.Field == "SellDate");
+    }
+
+    [Fact]
     public async Task Sell_WithoutToken_Returns401()
     {
         var client = Factory.CreateClient();

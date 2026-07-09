@@ -1255,4 +1255,61 @@ filtro visible y la transacción parecía "desaparecer" tras crearla.
   día 1 de ese mes, y la transacción creada con esa fecha aparece correctamente en la lista filtrada.
 
 **Siguiente paso:**
-- [ ] Task 3 — Prohibir fechas futuras en compra/venta/valoración (backend + frontend) (Plan 025).
+- [x] Task 3 — Prohibir fechas futuras en compra/venta/valoración (backend + frontend) (Plan 025).
+
+---
+
+## 2026-07-09 — Backend + Frontend-Web: Task 3 — Prohibir fechas futuras en compra/venta/valoración (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: backend (Investments) + frontend-web (Investments)
+
+**Contexto**: bugs #5 y #6 del registro de la ronda de pruebas manuales — los formularios de compra
+de holding, venta de holding y alta de valoración aceptaban fechas futuras. Transacciones se
+excluyen a propósito (un pago emitido a fecha futura es un caso de negocio válido — no se aborda
+Saldo real vs. corriente).
+
+**Actividades realizadas (3A · backend):**
+- TDD por validador: test RED (`Validate_BuyDateInFuture_HasError` fallando) → regla
+  `RuleFor(x => x.BuyDate).LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))` en
+  `AddHoldingCommandValidator`, y la misma regla (adaptada) en `SellSharesCommandValidator` y
+  `AddValuationCommandValidator` → GREEN. 6 tests unitarios nuevos en
+  `tests/BigSchool.Application.Tests/Validators/Investments/` (13/13 en el namespace, 119/119 en
+  toda la suite de `Application.Tests`).
+- 3 tests E2E nuevos (`Post_FutureBuyDate_Returns400`, `Sell_FutureSellDate_Returns400`,
+  `Post_Valuation_FutureDate_Returns400`) en `PostHoldingTests.cs`/`PostSaleTests.cs`/
+  `AddValuationTests.cs`, reutilizando el arrange del test principal de cada fichero — verifican
+  `400` con `Code == "VALIDATION_ERROR"` y el `Field` correcto. Suite de integración de Investments:
+  73/73 en verde.
+
+**Actividades realizadas (3B · frontend):**
+- Ampliado `lib/dates.ts` con `isNotFuture(iso, today?)` (TDD: RED confirmado, luego GREEN — 7 tests
+  en `dates.test.ts`).
+- `investments/[id]/page.tsx`: `todayISO`/`isNotFuture` importados de `lib/dates` (se elimina el
+  `todayISO()` local); `.refine(isNotFuture, ...)` en `buyDate` y `sellDate`; `max={todayISO()}` en
+  ambos `<Input type="date">`.
+- `market/[id]/page.tsx`: mismo tratamiento en el campo `date` del formulario de valoración.
+
+**Decisiones / Problemas encontrados:**
+- **Desviación de nomenclatura de tests** (corrección del humano antes de escribir el primer test):
+  el borrador del plan usaba nombres tipo `BuyDate_today_is_valid`; se ajustó a la convención real
+  ya presente en `Validators/Investments/` (`Validate_<Escenario>_NoError`/`HasError`, ver
+  `RenamePortfolioCommandValidatorTests.cs`).
+- Sin más desviaciones: el resto del plan (reglas de validador, tests E2E, guards de frontend) se
+  ejecutó tal cual estaba escrito, incluido reutilizar el arrange exacto de cada fichero E2E
+  existente.
+- E2E local: un fallo de timeout en el registro durante la corrida completa (11 tests) — mismo flake
+  observado en tareas anteriores de esta sesión, no relacionado con este cambio (los inputs de fecha
+  de `sell-holding.spec.ts` usan la fecha de "hoy" dinámica, no una fecha fija que pudiera quedar
+  invalidada por el nuevo guard). Pasó en un rerun aislado.
+
+**Resultado / Estado:**
+- Backend: 119/119 (`Application.Tests`) + 73/73 (`Integration.Tests` · Investments) en verde.
+- Frontend: `typecheck` limpio, 273/273 tests unitarios en verde (+3 nuevos), 11/11 E2E local en
+  verde (tras el rerun del flake). Verificación visual manual del humano: calendario bloqueado a
+  futuro y error de Zod en compra/venta/valoración; transacciones siguen aceptando fecha futura sin
+  cambios.
+
+**Siguiente paso:**
+- [ ] Task 4 — Etiqueta UTC en fechas-hora de Perfil/Emails/Contactos (Plan 025).

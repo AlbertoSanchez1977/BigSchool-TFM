@@ -32,6 +32,7 @@ import {
 } from '@/components/investments/portfolio-action-modals'
 import { CompanyCombobox } from '@/components/market/company-combobox'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
+import { todayISO, isNotFuture } from '@/lib/dates'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
 // ── Schemas Zod ───────────────────────────────────────────────────────────────
@@ -40,7 +41,9 @@ const addHoldingSchema = z.object({
   idCompany: z.number({ error: 'Selecciona una empresa' }).int().positive('Selecciona una empresa'),
   shares:    z.number({ error: 'Las acciones deben ser un número' }).positive('Debe ser mayor que cero'),
   buyPrice:  z.number({ error: 'El precio debe ser un número' }).positive('Debe ser mayor que cero'),
-  buyDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  buyDate:   z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido')
+    .refine(isNotFuture, 'La fecha de compra no puede ser futura'),
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type AddHoldingForm = z.infer<typeof addHoldingSchema>
@@ -54,16 +57,12 @@ type EditNotesForm = z.infer<typeof editNotesSchema>
 const sellSchemaBase = z.object({
   shares:    z.number({ error: 'Las acciones deben ser un número' }).positive('Debe ser mayor que cero'),
   sellPrice: z.number({ error: 'El precio debe ser un número' }).positive('Debe ser mayor que cero'),
-  sellDate:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  sellDate:  z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido')
+    .refine(isNotFuture, 'La fecha de venta no puede ser futura'),
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type SellForm = z.infer<typeof sellSchemaBase>
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function todayISO() {
-  return new Date().toISOString().split('T')[0]
-}
 
 function Field({
   label, htmlFor, error, children,
@@ -154,7 +153,7 @@ function AddHoldingModal({
           <Field label="Fecha de compra" htmlFor="buyDate"
             error={form.formState.errors.buyDate?.message}>
             <Input
-              id="buyDate" type="date"
+              id="buyDate" type="date" max={todayISO()}
               data-testid="input-buy-date"
               {...form.register('buyDate')}
             />
@@ -312,7 +311,7 @@ function SellSharesModal({
           <Field label="Fecha de venta" htmlFor="sell-date"
             error={form.formState.errors.sellDate?.message}>
             <Input
-              id="sell-date" type="date"
+              id="sell-date" type="date" max={todayISO()}
               data-testid="input-sell-date"
               {...form.register('sellDate')}
             />

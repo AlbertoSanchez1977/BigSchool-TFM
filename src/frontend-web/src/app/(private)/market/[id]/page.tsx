@@ -24,20 +24,19 @@ import { useValuations, useCreateValuation } from '@/hooks/useValuations'
 import { formatAmount, formatDate } from '@/lib/transactions/labels'
 import { SECTOR_LABEL } from '@/lib/investments/labels'
 import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
+import { todayISO, isNotFuture } from '@/lib/dates'
 import type { Sector } from '@/types/enums'
 
 // ── Schema Zod del formulario "Nueva valoración" ──────────────────────────────
 // Sin currency: el backend la hereda de la empresa (Company.Currency), no viaja en el body.
 const createValuationSchema = z.object({
   price:  z.number({ error: 'El precio debe ser un número' }).positive('Debe ser mayor que cero'),
-  date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  date:   z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido')
+    .refine(isNotFuture, 'La fecha no puede ser futura'),
   source: z.string().max(100, 'Máximo 100 caracteres').nullable().optional(),
 })
 type CreateValuationForm = z.infer<typeof createValuationSchema>
-
-function todayISO() {
-  return new Date().toISOString().split('T')[0]
-}
 
 // ── Modal de creación ─────────────────────────────────────────────────────────
 
@@ -89,7 +88,7 @@ function CreateValuationModal({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="valuation-date">Fecha</Label>
             <Input
-              id="valuation-date" type="date"
+              id="valuation-date" type="date" max={todayISO()}
               data-testid="input-valuation-date"
               {...form.register('date')}
             />
