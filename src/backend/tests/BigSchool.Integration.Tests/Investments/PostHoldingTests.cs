@@ -98,6 +98,22 @@ public class PostHoldingTests : PortfolioEndpointTestBase
     }
 
     [Fact]
+    public async Task Post_FutureBuyDate_Returns400()
+    {
+        var (userId, email) = await SeedUserAsync();
+        var client = AuthenticatedClient(userId, email);
+        var portfolioId = await CreatePortfolioViaApiAsync(client);
+        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1).ToString("yyyy-MM-dd");
+
+        var response = await client.PostAsJsonAsync($"/api/v1/portfolios/{portfolioId}/holdings",
+            new { idCompany = CompanySanEur, shares = 10m, buyPrice = 4.5m, buyDate = futureDate });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var env = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
+        env!.Errors.Should().Contain(e => e.Code == "VALIDATION_ERROR" && e.Field == "BuyDate");
+    }
+
+    [Fact]
     public async Task Post_ForeignPortfolio_Returns404()
     {
         var (ownerId, ownerEmail) = await SeedUserAsync();

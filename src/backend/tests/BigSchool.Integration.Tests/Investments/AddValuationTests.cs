@@ -93,6 +93,22 @@ public class AddValuationTests : CompanyEndpointTestBase
     }
 
     [Fact]
+    public async Task Post_Valuation_FutureDate_Returns400()
+    {
+        var (userId, email) = await SeedUserAsync();
+        var client = AuthenticatedClient(userId, email);
+        var companyId = await CreateUsdCompanyAsync(client);
+        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1).ToString("yyyy-MM-dd");
+
+        var response = await client.PostAsJsonAsync($"/api/v1/companies/{companyId}/valuations",
+            new { price = 100m, date = futureDate, source = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var env = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
+        env!.Errors.Should().Contain(e => e.Code == "VALIDATION_ERROR" && e.Field == "Date");
+    }
+
+    [Fact]
     public async Task Post_Valuation_WithoutToken_Returns401()
     {
         var client = Factory.CreateClient();
