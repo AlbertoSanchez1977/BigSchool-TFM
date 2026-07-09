@@ -59,7 +59,7 @@ tests unitarios: es assets + config; la verificación es build limpio + consola 
 - Modify: `src/frontend-web/src/app/layout.tsx`
 - Modify: `src/frontend-web/package.json`
 
-- [ ] **Step 1: Crear el favicon file-based** `src/frontend-web/src/app/icon.svg`
+- [x] **Step 1: Crear el favicon file-based** `src/frontend-web/src/app/icon.svg`
 
 Next.js App Router detecta automáticamente `app/icon.svg` y genera el `<link rel="icon">` — no hace
 falta declararlo en `metadata`. Marca BigSchool (línea de cotización blanca sobre azul primario):
@@ -72,7 +72,7 @@ falta declararlo en `metadata`. Marca BigSchool (línea de cotización blanca so
 </svg>
 ```
 
-- [ ] **Step 2: Retirar Analytics y el bloque `icons` roto de** `src/frontend-web/src/app/layout.tsx`
+- [x] **Step 2: Retirar Analytics y el bloque `icons` roto de** `src/frontend-web/src/app/layout.tsx`
 
 Quita la línea 1 `import { Analytics } from '@vercel/analytics/next'`, el bloque `icons: {...}` de
 `metadata` (líneas 18–34; las referencias a `/icon-light-32x32.png`, `/icon-dark-32x32.png`,
@@ -123,12 +123,12 @@ export default function RootLayout({
 }
 ```
 
-- [ ] **Step 3: Retirar la dependencia** `@vercel/analytics`
+- [x] **Step 3: Retirar la dependencia** `@vercel/analytics`
 
 Run: `pnpm remove @vercel/analytics`
 Expected: elimina la línea de `package.json` y actualiza `pnpm-lock.yaml`.
 
-- [ ] **Step 4: Verificar typecheck y build**
+- [x] **Step 4: Verificar typecheck y build**
 
 Run: `npm run typecheck`
 Expected: sin errores.
@@ -136,13 +136,16 @@ Expected: sin errores.
 Run: `npm run build`
 Expected: build correcto; en el output NO aparece `@vercel/analytics`.
 
-- [ ] **Step 5: Verificación visual manual**
+- [x] **Step 5: Verificación visual manual**
 
 Arranca `npm run dev`, abre `http://localhost:3000` con la consola (F12). Confirma: (a) el favicon de
 la pestaña es el nuevo icono; (b) NO hay 404 de `icon.svg`, `icon-light-32x32.png` ni
 `/_vercel/insights/script.js`.
 
-- [ ] **Step 6: Commit**
+**Confirmado por el humano** (comprobación visual manual): favicon nuevo visible en la pestaña, sin
+404 de los assets rotos ni del script de Vercel.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/frontend-web/src/app/icon.svg src/frontend-web/src/app/layout.tsx src/frontend-web/package.json src/frontend-web/pnpm-lock.yaml
