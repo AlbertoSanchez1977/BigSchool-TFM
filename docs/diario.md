@@ -1350,4 +1350,41 @@ conversión de zona).
   fecha-hora etiquetada " UTC".
 
 **Siguiente paso:**
-- [ ] Task 5 — Refrescar el contenido de la página de Alcance (Plan 025). Última tarea del plan.
+- [x] Task 5 — Refrescar el contenido de la página de Alcance (Plan 025). Última tarea del plan.
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 5 — Refresco de la página de Alcance (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (landing pública)
+
+**Contexto**: bug #1 del registro de la ronda de pruebas manuales — `/scope` describía la
+iteración 1 (contacto/emails en `localStorage`, `/users/me`/`/contacts`/`/emails` listados como
+"trabajo futuro" cuando ya son backend real de la iteración 2) y no mencionaba Mercado ni
+Valoraciones (Tasks 8-9 del plan 024). Última tarea del plan 025.
+
+**Actividades realizadas:**
+- Reescritos los arrays `mvpFeatures` y `futureWork` de `scope/page.tsx`: retiradas las menciones a
+  `localStorage` en contacto/emails/perfil (ahora "contra backend"/"contra endpoint real"); añadidas
+  Mercado y Valoraciones al área "Inversiones"; retirados de `futureWork` los tres puntos ya
+  implementados (`/users/me`, `POST /contact`, `GET /emails`), sustituidos por una card
+  "Inversiones" con la deuda real vigente (editar/borrar empresa, ver/borrar valoración, búsqueda
+  server-side, envío real de emails).
+- **Petición explícita del humano durante la revisión visual**: añadida una card "Arquitectura" que
+  no estaba en el borrador del plan, con DDD/CQRS/Clean Architecture (4 capas)/Monolito Modular por
+  Bounded Context en el backend, y una línea del patrón de capas del propio frontend (types → services
+  → hooks TanStack Query → páginas) — la página no mencionaba nada de arquitectura hasta ahora.
+
+**Decisiones / Problemas encontrados:**
+- Única desviación: la card "Arquitectura" añadida a petición del humano (ver arriba). El resto del
+  contenido se aplicó tal cual estaba redactado en el plan, ya validado por el humano antes de
+  ejecutar la tarea ("Sí, redacta tú, yo reviso y comentamos").
+
+**Resultado / Estado:**
+- `typecheck` limpio. Verificación visual manual del humano en `/scope`: contenido coherente con la
+  app real, incluida la card nueva de Arquitectura.
+
+**Plan 025 completo: 5/5 tareas mergeadas.** Cierra la ronda de correcciones QA post-pruebas
+manuales (`docs/guia-pruebas-manuales-frontend.md`).

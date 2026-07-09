@@ -722,7 +722,11 @@ Además faltan Mercado y Valoraciones. Se reescribe el contenido (solo datos, si
 **Files:**
 - Modify: `src/frontend-web/src/app/(public)/scope/page.tsx`
 
-- [ ] **Step 1: Actualizar `mvpFeatures`** con la realidad de la iteración 2
+- [x] **Step 1: Actualizar `mvpFeatures`** con la realidad de la iteración 2
+
+**Desviación (pedida por el humano):** se añadió una card extra "Arquitectura" que no estaba en el
+borrador del plan, con DDD/CQRS/Clean Architecture/Monolito Modular en backend y el patrón de capas
+del frontend (types → services → hooks → páginas). "Infraestructura" se dejó igual (tooling/CI/TDD).
 
 Sustituye el array `mvpFeatures` por:
 ```tsx
@@ -785,7 +789,7 @@ const mvpFeatures = [
 ]
 ```
 
-- [ ] **Step 2: Actualizar `futureWork`** retirando lo ya implementado
+- [x] **Step 2: Actualizar `futureWork`** retirando lo ya implementado
 
 Sustituye el array `futureWork` por (fuera: `/users/me`, contactos/emails backend — ya hechos):
 ```tsx
@@ -833,17 +837,22 @@ const futureWork = [
 ]
 ```
 
-- [ ] **Step 3: Verificar typecheck**
+- [x] **Step 3: Verificar typecheck**
 
 Run: `npm run typecheck`
 Expected: sin errores.
 
-- [ ] **Step 4: Verificación visual manual**
+Confirmado: limpio.
+
+- [x] **Step 4: Verificación visual manual**
 
 Abre `/scope` y revisa que ninguna afirmación contradice la app real (nada de "localStorage" en
 contacto/emails; aparecen Mercado y Valoraciones; el trabajo futuro no lista cosas ya hechas).
 
-- [ ] **Step 5: Commit**
+**Confirmado por el humano** (comprobación visual manual, incluida la card "Arquitectura" añadida a
+petición suya).
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add "src/frontend-web/src/app/(public)/scope/page.tsx"
