@@ -614,7 +614,7 @@ de zona. Backend confirmado en UTC (`DateTime.UtcNow`).
 - Modify: `src/frontend-web/src/app/(private)/emails/page.tsx`
 - Modify: `src/frontend-web/src/app/(private)/contacts/page.tsx`
 
-- [ ] **Step 1: Ampliar el test de `dates.ts` con `formatDateTimeUtc` (RED)** — añade a `tests/unit/dates.test.ts`
+- [x] **Step 1: Ampliar el test de `dates.ts` con `formatDateTimeUtc` (RED)** — añade a `tests/unit/dates.test.ts`
 
 ```ts
 import { formatDateTimeUtc } from '@/lib/dates'
@@ -631,12 +631,14 @@ describe('formatDateTimeUtc', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla (RED)**
+- [x] **Step 2: Ejecutar y verificar que falla (RED)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: FAIL — `formatDateTimeUtc` no está exportado.
 
-- [ ] **Step 3: Añadir `formatDateTimeUtc` a** `src/frontend-web/src/lib/dates.ts`
+Confirmado: 2 fallos (`formatDateTimeUtc is not a function`) + 7 tests preexistentes en verde.
+
+- [x] **Step 3: Añadir `formatDateTimeUtc` a** `src/frontend-web/src/lib/dates.ts`
 
 ```ts
 // Formatea un timestamp UTC del backend (DateTime.UtcNow, serializado a veces SIN sufijo Z
@@ -654,12 +656,12 @@ export function formatDateTimeUtc(iso: string): string {
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasa (GREEN)**
+- [x] **Step 4: Ejecutar y verificar que pasa (GREEN)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: PASS (9 tests en total en el fichero).
 
-- [ ] **Step 5: Usar el helper en Perfil** `src/frontend-web/src/app/(private)/profile/page.tsx`
+- [x] **Step 5: Usar el helper en Perfil** `src/frontend-web/src/app/(private)/profile/page.tsx`
 
 Añade `import { formatDateTimeUtc } from '@/lib/dates'` y reemplaza la función local
 `formatLastLogin` por:
@@ -670,17 +672,17 @@ function formatLastLogin(iso: string | null): string {
 }
 ```
 
-- [ ] **Step 6: Usar el helper en Emails** `src/frontend-web/src/app/(private)/emails/page.tsx`
+- [x] **Step 6: Usar el helper en Emails** `src/frontend-web/src/app/(private)/emails/page.tsx`
 
 Añade `import { formatDateTimeUtc } from '@/lib/dates'`, **elimina** la función local `formatDate` y
 sustituye su uso `{formatDate(email.sentAt)}` por `{formatDateTimeUtc(email.sentAt)}`.
 
-- [ ] **Step 7: Usar el helper en Contactos** `src/frontend-web/src/app/(private)/contacts/page.tsx`
+- [x] **Step 7: Usar el helper en Contactos** `src/frontend-web/src/app/(private)/contacts/page.tsx`
 
 Añade `import { formatDateTimeUtc } from '@/lib/dates'`, **elimina** la función local `formatDate` y
 sustituye su uso `{formatDate(c.createdAt)}` por `{formatDateTimeUtc(c.createdAt)}`.
 
-- [ ] **Step 8: Verificar typecheck y suite**
+- [x] **Step 8: Verificar typecheck y suite**
 
 Run: `npm run typecheck`
 Expected: sin errores.
@@ -688,12 +690,18 @@ Expected: sin errores.
 Run: `npm run test -- --run`
 Expected: toda la suite en verde.
 
-- [ ] **Step 9: Verificación visual manual**
+Confirmado: `typecheck` limpio, 275/275 tests unitarios en verde (+2 nuevos de `formatDateTimeUtc`).
+Sin E2E afectado (ningún spec toca Perfil/Emails/Contactos).
+
+- [x] **Step 9: Verificación visual manual**
 
 En Perfil, Emails y Contactos, confirma que las fechas-hora terminan en " UTC" y muestran la hora UTC
 (coherente con lo que hay en BD).
 
-- [ ] **Step 10: Commit**
+**Confirmado por el humano** (comprobación visual manual): las tres pantallas muestran la fecha-hora
+etiquetada " UTC".
+
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/frontend-web/src/lib/dates.ts src/frontend-web/tests/unit/dates.test.ts "src/frontend-web/src/app/(private)/profile/page.tsx" "src/frontend-web/src/app/(private)/emails/page.tsx" "src/frontend-web/src/app/(private)/contacts/page.tsx"

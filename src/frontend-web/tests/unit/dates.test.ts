@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultTransactionDate, isNotFuture } from '@/lib/dates'
+import { defaultTransactionDate, isNotFuture, formatDateTimeUtc } from '@/lib/dates'
 
 describe('defaultTransactionDate', () => {
   // "hoy" fijo para determinismo: 2026-07-09
@@ -35,5 +35,16 @@ describe('isNotFuture', () => {
 
   it('rechaza una fecha futura', () => {
     expect(isNotFuture('2026-07-10', today)).toBe(false)
+  })
+})
+
+describe('formatDateTimeUtc', () => {
+  it('etiqueta la salida con " UTC"', () => {
+    expect(formatDateTimeUtc('2026-07-09T10:30:00Z')).toMatch(/ UTC$/)
+  })
+
+  it('interpreta como UTC un timestamp sin sufijo Z (naive del backend)', () => {
+    // Con y sin Z deben producir EXACTAMENTE la misma salida (misma hora de pared UTC).
+    expect(formatDateTimeUtc('2026-07-09T10:30:00')).toBe(formatDateTimeUtc('2026-07-09T10:30:00Z'))
   })
 })

@@ -6,19 +6,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmails } from '@/hooks/useEmails'
 import { EMAIL_TYPE } from '@/types/notifications'
+import { formatDateTimeUtc } from '@/lib/dates'
 
 // EmailType (backend, Domain/Notifications/Enums/EmailType.cs): 1 = Welcome, 2 = Contact.
 // El DTO de listado (Dapper) lo devuelve como número crudo, no como string.
 const TYPE_CONFIG: Record<number, { label: string; icon: typeof PartyPopper; badge: 'secondary' | 'outline' }> = {
   [EMAIL_TYPE.Welcome]: { label: 'Bienvenida', icon: PartyPopper, badge: 'secondary' },
   [EMAIL_TYPE.Contact]: { label: 'Contacto', icon: MessageSquare, badge: 'outline' },
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('es-ES', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 }
 
 export default function EmailsPage() {
@@ -84,7 +78,7 @@ export default function EmailsPage() {
                     </div>
 
                     <time className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDate(email.sentAt)}
+                      {formatDateTimeUtc(email.sentAt)}
                     </time>
                   </div>
                 </CardContent>

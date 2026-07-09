@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
 import { profileSchema, type ProfileFormValues } from '@/lib/schemas/profile'
 import { ApiError } from '@/lib/apiClient'
+import { formatDateTimeUtc } from '@/lib/dates'
 
 // ── Fila de información de solo lectura ───────────────────────────────────────
 
@@ -29,10 +30,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function formatLastLogin(iso: string | null): string {
   if (!iso) return 'Nunca'
-  return new Date(iso).toLocaleString('es-ES', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return formatDateTimeUtc(iso)
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
