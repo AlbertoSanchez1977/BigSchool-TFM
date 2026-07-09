@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultTransactionDate } from '@/lib/dates'
+import { defaultTransactionDate, isNotFuture } from '@/lib/dates'
 
 describe('defaultTransactionDate', () => {
   // "hoy" fijo para determinismo: 2026-07-09
@@ -19,5 +19,21 @@ describe('defaultTransactionDate', () => {
 
   it('devuelve el día 1 si el periodo visible es un mes futuro', () => {
     expect(defaultTransactionDate(2026, 9, today)).toBe('2026-09-01')
+  })
+})
+
+describe('isNotFuture', () => {
+  const today = new Date(2026, 6, 9)
+
+  it('acepta hoy', () => {
+    expect(isNotFuture('2026-07-09', today)).toBe(true)
+  })
+
+  it('acepta una fecha pasada', () => {
+    expect(isNotFuture('2026-07-08', today)).toBe(true)
+  })
+
+  it('rechaza una fecha futura', () => {
+    expect(isNotFuture('2026-07-10', today)).toBe(false)
   })
 })
