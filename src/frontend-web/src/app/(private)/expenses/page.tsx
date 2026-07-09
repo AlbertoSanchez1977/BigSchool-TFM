@@ -21,6 +21,7 @@ import { useMonthlySeries } from '@/hooks/useMonthlySeries'
 import {
   TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL, formatAmount, formatDate,
 } from '@/lib/transactions/labels'
+import { defaultTransactionDate } from '@/lib/dates'
 import type { Transaction } from '@/types/transactions'
 import type { TransactionType } from '@/types/enums'
 import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
@@ -500,6 +501,7 @@ export default function ExpensesPage() {
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           transaction={editingTx}
+          defaultDate={defaultTransactionDate(year, month)}
         />
       )}
 

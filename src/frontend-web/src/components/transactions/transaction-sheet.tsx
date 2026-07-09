@@ -33,6 +33,7 @@ interface TransactionSheetProps {
   open: boolean
   onClose: () => void
   transaction?: Transaction   // si se pasa → modo edición; si no → modo creación
+  defaultDate?: string        // fecha inicial en modo creación (por defecto: hoy)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ function Field({
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export function TransactionSheet({ open, onClose, transaction }: TransactionSheetProps) {
+export function TransactionSheet({ open, onClose, transaction, defaultDate }: TransactionSheetProps) {
   const isEdit = Boolean(transaction)
 
   // user.currency estará disponible cuando el backend incluya currency en AuthResponseDto.
@@ -95,7 +96,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
       : {
           type:            'Expense',
           idMainCategory:  'EssentialExpenses',
-          transactionDate: todayISO(),
+          transactionDate: defaultDate ?? todayISO(),
           currency:        defaultCurrency,
         },
   })
@@ -121,13 +122,13 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
           : {
               type:            'Expense',
               idMainCategory:  'EssentialExpenses',
-              transactionDate: todayISO(),
+              transactionDate: defaultDate ?? todayISO(),
               currency:        defaultCurrency,
             },
       )
       setConfirmingDelete(false)
     }
-  }, [open, transaction, reset, defaultCurrency])
+  }, [open, transaction, reset, defaultCurrency, defaultDate])
 
   // Al cambiar el tipo (Income ↔ Expense), resetear la categoría a su valor por defecto
   // para evitar que quede activa una categoría del tipo contrario.
