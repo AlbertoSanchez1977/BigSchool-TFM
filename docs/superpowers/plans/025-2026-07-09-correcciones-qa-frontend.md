@@ -166,7 +166,7 @@ mes/año visible.
 - Modify: `src/frontend-web/src/components/transactions/transaction-sheet.tsx`
 - Modify: `src/frontend-web/src/app/(private)/expenses/page.tsx`
 
-- [ ] **Step 1: Escribir el test que falla** `src/frontend-web/tests/unit/dates.test.ts`
+- [x] **Step 1: Escribir el test que falla** `src/frontend-web/tests/unit/dates.test.ts`
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -194,12 +194,12 @@ describe('defaultTransactionDate', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar el test y verificar que falla (RED)**
+- [x] **Step 2: Ejecutar el test y verificar que falla (RED)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: FAIL — `Failed to resolve import "@/lib/dates"` (el módulo aún no existe).
 
-- [ ] **Step 3: Crear** `src/frontend-web/src/lib/dates.ts`
+- [x] **Step 3: Crear** `src/frontend-web/src/lib/dates.ts`
 
 ```ts
 // Utilidades de fecha centralizadas. Las fechas de negocio del backend viajan como
@@ -231,12 +231,12 @@ export function defaultTransactionDate(
 }
 ```
 
-- [ ] **Step 4: Ejecutar el test y verificar que pasa (GREEN)**
+- [x] **Step 4: Ejecutar el test y verificar que pasa (GREEN)**
 
 Run: `npm run test -- --run tests/unit/dates.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Aceptar `defaultDate` en el sheet** `src/frontend-web/src/components/transactions/transaction-sheet.tsx`
+- [x] **Step 5: Aceptar `defaultDate` en el sheet** `src/frontend-web/src/components/transactions/transaction-sheet.tsx`
 
 Añade el prop y úsalo en modo creación. Cambios:
 
@@ -254,7 +254,7 @@ interface TransactionSheetProps {
    `reset(...)` del `useEffect`) por `transactionDate: defaultDate ?? todayISO(),`. El helper local
    `todayISO()` ya existente en este fichero se mantiene como fallback.
 
-- [ ] **Step 6: Pasar `defaultDate` desde la página** `src/frontend-web/src/app/(private)/expenses/page.tsx`
+- [x] **Step 6: Pasar `defaultDate` desde la página** `src/frontend-web/src/app/(private)/expenses/page.tsx`
 
 1. Añade el import: `import { defaultTransactionDate } from '@/lib/dates'`
 2. Localiza el render del sheet (`<TransactionSheet open={sheetOpen} ... transaction={editingTx} />`)
@@ -269,7 +269,7 @@ interface TransactionSheetProps {
 ```
    (Mantén el resto de props tal cual estén; solo se añade `defaultDate`.)
 
-- [ ] **Step 7: Verificar typecheck y suite**
+- [x] **Step 7: Verificar typecheck y suite**
 
 Run: `npm run typecheck`
 Expected: sin errores.
@@ -277,13 +277,15 @@ Expected: sin errores.
 Run: `npm run test -- --run`
 Expected: toda la suite en verde (incluye los 4 tests nuevos).
 
-- [ ] **Step 8: Verificación visual manual**
+- [x] **Step 8: Verificación visual manual**
 
 En `/expenses`, retrocede a un mes anterior con la flecha ‹, pulsa **Nueva transacción** y comprueba
 que la fecha por defecto es el **día 1 de ese mes**. Vuelve al mes actual y confirma que el default
 vuelve a ser **hoy**.
 
-- [ ] **Step 9: Commit**
+**Confirmado por el humano** (comprobación visual manual, mes actual y mes anterior).
+
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/frontend-web/src/lib/dates.ts src/frontend-web/tests/unit/dates.test.ts src/frontend-web/src/components/transactions/transaction-sheet.tsx "src/frontend-web/src/app/(private)/expenses/page.tsx"

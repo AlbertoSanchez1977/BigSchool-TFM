@@ -1218,4 +1218,41 @@ Vercel).
   assets/script.
 
 **Siguiente paso:**
-- [ ] Task 2 — Fecha por defecto de "Nueva transacción" = periodo visible (Plan 025).
+- [x] Task 2 — Fecha por defecto de "Nueva transacción" = periodo visible (Plan 025).
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 2 — Fecha por defecto de "Nueva transacción" (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Finance)
+
+**Contexto**: bug #4 del registro de la ronda de pruebas manuales — al crear una transacción con la
+parrilla filtrada a un mes distinto del actual, la fecha por defecto (siempre "hoy") caía fuera del
+filtro visible y la transacción parecía "desaparecer" tras crearla.
+
+**Actividades realizadas:**
+- TDD: `tests/unit/dates.test.ts` (RED confirmado — `@/lib/dates` no existía) → creado
+  `src/lib/dates.ts` con `todayISO()` y `defaultTransactionDate(viewedYear, viewedMonth, today?)`
+  (GREEN, 4 tests). Es el primer fichero de esta nueva utilidad centralizada de fechas que irán
+  ampliando las Tasks 3 y 4 del plan (`isNotFuture`, `formatDateTimeUtc`).
+- `transaction-sheet.tsx`: nuevo prop opcional `defaultDate` que sustituye a `todayISO()` en los dos
+  puntos donde se inicializaba la fecha en modo creación (`defaultValues` y el `reset()` del
+  `useEffect` que se dispara al abrir el modal). El helper local `todayISO()` del propio fichero se
+  mantiene como fallback cuando no se pasa `defaultDate` (edición, u otros consumidores del sheet).
+- `expenses/page.tsx`: pasa `defaultDate={defaultTransactionDate(year, month)}` al `<TransactionSheet>`,
+  usando el `year`/`month` ya existentes en el estado de la página (el filtro visible de la parrilla).
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan. Único añadido no explicitado en el plan: se incluyó `defaultDate` en
+  el array de dependencias del `useEffect` de reset del sheet (coherente con el resto de deps ya
+  listadas ahí — `open`, `transaction`, `reset`, `defaultCurrency`).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 270/270 tests unitarios en verde (+4 nuevos de `dates.ts`). Verificación visual
+  manual del humano: en mes actual la fecha por defecto sigue siendo hoy; en un mes anterior es el
+  día 1 de ese mes, y la transacción creada con esa fecha aparece correctamente en la lista filtrada.
+
+**Siguiente paso:**
+- [ ] Task 3 — Prohibir fechas futuras en compra/venta/valoración (backend + frontend) (Plan 025).
