@@ -31,3 +31,17 @@ export function defaultTransactionDate(
 export function isNotFuture(iso: string, today = new Date()): boolean {
   return iso <= todayISO(today)
 }
+
+// Formatea un timestamp UTC del backend (DateTime.UtcNow, serializado a veces SIN sufijo Z
+// desde MySQL datetime) mostrando la hora de pared en UTC y etiquetándola. NO convierte a la
+// zona local: solución simple y sin ambigüedad para "Último acceso", emails y contactos.
+export function formatDateTimeUtc(iso: string): string {
+  // Sin 'Z', `new Date` interpretaría el string como hora LOCAL (origen del bug). Lo forzamos a UTC.
+  const utc = iso.endsWith('Z') ? iso : `${iso}Z`
+  const formatted = new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(utc))
+  return `${formatted} UTC`
+}

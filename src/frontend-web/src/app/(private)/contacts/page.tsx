@@ -6,13 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useContacts } from '@/hooks/useContacts'
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('es-ES', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+import { formatDateTimeUtc } from '@/lib/dates'
 
 export default function ContactsPage() {
   const { contacts, isLoading, isError } = useContacts()
@@ -81,7 +75,7 @@ export default function ContactsPage() {
                     <p className="text-sm text-foreground/80 line-clamp-3">{c.message}</p>
                   </div>
                   <time className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(c.createdAt)}
+                    {formatDateTimeUtc(c.createdAt)}
                   </time>
                 </div>
               </CardContent>

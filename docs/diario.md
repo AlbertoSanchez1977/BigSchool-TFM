@@ -1312,4 +1312,42 @@ Saldo real vs. corriente).
   cambios.
 
 **Siguiente paso:**
-- [ ] Task 4 — Etiqueta UTC en fechas-hora de Perfil/Emails/Contactos (Plan 025).
+- [x] Task 4 — Etiqueta UTC en fechas-hora de Perfil/Emails/Contactos (Plan 025).
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 4 — Etiqueta UTC en fechas-hora (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth, Notifications)
+
+**Contexto**: bug #3 del registro de la ronda de pruebas manuales — "Último acceso" (Perfil), la
+fecha de envío en Emails y la fecha de recepción en Contactos se mostraban con `toLocaleString`
+sin indicar zona horaria, aunque el backend las persiste en UTC (`DateTime.UtcNow` en
+`User.LastLoginDate`, `EmailLog.SentAt`, `Contact.CreatedAt` — verificado en el código real antes
+de escribir el plan). Solución acordada: mostrar la hora UTC tal cual, etiquetada " UTC" (sin
+conversión de zona).
+
+**Actividades realizadas:**
+- TDD: ampliado `dates.test.ts` con `describe('formatDateTimeUtc', ...)` (RED: 2 fallos, función no
+  exportada) → añadido `formatDateTimeUtc(iso)` a `lib/dates.ts` (GREEN, 9 tests en el fichero).
+  Fuerza el sufijo `Z` si no viene en el string (los timestamps de MySQL datetime pueden llegar
+  "naive", sin zona, y `new Date()` los interpretaría como hora local si no se corrige) y formatea
+  con `Intl.DateTimeFormat({ timeZone: 'UTC' })` + el sufijo " UTC" literal.
+- `profile/page.tsx`: `formatLastLogin` pasa a delegar en `formatDateTimeUtc`.
+- `emails/page.tsx` y `contacts/page.tsx`: eliminada la función local `formatDate` (duplicada en
+  los tres ficheros, sin etiqueta) y sustituida por `formatDateTimeUtc` en el único punto de uso de
+  cada uno.
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 275/275 tests unitarios en verde (+2 nuevos de `formatDateTimeUtc`). Ningún
+  E2E toca estas tres pantallas, así que no se reejecutó la suite E2E (fuera del alcance real de
+  este cambio). Verificación visual manual del humano: Perfil, Emails y Contactos muestran la
+  fecha-hora etiquetada " UTC".
+
+**Siguiente paso:**
+- [ ] Task 5 — Refrescar el contenido de la página de Alcance (Plan 025). Última tarea del plan.
