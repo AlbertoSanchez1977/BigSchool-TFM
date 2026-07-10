@@ -4,7 +4,7 @@
 
 # Sufijo de fecha para nombres de recurso (evita colisiones con soft-delete al reprovisionar).
 # El RG NO lleva sufijo: se reutiliza / se borra entero en el teardown.
-$AZ_DATENOW = (Get-Date).ToString("yyyy-MM-dd")
+$AZ_DATENOW =  "2026-07-03" # Solo la primera vez - (Get-Date).ToString("yyyy-MM-dd")
 
 # ---- Azure: recursos ----
 $AZ_RG       = "rg-bstfminvesting-demo"
