@@ -6,6 +6,7 @@
 > qué, y apoyarse en analogías con C#/.NET cuando ayuden. Ver el glosario al final.
 
 Diseño visual y decisiones de UX: `docs/03-frontend-design.md`. Prompt de v0: `docs/03-frontend-v0-prompt.md`.
+Arquitectura por capas (cómo está construido: flujo de datos, invariantes): `docs/05-frontend-arquitectura.md`.
 
 ---
 
