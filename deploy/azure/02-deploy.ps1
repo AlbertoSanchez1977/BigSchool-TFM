@@ -20,6 +20,7 @@ New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 # Compress-Archive como ZipFile.CreateFromDirectory escriben rutas con "\", que en Linux se
 # interpretan como parte del nombre y rompen el rsync de Oryx (error "failed to stat .next\BUILD_ID").
 # Aqui creamos cada entrada a mano forzando "/", asi funciona en PS 5.1 y en PS 7.
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function New-DeployZip([string]$sourceDir, [string]$zipPath) {
     if (Test-Path $zipPath) { [System.IO.File]::Delete($zipPath) }
