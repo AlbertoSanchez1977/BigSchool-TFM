@@ -11,8 +11,10 @@ Trabajo de Fin de Máster — Aplicación de gestión financiera personal con m�
 | Recurso | Enlace |
 |---------|--------|
 | 🌐 Demo desplegada (Azure) | https://bstfminvesting-demo-2026-07-03-frontend.azurewebsites.net/ |
-| 📽️ Presentación (PPTX) | _pendiente de publicar_ |
-| 🎥 Vídeo de defensa | _pendiente de publicar_ |
+| 📽️ Presentación (PPTX) | https://azureinfojobscom-my.sharepoint.com/:p:/g/personal/alberto_sanchez_infojobs_com_br/IQCRqTUF_tN5Q7Qi78WT4r0QAcIs_Byrtc6CsIt-tLnLdh8?e=8dSe9j |
+| 🎥 Vídeo de defensa 01 | https://azureinfojobscom-my.sharepoint.com/:v:/g/personal/alberto_sanchez_infojobs_com_br/IQAcUwADvhVsSav_fygzhVyXAcieZL3HZ2SWGSSgyETExnM?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=e8NLdl|
+| 🎥 Vídeo de defensa 02 | https://azureinfojobscom-my.sharepoint.com/:v:/g/personal/alberto_sanchez_infojobs_com_br/IQBfCV2JEEtwSJLWfn9A0SUPASwPSekOaiYl2zsOkIW6crg?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=uzlPkH|
+| 🎥 Vídeo de defensa 03 | https://azureinfojobscom-my.sharepoint.com/:v:/g/personal/alberto_sanchez_infojobs_com_br/IQBuiIR8TLUMQZN0smnjkBcxAaMgPJbqmAk2Zm5ou6vUK08?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=G7kjIA|
 
 ## 📋 Descripción general
 
