@@ -14,8 +14,17 @@ const mvpFeatures = [
     items: [
       'Monorepo Next.js 15 + .NET 8 + Docker Compose (MySQL + Qdrant)',
       'CI por ramas con PRs a develop + gate de revisión humana',
-      'TDD: Vitest + RTL (unit) · Playwright (E2E) · xUnit (backend)',
-      'Autenticación JWT con DPAPI (userId cifrado en token, refresh)',
+      'TDD: Vitest + RTL y Playwright (frontend) · xUnit + integración E2E (backend)',
+      'Autenticación JWT con DPAPI (userId cifrado en token) y refresco proactivo en cliente',
+    ],
+  },
+  {
+    area: 'Arquitectura',
+    items: [
+      'Backend: Clean Architecture en 4 capas (Domain, Application, Infrastructure, WebApi)',
+      'CQRS con MediatR (Commands/Queries separados) + DDD (entidades, agregados, eventos de dominio)',
+      'Monolito modular por Bounded Context (Auth, Finance, Investments, Notifications), fronteras verificadas con tests de arquitectura',
+      'Frontend: capas propias por recurso — types (espejo de los DTOs) → services → hooks (TanStack Query) → páginas',
     ],
   },
   {
@@ -23,26 +32,36 @@ const mvpFeatures = [
     items: [
       'Hero con propuesta de valor y CTAs de registro/login',
       'Secciones de producto: Gastos, Inversiones, AI Scanner (demos visuales)',
-      'Formulario de contacto integrado (localStorage)',
-      'Footer con navegación y aviso legal',
+      'Formulario de contacto contra endpoint real (POST /contacts)',
+      'Página de Alcance y trabajos futuros + footer con navegación',
     ],
   },
   {
     area: 'Finanzas personales',
     items: [
-      'Dashboard con resumen mensual y gráfica de evolución (Recharts)',
-      'CRUD completo de Gastos/Ingresos con filtros y paginación',
-      'Categorías dinámicas (globales + personalizadas por usuario)',
-      'Soporte multimoneda (backend: EUR, USD, GBP, CHF, JPY con tipos de cambio reales)',
+      'Dashboard con resumen mensual, gráficas de ingresos/gastos y balance acumulado (Recharts)',
+      'CRUD completo de Gastos/Ingresos con filtro mes/año y paginación',
+      'Gráficas por categoría y serie mensual agregadas en backend (by-category / monthly)',
+      'Soporte multimoneda (EUR, USD, GBP, CHF, JPY con tipos de cambio reales)',
     ],
   },
   {
     area: 'Inversiones',
     items: [
-      'Gestión de carteras y holdings (compra con snapshot de tipo)',
-      'Venta FIFO cross-lot con RealizedPnL consolidado',
-      'Performance: plusvalía realizada + no realizada en moneda base',
-      'Catálogo de empresas con valoraciones históricas',
+      'Carteras: crear, renombrar y borrar (con guard fiscal 409 si hay holdings abiertos)',
+      'Holdings: alta, edición de notas, borrado y venta FIFO cross-lot a nivel empresa',
+      'Performance: plusvalía realizada y no realizada + resumen global en Dashboard',
+      'Mercado: catálogo de empresas (listado/detalle/alta) con combobox de búsqueda',
+      'Valoraciones: alta, listado paginado y gráfico de serie por periodo (3M–5A)',
+    ],
+  },
+  {
+    area: 'Cuenta y perfil',
+    items: [
+      'Registro con moneda base y email de bienvenida (evento de dominio)',
+      'Perfil real contra GET/PUT /users/me: edición de nombre y contraseña',
+      'Registro de emails enviados (bienvenida + contacto) contra backend',
+      'Listado de mensajes de contacto recibidos contra backend',
     ],
   },
   {
@@ -50,17 +69,8 @@ const mvpFeatures = [
     items: [
       'UI de chat con selector de LLM (Claude / GPT / Gemini)',
       'Panel RAG de documentos (estado local, pendiente de backend)',
-      'Gestión de API keys por proveedor (localStorage)',
+      'Gestión de API keys por proveedor (local)',
       'Feature-flag NEXT_PUBLIC_AI_SCANNER_ENABLED para activar la demo',
-    ],
-  },
-  {
-    area: 'Cuenta y perfil',
-    items: [
-      'Perfil de usuario: info de cuenta + edición de nombre y contraseña',
-      'Listado de emails enviados (bienvenida + contacto) — demo local',
-      'Listado de contactos recibidos — demo local (localStorage)',
-      'ProfileDropdown como hub de páginas privadas secundarias',
     ],
   },
 ]
@@ -77,13 +87,13 @@ const futureWork = [
     ],
   },
   {
-    area: 'Backend pendiente',
-    priority: 'high',
+    area: 'Inversiones',
+    priority: 'medium',
     items: [
-      'GET / PUT /users/me (baseCurrency, lastLoginDate — contrato documentado en frontend)',
-      'POST /contact + tabla de contactos en BD (actualmente localStorage)',
-      'GET /emails: tabla EmailLog con idUser nullable (spec documentada en frontend)',
-      'Envío real de emails de bienvenida (SendGrid / SES)',
+      'Editar y borrar empresas del catálogo (PUT/DELETE /companies/{id})',
+      'Ver detalle y borrar valoraciones individuales (GET{id}/DELETE)',
+      'Búsqueda de empresas server-side (?search=) para el combobox de holdings',
+      'Envío real de emails de bienvenida y contacto (SendGrid / SES)',
     ],
   },
   {
@@ -93,7 +103,7 @@ const futureWork = [
       'App Mobile React Native Expo (solo lectura, consume el mismo backend)',
       'Exportación a CSV / Excel de transacciones y cartera',
       'Alertas y notificaciones (precio objetivo, resumen semanal)',
-      'Modo multi-divisa en UI (el backend ya convierte; falta el selector en frontend)',
+      'Selector de divisa de visualización en UI (el backend ya convierte)',
     ],
   },
   {

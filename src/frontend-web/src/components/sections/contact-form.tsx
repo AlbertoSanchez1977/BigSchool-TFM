@@ -4,15 +4,18 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, Send } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { contactSchema, type ContactFormValues } from '@/lib/schemas/contact'
-import { saveContact } from '@/hooks/useContacts'
+import { useCreateContact } from '@/hooks/useContacts'
+import { ApiError } from '@/lib/apiClient'
 
 export function ContactForm() {
   const [sent, setSent] = useState(false)
+  const createContact = useCreateContact()
 
   const {
     register,
@@ -24,9 +27,13 @@ export function ContactForm() {
   })
 
   function onSubmit(values: ContactFormValues) {
-    saveContact(values)
-    setSent(true)
-    reset()
+    createContact.mutate(values, {
+      onSuccess: () => {
+        setSent(true)
+        reset()
+      },
+      onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Error al enviar el mensaje'),
+    })
   }
 
   if (sent) {
@@ -103,7 +110,7 @@ export function ContactForm() {
         type="submit"
         size="lg"
         className="w-full gap-2 shadow-sm transition-transform active:scale-95"
-        disabled={isSubmitting}
+        disabled={isSubmitting || createContact.isPending}
       >
         <Send className="size-4" />
         Enviar mensaje

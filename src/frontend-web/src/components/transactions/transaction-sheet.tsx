@@ -24,6 +24,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { useAuth } from '@/hooks/useAuth'
 import { TRANSACTION_TYPE_LABEL, MAIN_CATEGORY_LABEL } from '@/lib/transactions/labels'
 import type { Transaction } from '@/types/transactions'
+import { CURRENCIES } from '@/types/enums'
 import type { MainCategory, TransactionType } from '@/types/enums'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -32,11 +33,10 @@ interface TransactionSheetProps {
   open: boolean
   onClose: () => void
   transaction?: Transaction   // si se pasa → modo edición; si no → modo creación
+  defaultDate?: string        // fecha inicial en modo creación (por defecto: hoy)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'JPY'] as const
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]
@@ -64,7 +64,7 @@ function Field({
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export function TransactionSheet({ open, onClose, transaction }: TransactionSheetProps) {
+export function TransactionSheet({ open, onClose, transaction, defaultDate }: TransactionSheetProps) {
   const isEdit = Boolean(transaction)
 
   // user.currency estará disponible cuando el backend incluya currency en AuthResponseDto.
@@ -96,7 +96,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
       : {
           type:            'Expense',
           idMainCategory:  'EssentialExpenses',
-          transactionDate: todayISO(),
+          transactionDate: defaultDate ?? todayISO(),
           currency:        defaultCurrency,
         },
   })
@@ -122,13 +122,13 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
           : {
               type:            'Expense',
               idMainCategory:  'EssentialExpenses',
-              transactionDate: todayISO(),
+              transactionDate: defaultDate ?? todayISO(),
               currency:        defaultCurrency,
             },
       )
       setConfirmingDelete(false)
     }
-  }, [open, transaction, reset, defaultCurrency])
+  }, [open, transaction, reset, defaultCurrency, defaultDate])
 
   // Al cambiar el tipo (Income ↔ Expense), resetear la categoría a su valor por defecto
   // para evitar que quede activa una categoría del tipo contrario.
@@ -205,12 +205,17 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
           {/* Tipo — ancho completo (gobierna las categorías disponibles) */}
+          {/* Los 4 <Select> de este formulario llevan modal={false}: Select es modal por
+              defecto (bloquea scroll + interacción fuera de él); anidado dentro de este
+              Dialog (también modal) provocaba un parpadeo al cerrarse el Select — su propio
+              desbloqueo de scroll pisaba momentáneamente el del Dialog padre, más visible en
+              móvil. El Dialog ya bloquea la interacción exterior. */}
           <Field label="Tipo" htmlFor="type">
             <Controller
               control={form.control}
               name="type"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={field.onChange} modal={false}>
                   <SelectTrigger id="type" className="w-full" data-testid="select-type">
                     <SelectValue>
                       {(v: TransactionType) => TRANSACTION_TYPE_LABEL[v]}
@@ -269,6 +274,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                       field.onChange(v)
                       setValue('idSubCategory', null)
                     }}
+                    modal={false}
                   >
                     <SelectTrigger id="idMainCategory" className="w-full" data-testid="select-category">
                       <SelectValue>
@@ -301,6 +307,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
                       onValueChange={(v) =>
                         field.onChange(v === '__none__' ? null : Number(v))
                       }
+                      modal={false}
                     >
                       <SelectTrigger id="idSubCategory" className="w-full">
                         <SelectValue placeholder="Ninguna">
@@ -332,7 +339,7 @@ export function TransactionSheet({ open, onClose, transaction }: TransactionShee
               control={form.control}
               name="currency"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={field.onChange} modal={false}>
                   <SelectTrigger id="currency" className="w-full" data-testid="select-currency">
                     <SelectValue />
                   </SelectTrigger>

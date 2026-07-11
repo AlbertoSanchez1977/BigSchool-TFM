@@ -1,1 +1,1 @@
-Usar: src\mcp-server\AGENTS.md
+AGENTS.md

@@ -84,6 +84,11 @@ test.describe('Formularios de autenticación (landing page)', () => {
     // exact:true para no colisionar con "Repetir contraseña"
     await page.getByLabel('Contraseña', { exact: true }).fill('Password1!')
     await page.getByLabel('Repetir contraseña').fill('OtraPassword2!')
+    // El .refine() de confirmPassword solo corre si el resto del schema es válido
+    // (Zod no evalúa refine() de nivel-objeto si el propio shape ya falló) — así que
+    // hace falta una moneda válida para que el error de "no coinciden" pueda aparecer.
+    await page.getByTestId('select-baseCurrency').click()
+    await page.getByRole('option', { name: 'EUR' }).click()
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await expect(page.getByText('Las contraseñas no coinciden')).toBeVisible()
   })
@@ -98,6 +103,8 @@ test.describe('Formularios de autenticación (landing page)', () => {
     await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
     await page.getByLabel('Repetir contraseña').fill(PASSWORD)
+    await page.getByTestId('select-baseCurrency').click()
+    await page.getByRole('option', { name: 'EUR' }).click()
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
 
     // Tras registro exitoso el panel se cierra y el router navega a /dashboard
@@ -115,6 +122,8 @@ test.describe('Formularios de autenticación (landing page)', () => {
     await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
     await page.getByLabel('Repetir contraseña').fill(PASSWORD)
+    await page.getByTestId('select-baseCurrency').click()
+    await page.getByRole('option', { name: 'EUR' }).click()
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await expect(page.getByRole('heading', { name: 'Crear cuenta' })).not.toBeVisible({ timeout: 5000 })
 

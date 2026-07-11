@@ -589,6 +589,130 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 
 ---
 
+## 2026-07-02 — Backend: monolito modular (Spec 0, Plan 018, Tasks 1-9)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/005-2026-07-01-backend-modular-monolith-design.md` (Spec 0, fundacional — precede a las specs de features 006-010) y plan `docs/superpowers/plans/018-2026-07-01-backend-modular-monolith.md`; ejecución tarea a tarea con gate humano (1 tarea = 1 rama = 1 PR).
+- Backend reorganizado de layer-first a **monolito modular**: 4 proyectos de capa intactos (`Domain/Application/Infrastructure/WebApi`), pero dentro de cada uno carpeta+namespace por módulo funcional (`Auth`, `Finanzas`, `Investments`, `Rag` esqueleto) + `SharedKernel` transversal. Convención estricta namespace = ruta de carpeta.
+- **Task 1 (PR #123)**: building blocks compartidos del dominio (`BaseEntity`, `IAggregateRoot`, `IDomainEvent`, `IUnitOfWork`, `Money`, `MoneyConversion`, `Currency`, `EntityStatus`, excepciones base, `ExchangeRate`) → `Domain/SharedKernel`.
+- **Task 2 (PR #124)**: entidades/enums/eventos/excepciones específicas de negocio reubicadas por módulo (`User`→Auth, `Transaction`/`SubCategory`→Finanzas, `Company`/`Portfolio`/`Holding`/`Disposal`→Investments, `RagDocument`→Rag).
+- **Task 3 (PR #125)**: Commands/Queries/DTOs/Interfaces de Application por módulo + `Application/SharedKernel`. Corrección de diseño aplicada **antes** de mover ficheros (feedback humano): el movimiento de `Interfaces/Repositories` y `Interfaces/Services` es 1:1 por subcarpeta, nunca se funden en un único `Interfaces/` plano — se retocó el plan (Tasks 3, 4 y el código de ejemplo de Task 8) para que quedara coherente de principio a fin.
+- **Task 4 (PR #126)**: configuraciones EF, repositorios y servicios de Infrastructure por módulo, con el mismo criterio 1:1 (`Persistence/Configurations/`, `Persistence/Repositories/`). Namespace de `Migrations/*.cs` preservado intacto por excepción explícita (evita romper `__EFMigrationsHistory`).
+- **Task 5 (PR #127)**: Controllers de WebApi por módulo. Rutas por atributo, sin regresión de contrato.
+- **Task 6 (PR #128)**: primera tarea con código nuevo (TDD) tras el bloque mecánico — `IIntegrationEvent`/`IIntegrationEventHandler`/`IIntegrationEventBus` (Application/SharedKernel) + `InMemoryIntegrationEventBus` (Infrastructure/SharedKernel), resuelve handlers por reflexión vía `IServiceProvider.GetServices`. Sin consumidores todavía (se estrenan en Spec 007).
+- **Task 7 (PR #129)**: patrón Outbox transaccional — `OutboxMessage` + `OutboxMessageConfiguration` + migración `AddOutboxMessage`, `IntegrationEventOutbox` (encola en la misma UoW que el agregado), `OutboxDispatcher` (drena, publica, marca `ProcessedOn`, idempotente), `OutboxDispatchBehavior` (pipeline MediatR post-commit). TDD: test de integración escrito antes de la implementación, verificado en rojo.
+- **Task 8 (PR #130)**: DI Autofac por módulo (`SharedKernelModule`, `AuthModule`, `FinanzasModule`, `InvestmentsModule`) sustituyendo el registro por-capa de `Program.cs`. Prueba de fuego: la suite E2E completa valida la resolución real del grafo de contenedores.
+- **Task 9 (PR #131)**: guard tests de arquitectura (`BigSchool.Architecture.Tests`, NetArchTest) — fronteras entre módulos + Domain no depende de Infrastructure/Application. Al ejecutarlos por primera vez aparecieron 3 fugas reales de frontera (ver abajo).
+- Documentación adicional (post-mergeo del plan): comentarios de evolución a microservicios en `IUserBaseCurrencyProvider`/`UserBaseCurrencyProvider` (rama `docs/018-modular-monolith-diario-and-notes`).
+
+**Decisiones / Problemas encontrados:**
+- **Fuga real de frontera (Task 9)**: 6 handlers de Finanzas/Investments (`CreateTransactionCommandHandler`, `UpdateTransactionCommandHandler`, `CreatePortfolioCommandHandler`, `GetPortfoliosQueryHandler`, `GetPortfolioPerformanceQueryHandler`, `GetPortfolioByIdQueryHandler`) dependían de `IUserRepository` (Auth) solo para leer `BaseCurrency`. Corregido introduciendo `IUserBaseCurrencyProvider` en `Application/SharedKernel`, implementado en `Infrastructure/Auth` — mismo patrón que `IExchangeRateProvider`: el módulo publica una capacidad estrecha vía SharedKernel en vez de exponer su repositorio completo.
+- **Excepción documentada, no corregida (Task 9)**: `Auth.Entities.User` → `Finanzas` (`SubCategory`/`MainCategory`/`DuplicateSubCategoryDomainException`) es la excepción cerrada en spec 005 §7 — `SubCategory` sigue siendo hija de `User` hasta que la **Spec 009** la re-modele como AR independiente de Finanzas; el plan 018 prohíbe explícitamente re-modelarla aquí. Documentado inline en `ModuleBoundaryTests`, no relajado sin más.
+- **Bug propio en scripts de refactor mecánico (Tasks 3/4)**: el script de PowerShell que reescribía `using`s confundía `using var conn = ...;` (declaración C#) con una directiva de importación y la insertaba en mitad de un método, rompiendo la compilación. Detectado por el propio build, corregido con lógica que restringe la búsqueda de "última línea `using`" a las líneas anteriores a la declaración `namespace`.
+- **`dotnet new xunit` fijaba `net10.0`** en el nuevo proyecto `BigSchool.Architecture.Tests`, sobrescribiendo el `net8.0` centralizado en `Directory.Build.props`. Corregido a mano; de paso se centralizaron `TestSdkVersion`/`XunitRunnerVisualStudioVersion`/`NetArchTestVersion` (los 3 proyectos de test existentes hardcodeaban las versiones) siguiendo la convención del repo de nunca hardcodear `PackageReference` nuevas.
+- **Reflexión sobre evolución a microservicios**: `IUserBaseCurrencyProvider` es válido tal cual mientras Auth viva en el mismo proceso/BD (monolito modular). Si Finanzas/Investments se extraen a microservicios reales, la interfaz sobrevive pero la implementación no se puede seguir inyectando por DI desde el código de otro servicio — dos caminos: (A) RPC síncrono a Auth (simple, acopla disponibilidad/latencia) o (B, recomendado) proyección local eventualmente consistente alimentada por el mismo `IIntegrationEventBus` + Outbox ya construidos en las Tasks 6-7, sin consumidores reales todavía pero con la infraestructura lista para este caso de uso exacto.
+
+**Resultado / Estado:**
+- Plan 018 completado (9/9 tareas, PRs #123-#131, todos mergeados).
+- Suite final: `dotnet build` 0 errores · **233/233 tests en verde** (73 Domain + 64 Application + 8 Architecture + 88 Integration) · `dotnet ef migrations has-pending-model-changes` sin pendientes.
+- Refactor sin cambio de comportamiento observable (mismas rutas, mismos contratos, misma API pública) salvo la corrección de frontera de Task 9 (invisible desde fuera: mismo resultado, distinta forma de resolver `BaseCurrency` internamente).
+
+**Siguiente paso:**
+- [ ] Spec 007 (Notifications): primer consumidor real del `IIntegrationEventBus` + Outbox — `UserRegisteredIntegrationEvent` → `EmailLog` de bienvenida.
+- [ ] Spec 009 (Finanzas): re-modelar `SubCategory` como AR independiente de Finanzas; al hacerlo, retirar la excepción documentada en `ModuleBoundaryTests` (Auth ya no debería depender de Finanzas).
+- [ ] Backlog de deuda técnica de backend (`docs/04-backend-tech-debt.md`) — specs 006-010 sobre la base modular ya cerrada.
+
+---
+
+## 2026-07-04 — Backend: paginación de listados (Spec 00, Plan 019, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/006-2026-07-01-backend-paginacion-listados-design.md` (Spec 00, segunda fundacional tras la Spec 0) y plan `docs/superpowers/plans/019-2026-07-01-backend-paginacion-listados.md`; ejecución tarea a tarea con gate humano (PRs #133-#138), ya sobre la estructura modular de la Spec 0.
+- Generalizado el contrato de paginación que **ya cumplía** `GET /transactions` (`?page&pageSize` + `meta.totalCount`) al resto de listados tabulares — **Companies, Portfolios, Valuations** — con contrato idéntico (`PagedResult<T>` + `MetaData`).
+- **Task 1 (#133)**: helper único `Pagination` en `Application/SharedKernel/Common` (`DEFAULT_PAGE_SIZE=20`, `MAX_PAGE_SIZE=100`) + dedup — se retiraron los `NormalizePage/NormalizePageSize` que vivían dentro de `GetTransactionsQuery`.
+- **Task 2 (#134/#135)**: paginar `GET /companies` — `COUNT(*)` con los filtros pero **sin** el `LEFT JOIN` de última valoración; página con `ORDER BY c.Name, c.IdCompany` (desempate único).
+- **Task 3 (#136)**: paginar `GET /portfolios` — el `COUNT(*)` cuenta **carteras**, no filas del `GROUP BY`; página conserva `GROUP BY` + `HOLDING_VALUATION` + `LIMIT/OFFSET`.
+- **Task 4 (#137/#138)**: paginar `GET /companies/{id}/valuations` (`ORDER BY Date DESC, IdValuation DESC`).
+- Patrón por listado: COUNT + página en un solo `QueryMultipleAsync` (espejo de `GetTransactionsQueryHandler`); E2E por endpoint (primera/segunda página sin solape, `totalCount`, cap de `pageSize` a 100, listado vacío). Adaptado `bigschool-api.http`.
+
+**Decisiones / Problemas encontrados:**
+- **Holdings: excepción consciente** (spec 006 §5) — colección hija acotada del AR `Portfolio`; se mantiene anidada en `GET /portfolios/{id}` y **no** se pagina. `PortfolioDetailDto` intacto → cero churn en frontend.
+- **Series y summaries no se paginan** (`monthly-chart`, `summary`, `performance`): se quiere el conjunto completo por diseño.
+- **`totalCount` de Portfolios cuenta carteras** (no holdings): test dedicado con cartera con 2 holdings + 2 vacías verificando `totalCount = 3`.
+
+**Resultado / Estado:**
+- Plan 019 completado (4/4 tareas, PRs #133-#138, mergeados). Build 0 errores + suite en verde (unit + E2E por listado).
+- Con esto la **fase fundacional (Specs 0 + 00) queda cerrada**: el backend es modular, con IntegrationEvents + Outbox listos y todos los listados paginados. Base preparada para especificar las features 1-4 (Specs 007-010) contra código real.
+
+**Siguiente paso:**
+- [ ] Especificar Specs 007-010 (features 1-4) en una única rama, empezando por la 007 (Notifications): primer consumidor real del `IIntegrationEventBus` + Outbox.
+- [ ] Al cerrar 1-4, nueva entrada de diario del bloque completo.
+
+---
+
+## 2026-07-04 — Backend: especificación de features 1-4 (Specs 007-010)
+
+### Fase: Diseño
+
+**Módulo**: backend
+
+**Actividades realizadas:**
+- Sesión de **especificación pura** (Opus) de las cuatro features de deuda técnica del backlog
+  (`docs/04-backend-tech-debt.md`), redactadas en una única rama `feature/specs-007-010-backend-features`
+  y **verificadas contra el código real post-modular** (specs 0/00 ya mergeadas), no de memoria.
+- **Spec 007 — Notifications** (`007-…-notifications-emails-contactos`): módulo nuevo con AR `Contact`
+  + `EmailLog` (+ `EmailType`). Estrena los dos patrones de comunicación de la Spec 0: alta de contacto
+  → `EmailLog` por **DomainEvent intra-módulo (atómico)**; registro → `EmailLog` de bienvenida por
+  **IntegrationEvent + Outbox (post-commit)**. Endpoints `POST /contacts` (público) + `GET /contacts|
+  /emails|/emails/{id}` (privado, paginado; `IdUser = @user OR NULL`).
+- **Spec 008 — User/Registro** (`008-…-user-registro-moneda`): `BaseCurrency` obligatoria en el registro
+  (cambio de contrato); `GET/PUT /users/me` en `UsersController` nuevo; `User.UpdateProfile`/`ChangePassword`.
+  `email` y `baseCurrency` inmutables.
+- **Spec 009 — Finanzas** (`009-…-finanzas-agregaciones`): re-modela `SubCategory` de hija de `User` a
+  **AR independiente** de Finanzas (cierra la deuda de spec 005 §7 y **reactiva** el guard
+  `ModuleBoundaryTests` Auth ⊥ Finanzas); #8/C CRUD subcategorías; #6 `by-category`; #7 nuevo
+  `/transactions/monthly` con filtros; validación de rango (from≤to, span máx 4 años).
+- **Spec 010 — Inversiones** (`010-…-inversiones-summaries`): #10 campos `*Original` por holding en
+  performance; #9 serie de precio por periodo anclada a la última valoración + summary; #11/D
+  rename/delete de cartera; #11/E `GET /portfolios/summary` global.
+
+**Decisiones / Problemas encontrados:**
+- **Mejora de la UoW (A)** — decisión de diseño clave discutida a fondo: `BigSchoolDbContext.SaveChangesAsync`
+  pasa a envolver en **transacción** y persistir en la **misma** transacción los efectos intra-BD que los
+  domain-event handlers añaden (p. ej. la fila de `OutboxMessage`), con guard `CurrentTransaction is null`
+  para ser **componible** ante llamadas anidadas. Sin (A), el patrón hecho-de-dominio → publish-handler →
+  outbox no persistía la fila.
+- **Regla intra-BD vs desacoplado**: el criterio no es "toca BD o no", sino **¿atómico con el agregado
+  o efecto desacoplado?** Intra-módulo/mismo `DbContext` → DomainEvent dentro de (A) (atómico);
+  otro módulo/externo (email, Elastic) → **IntegrationEvent + Outbox** post-commit (I/O externo dentro
+  de la transacción = anti-patrón). Los **DomainEvents son hechos** (llevan la entidad) y los **handlers
+  acciones** (1 hecho : N handlers).
+- **`SubCategory.IdUser` como referencia suave** (sin FK dura), coherente con `EmailLog`; la migración
+  del re-modelado solo suelta la FK a `Users`.
+- **Regla fiscal en `Portfolio.Delete`** (feedback humano): no se borra una cartera con posiciones
+  abiertas; si está cerrada, tampoco dentro de los **5 años fiscales de gracia** (prescripción ES) desde
+  la última venta, con **excepción de dominio específica** (409 con `Code` propio) para que el frontend avise.
+- **Frontend fuera de alcance** en las cuatro: cada spec deja el frontend como apunte; son backend puro.
+
+**Resultado / Estado:**
+- 4 specs de features redactadas y commiteadas (007-010) + entradas de backlog/diario. Ningún código de
+  producción tocado todavía (sesión de diseño).
+
+**Siguiente paso:**
+- [ ] Planificar cada spec (planes 020+) y ejecutarla spec→plan→implementación con gate humano
+  (1 tarea = 1 rama = 1 PR), empezando por la 007 (Notifications), que incluye la mejora de la UoW (A).
+- [ ] Al implementar 007-010, nueva entrada de diario por bloque.
+
+---
+
 *Añadir nuevas entradas al final del documento con fecha y fase.*
 
 ### Plantilla para nuevas entradas:
@@ -612,3 +736,655 @@ Registro cronológico del desarrollo del proyecto siguiendo un ciclo ligero:
 **Siguiente paso:**
 - ...
 ```
+
+## 2026-07-04 — Planificación de features 1–4 (Planes 020–023)
+
+### Fase: Diseño
+
+**Módulo**: backend (Notifications, Auth, Finanzas, Investments)
+
+**Actividades realizadas:**
+- Redacción de los planes de implementación derivados de las Specs 007–010, sobre la estructura modular ya integrada (planes 018/019 en `develop`):
+  - **020** — Notifications (EmailLog + Contactos + Welcome): UoW transaccional componible, `Contact`/`EmailLog` (AR), flujo Contacto (DomainEvent atómico) y Welcome (IntegrationEvent + Outbox), lecturas paginadas. 6 tareas.
+  - **021** — User/Registro: moneda obligatoria en registro (contrato rompedor), `GET/PUT /users/me` (re-hash Argon2). 3 tareas.
+  - **022** — Finanzas: `SubCategory` re-modelada como AR independiente (cierre de la frontera Auth⊥Finanzas), CRUD de subcategorías, agregaciones `by-category`/`monthly` con validación de rango. 3 tareas.
+  - **023** — Investments: holdings `*Original`, serie de cotización por periodo, rename/delete de cartera con guards fiscales, summary global. 4 tareas.
+
+**Decisiones clave (revisión de planes):**
+- **Norma de EventHandlers**: son disparadores finos (`_mediator.Send(Command)`); el Command hace `entity.Add` + `SaveChangesAsync()`. Excepción documentada en código: el handler de Auth que encola el IntegrationEvent (no guarda; lo persiste el save-3 de la UoW componible, atómico con el `User`).
+- **Convención namespace = carpeta** (anidado, con subcarpetas por categoría); se corrigió la Spec 005 en consecuencia.
+- **Invariantes en el dominio**: `SubCategory.Delete(requestingUserId)` rechaza predefinidas y no-propietario; `Portfolio.Delete(today)` aplica guards de posiciones abiertas y gracia fiscal de 5 años (excepciones de dominio → 409).
+- **Sin magic values**: el periodo de la serie de cotización se modela como enum `ValuationPeriod` (valor subyacente = nº de meses), compartible con el frontend.
+- **DI**: se excluyen los `INotificationHandler` del escaneo Autofac (los posee MediatR) para evitar doble disparo; los `IIntegrationEventHandler` se resuelven por `GetServices`.
+
+**Resultado / Estado:**
+- Planes `docs/superpowers/plans/020–023` listos para ejecución task-by-task (subagent-driven).
+- Rama `feature/007-010-backend-features`.
+
+**Siguiente paso:**
+- [ ] Ejecutar los planes por orden (020 → 023), una tarea = una rama = un PR con gate humano.
+
+---
+
+## 2026-07-04 al 2026-07-05 — Backend: módulo Notifications completo (Spec 007, Plan 020, Tasks 1-6)
+
+### Fase: Implementación
+
+**Módulo**: backend (Notifications)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/007-2026-07-04-backend-notifications-emails-contactos-design.md` y plan `docs/superpowers/plans/020-2026-07-04-backend-notifications-emails-contactos.md`; ejecución tarea a tarea con gate humano. Primer módulo funcional nuevo desde el monolito modular (Spec 0) y primer consumidor real de `IIntegrationEventBus`/Outbox (Spec 0, Tasks 6-7 del plan 018).
+- **Task 1 (PR #141)**: dominio del módulo — `Contact`, `EmailLog` (ARs), `EmailType` (Welcome=1, Contact=2), `ContactSubmittedDomainEvent`, `UserRegisteredDomainEvent` (nuevo en `Auth`, disparado por `User.Create`).
+- **Task 2 (PR #142)**: **UoW transaccional componible** — `BigSchoolDbContext.SaveChangesAsync` reescrito para envolver en transacción y persistir en la **misma** transacción los efectos que los domain-event handlers añaden (p. ej. una fila de `EmailLog` disparada por el evento de otro agregado), con guard `CurrentTransaction is null` para admitir llamadas anidadas sin intentar un `BEGIN` doble en MySQL.
+- **Task 3 (PR #143)**: persistencia — `IContactRepository`/`IEmailLogRepository`, configuraciones EF (`EmailLogs.IdUser` nullable **sin FK dura**, referencia blanda), migración `AddNotificationsModule`.
+- **Task 4 (PR #144)**: flujo Contacto — `POST /contacts` (público) dispara `ContactSubmittedDomainEvent` → `SendContactAckEmailOnContactSubmittedHandler` (disparador fino) → `CreateContactAckEmailCommand` persiste el `EmailLog` de acuse en la **misma transacción** (Task 2). `GET /contacts` paginado. `NotificationsModule` (Autofac) excluye los `INotificationHandler<T>` del escaneo para que MediatR sea el único dueño de su resolución (si no, `Publish` los invocaría 2 veces vía `GetServices`).
+- **Task 5 (PR #145)**: flujo Welcome — `Register` (Auth) → `UserRegisteredDomainEvent` → `PublishIntegrationEventHandler` encola `UserRegisteredIntegrationEvent` (excepción documentada: no llama a `SaveChanges`, lo persiste el save-3 de la UoW componible) → `OutboxDispatchBehavior` drena post-commit → `CreateWelcomeEmailOnUserRegisteredHandler` dispara el command del `EmailLog` de bienvenida. `AuthModule` recibe el mismo guard anti-doble-registro que `NotificationsModule`.
+- **Task 6 (PR #146)**: lecturas — `GET /emails` (paginado, visibilidad `IdUser = @user OR IdUser IS NULL`) y `GET /emails/{id}` (404 si no visible, p. ej. welcome ajeno).
+- `docs/swagger/bigschool-api.http` e `infra/docker/mysql/init.sql` actualizados en cada tarea relevante (endpoints nuevos; tablas `Contacts`/`EmailLogs` espejo de la migración, validado con `dotnet ef database update` contra el `init.sql` modificado).
+
+**Decisiones / Problemas encontrados:**
+- **Convención de carpetas de test establecida en esta sesión** (feedback humano, dos rondas): `Domain.Tests` reestructurado a `Entities/{Módulo}/` (con cambio de namespace, `git mv`); `Application.Tests` a `Commands/{Módulo}/`, `Validators/{Módulo}/` y una categoría nueva `EventHandlers/{Módulo}/`. Se propagó retroactivamente a los planes 021-023 (que aún usaban rutas planas) antes de ejecutarlos.
+- **Nomenclatura de tests**: alineados a inglés + PascalCase (`Método_Escenario_Resultado`) tras detectar snake_case en español en los primeros ficheros generados; referencia canónica `PostTransactionTests.cs`.
+- **Bug crítico real en `OutboxDispatcher` (hallado durante Task 5, no introducido por ella)**: `OutboxDispatchBehavior` corre en **todo** request MediatR; como `CreateWelcomeEmailOnUserRegisteredHandler` hace `_mediator.Send(CreateWelcomeEmailCommand)`, esa llamada reentra en el mismo pipeline. El `OutboxDispatcher` original solo marcaba `ProcessedOn` y guardaba **al final** del `foreach`, así que la consulta de pendientes de la llamada anidada seguía viendo la fila como `NULL` en BD → **recursión infinita**. Detectado empíricamente: un único registro generó 5000+ `EmailLogs` antes de que el proceso quedara colgado (vstest lo abortó). Corregido marcando y persistiendo `ProcessedOn` **antes** de invocar el handler de cada mensaje; test de regresión dedicado que simula la reentrada.
+- **`DuplicateSubCategoryDomainException`-style guard**: mismo patrón de doble-registro Autofac/MediatR que ya se había resuelto en el plan 018 (Task 8), reaplicado aquí para `NotificationsModule` y `AuthModule`.
+- **Test E2E del flujo Welcome reubicado**: vive en `Integration.Tests/Auth/RegisterTests.cs` (el endpoint bajo prueba es `/api/v1/auth/register`, de Auth) y no en `Notifications/`, aunque sus asserts lean `EmailLogs`/`OutboxMessages` — documentado inline como cruce de frontera deliberado, válido solo en monolito modular con BD compartida.
+
+**Resultado / Estado:**
+- Plan 020 completado (6/6 tareas, PRs #141-#146, todos mergeados).
+- Suite final: Domain 83/83 · Application 74/74 · Architecture 8/8 · Integration 102/102.
+- Primer módulo de negocio nuevo construido sobre la infraestructura de eventos de la Spec 0 (DomainEvent intra-módulo + IntegrationEvent/Outbox inter-módulo), con un bug de infraestructura real corregido y cubierto por regresión.
+
+**Siguiente paso:**
+- [ ] Plan 021 (User/Registro): moneda obligatoria + perfil.
+
+---
+
+## 2026-07-05 — Backend: User/Registro completo (Spec 008, Plan 021, Tasks 1-3)
+
+### Fase: Implementación
+
+**Módulo**: backend (Auth)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/008-2026-07-04-backend-user-registro-moneda-design.md` y plan `docs/superpowers/plans/021-2026-07-04-backend-user-registro-moneda.md`; revisión previa de nomenclatura de tests del propio documento (todavía en español/estilo antiguo) antes de empezar, alineada a la convención cerrada en el plan 020.
+- **Task 1 (PR #147)**: `BaseCurrency` **obligatoria** en el registro — `RegisterCommand` añade el 4º parámetro `Currency BaseCurrency`, validado con `IsInEnum` (omitirla → `default=0` → 400). Cambio de contrato rompedor: ajustados todos los call-sites existentes (`AuthEndpointTestBase.RegisterRawAsync`, tests de `GetEmailsTests` del plan 020) para pasar la moneda explícitamente.
+- **Task 2 (PR #148)**: `GET /users/me` — `UserProfileDto` + `GetMeQuery/Handler` (Dapper, lectura directa por `IdUser` del token) + `UsersController` nuevo bajo `/api/v1/users`.
+- **Task 3 (PR #149)**: `PUT /users/me` — métodos de dominio `User.UpdateProfile(fullName)` (valida no-vacío) y `User.ChangePassword(hash, salt)`; `UpdateUserCommand/Validator/Handler` con re-hash Argon2 **solo si** llega `password`; verificado con round-trip real de login (contraseña nueva funciona, la vieja falla) sin mocks.
+- `docs/swagger/bigschool-api.http` actualizado (registro con `baseCurrency` + `GET/PUT /users/me`), junto con una limpieza de redacción en los `CLAUDE.md` de cada subdirectorio (referencia a `AGENTS.md` relativa al propio directorio).
+
+**Decisiones / Problemas encontrados:**
+- **Nomenclatura de tests del plan corregida antes de implementar**: el documento traía nombres en español (`Moneda_valida_pasa`, etc.) y estilo `.Validate(...).IsValid` en vez del `TestValidate`/`ShouldHaveValidationErrorFor` ya establecido en `RegisterCommandValidatorTests.cs` real — reescrito el plan completo (las 3 tareas) antes de tocar código.
+- **`NotFoundException` requiere `(entityName, key)`**, no un mensaje libre: el snippet del plan usaba un solo argumento; ajustado al ctor real del repo.
+- Sin cambios de frontera de módulo (todo dentro de Auth); `ModuleBoundaryTests` no se toca.
+
+**Resultado / Estado:**
+- Plan 021 completado (3/3 tareas, PRs #147-#149, todos mergeados).
+- Suite final: Domain 83/83 · Application 87/87 · Architecture 10/10 · Integration 109/109.
+
+**Siguiente paso:**
+- [ ] Plan 022 (Finanzas/Finance): re-modelado de `SubCategory` + agregaciones.
+
+---
+
+## 2026-07-05 — Backend: Finanzas re-modelada + agregaciones (Spec 009, Plan 022, Tasks 1-3) + rename `Finanzas → Finance`
+
+### Fase: Implementación
+
+**Módulo**: backend (Finance, ex-Finanzas)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/009-2026-07-04-backend-finanzas-agregaciones-design.md` y plan `docs/superpowers/plans/022-2026-07-04-backend-finanzas-agregaciones.md`; ejecución tarea a tarea con gate humano.
+- **Task 1 (PR #150)**: `SubCategory` re-modelada de entidad hija de `User` a **Aggregate Root independiente**. `IdUser` pasa de propiedad sombra a explícita (nullable = global; referencia blanda **sin FK dura**, mismo patrón que `EmailLogs.IdUser`). Invariante de borrado en el dominio: `Delete(requestingUserId)` rechaza predefinidas (`IsDefault`) y no-propietarios. `User` pierde `_subCategories`/`SubCategories`/`AddSubCategory` y sus `using` de Finanzas → deja de referenciar el módulo. `ModuleBoundaryTests` **reactivado**: `Domain.Auth ⊥ Domain.Finanzas` pasa a estar en verde (cierra la excepción documentada desde el plan 018). Migración `RemodelSubCategoryAggregate` (solo suelta la FK; validada contra `init.sql` con `dotnet ef database update` → *already up to date*).
+- **Task 2 (PR #151)**: CRUD de subcategorías — `POST/DELETE /categories/sub`. `ISubCategoryRepository.ExistsActiveAsync` (unicidad por nombre+categoría entre las propias y las globales); `DeleteSubCategoryCommandHandler` con 404 no-leak (inexistente, predefinida, global o ajena) reafirmado por la invariante del dominio como defensa en profundidad.
+- **Refactor intermedio (PR #152)**: renombrado el módulo **`Finanzas` → `Finance`** en las 4 capas + tests (namespaces, carpetas, `FinanzasModule`→`FinanceModule`), consolidando además la carpeta de tests E2E `Integration.Tests/Transactions` → `Integration.Tests/Finance` (era el único punto donde módulo y agregado colisionaban de nombre). Ver detalle en "Decisiones" — se trata como entrada propia por alcance (afecta a las 4 capas + AGENTS.md), aunque nace de una observación durante este mismo plan.
+- **Task 3 (PR #153)**: agregaciones — `GET /transactions/by-category` (totales por `MainCategory` sobre `BaseAmount`) y `GET /transactions/monthly` (agrupado año-mes, split Income/Expense, reutiliza `MonthlyChartPointDto`). `DateRange.IsValid` (`SharedKernel.Common`) como predicado de rango compartido (`from ≤ to`, span ≤ 4 años) entre ambos validators. `GET /transactions/monthly-chart?year=` (dashboard) confirmado sin tocar.
+- `docs/swagger/bigschool-api.http` actualizado con los 4 endpoints nuevos (`POST/DELETE /categories/sub`, `GET /transactions/by-category`, `GET /transactions/monthly`).
+
+**Decisiones / Problemas encontrados:**
+- **`DuplicateSubCategoryDomainException` mal jerarquizada**: heredaba de `DomainException` (→400) en vez de `ConflictException` (→409), a diferencia de sus hermanas (`EmailAlreadyExistsDomainException`, `DuplicateTickerDomainException`, `DuplicateValuationDomainException`). El propio plan señalaba el riesgo; confirmado y corregido cambiando la base, sin tocar el middleware.
+- **Colisión de nombres `SubCategoryDto`**: `Application.Finance.DTOs.SubCategoryDto` (nuevo, forma CRUD) colisionaba con el `SubCategoryDto` ya existente en `Queries.Categories.GetCategories` (item anidado, forma distinta). Resuelto cualificando por nombre completo en `CategoriesController` en vez de añadir el `using` que colisiona.
+- **Rename `Finanzas → Finance` (PR #152)**: el usuario detectó que "Finanzas" era el único módulo en español (resto: Auth/Investments/Notifications/SharedKernel en inglés) y que colisionaba conceptualmente con "Transactions" — que en realidad es una *feature* dentro del módulo (`Queries/Transactions`), no el módulo. Decisiones tomadas explícitamente: (1) nombre elegido `Finance` (bounded context completo, no solo el agregado `Transaction`); (2) la carpeta de tests E2E se renombra también, a diferencia de dejarla como `Transactions/`; (3) el módulo `Rag` (2 ficheros, marcado "futuro" en spec 005) se mantiene y se documenta como 6º módulo futuro en `AGENTS.md`. Alcance del rename **acotado a código + AGENTS.md + backlog vivo** (`04-backend-tech-debt.md`) — specs/planes históricos (005/009/010, diario, 01-arquitectura, 02-backend-design) se dejan como registro de época; los planes en vuelo (022 Task 3, 023) se adaptan al ejecutarlos. Verificado behavior-preserving: `has-pending-model-changes` sin cambios (los strings de tipo del `ModelSnapshot` se reescribieron en el mismo commit) y suite completa en verde antes/después.
+- **`SubCategory.IdUser` como referencia suave**: se reafirma el patrón (sin FK dura) ya usado en `EmailLog`, coherente con la filosofía de frontera de módulo por convención + `NetArchTest`, no por integridad referencial de BD.
+
+**Resultado / Estado:**
+- Plan 022 completado (3/3 tareas, PRs #150-#153, todos mergeados) + refactor de nomenclatura (PR #152).
+- Suite final: Domain 81/81 · Application 101/101 · Architecture 10/10 (`Auth ⊥ Finance` en verde) · Integration 122/122.
+- Con esto, el módulo Finance queda con nomenclatura consistente (inglés, sin ambigüedad módulo↔agregado) y su deuda de re-modelado (Spec 009) cerrada.
+
+**Siguiente paso:**
+- [ ] Plan 023 (Investments): holdings `*Original`, serie de cotización por periodo, rename/delete de cartera con guards fiscales, summary global — namespaces ya en inglés (`Investments`), sin impacto del rename.
+
+---
+
+## 2026-07-05 al 2026-07-06 — Backend: Investments completo (Spec 010, Plan 023, Tasks 1-4)
+
+### Fase: Implementación
+
+**Módulo**: backend (Investments)
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/010-2026-07-04-backend-inversiones-summaries-design.md` y plan `docs/superpowers/plans/023-2026-07-04-backend-inversiones-summaries.md`; ejecución tarea a tarea con gate humano y TDD estricto (RED verificado antes de cada implementación).
+- **Task 1 (PR #155)**: campos `*Original` (moneda de la empresa, sin conversión FX) en `HoldingPerformanceDto` — `CostBasisOriginal`, `MarketValueOriginal`, `UnrealizedPnLOriginal`, reutilizando `PortfolioSqlFragments.HOLDING_VALUATION` (aditivo, no toca `GetPortfolios`).
+- **Task 2 (PR #156)**: `GET /companies/{id}/valuations/series?period=` — serie de precio + summary (`first/last/min/max/changePct`), anclada a la **última** valoración de la empresa (no a "hoy"). Periodo modelado como enum `ValuationPeriod` cuyo valor subyacente **es el nº de meses** (3/6/12/36/60) — sin magic values, mismo patrón que `Currency`.
+- **Task 3 (PR #157)**: `PUT`/`DELETE /portfolios/{id}` — rename siempre permitido; delete con dos guards de dominio (`PortfolioHasOpenPositionsDomainException`, `PortfolioWithinFiscalGracePeriodDomainException`, ambas → 409). `Portfolio.Delete(today)` como dominio puro (el reloj lo resuelve Application).
+- **Task 4 (PR #158)**: `GET /portfolios/summary` — agregado en moneda base de todas las carteras activas del usuario (market value/cost basis/unrealized de holdings abiertos + realized/portfolio count de todas las carteras). Cierra el plan 023 al completo.
+- `docs/swagger/bigschool-api.http`: nueva sección "INVESTMENTS — Plan 023" (endpoints 43-46: serie de valoraciones, periodo inválido→400, rename, delete, summary) + nota de los campos `*Original` añadida a la entrada 30 (performance) ya existente.
+
+**Decisiones / Problemas encontrados:**
+- **Bug real — columna SQL duplicada (Task 1)**: el primer intento re-seleccionaba `x.BuyOriginalCurrency AS BuyOriginalCurrency` como columna "nueva" en `HOLDING_VALUATION`, pero ya se seleccionaba sin alias más arriba en el mismo SELECT — dos columnas con el mismo nombre en la derived table. Al referenciarla por nombre desde un consumidor (`OPEN_HOLDINGS_QUERY`), MySQL la resolvía como ambigua en runtime → 500 que tumbó 6 tests E2E de Investments, incluidos algunos de `GetPortfolios` que ni tocan las columnas nuevas (comparten el mismo fragmento). Corregido eliminando la re-selección redundante.
+- **Excepciones de dominio con base class incorrecta (Task 3)**: mismo patrón de bug que `DuplicateSubCategoryDomainException` en el plan 022 — `PortfolioHasOpenPositionsDomainException`/`PortfolioWithinFiscalGracePeriodDomainException` debían heredar de `ConflictException` (409), no de `DomainException` (400). Al despachar `ExceptionHandlingMiddleware` por *pattern matching* de tipo (cubre subtipos), el Step del plan que proponía modificar el middleware sobraba y se eliminó.
+- **`NotFoundException` con mensaje libre no compila (Task 3)**: el plan pasaba un string suelto; el ctor real es `(entityName, key)`. Mismo bug ya visto y corregido en el plan 021.
+- **Convenciones de organización de tests no respetadas al implementar Task 3, corregidas tras revisión humana**: (1) los tests de dominio de `Rename`/`Delete` se crearon en un fichero nuevo (`PortfolioRenameDeleteTests.cs`) en vez de añadirse al `PortfolioTests.cs` ya existente de la misma clase — violaba "un fichero de test por clase bajo prueba"; fusionados en el fichero existente. (2) el E2E se escribió como un único fichero combinando `PUT` y `DELETE` — violaba "un fichero de test por endpoint"; separado en `PutPortfolioTests.cs`/`DeletePortfolioTests.cs`. (3) **tests de handler ausentes**: se habían omitido `RenamePortfolioCommandHandlerTests.cs`/`DeletePortfolioCommandHandlerTests.cs` (mock de `IPortfolioRepository`), pese a ser el patrón ya establecido para el resto de handlers de Investments — el E2E no sustituye la cobertura aislada del handler; añadidos a posteriori.
+- **Bug real — `COUNT(*)` como `long` en Dapper (Task 4)**: `RealizedRow(decimal RealizedPnL, int PortfolioCount)` fallaba en runtime (`InvalidOperationException` al materializar). `COUNT(*)` en MySQL/MySqlConnector se lee como `long`; cuando Dapper construye un record de **varias columnas vía su constructor** (path IL-generado) exige tipo exacto, sin conversión numérica — a diferencia de los `COUNT(*)` ya existentes en el proyecto (paginación de `GetCompanies`, `GetPortfolios`, etc.), que lo leen como **valor escalar único** (`ReadSingleAsync<int>()`), donde Dapper sí convierte. Corregido con `long PortfolioCount` + cast a `int` al construir el DTO; no aplica a los conteos escalares existentes.
+- **Nota aparte — symlinks `CLAUDE.md` → `AGENTS.md`**: se detectó que `CLAUDE.md` (raíz y los 6 subdirectorios) solo apuntaban a `AGENTS.md` con un texto ("Usar: AGENTS.md"), que no se resuelve automáticamente al cargar contexto en un agente — depende de que este decida seguir el puntero. Convertidos los 7 en symlinks reales (target relativo, mismo directorio) para que el auto-load de `CLAUDE.md` lea directamente el contenido de `AGENTS.md`, sin duplicar texto. Encontrado un problema de entorno: con `core.symlinks=false` (config del repo en esta máquina), git guarda el symlink correctamente en el índice (modo `120000`) pero cada `checkout`/cambio de rama lo materializaba en el working tree como fichero de texto plano con la ruta, no como enlace real — pasó desapercibido varias veces durante los cambios de rama de este mismo plan hasta que se verificó explícitamente. Solucionado activando `core.symlinks=true` (ejecutado por el usuario, no por el agente) y re-materializando los symlinks.
+
+**Resultado / Estado:**
+- Plan 023 completado (4/4 tareas, PRs #155-#158, todos mergeados).
+- Suite final: Domain 87/87 · Application 113/113 · Architecture 10/10 · Integration 139/139.
+- Con esto, Investments cubre performance con desglose en moneda de empresa, serie histórica de cotización por periodo, gestión completa de carteras (crear/renombrar/borrar con guards fiscales) y un resumen global multi-cartera — cierra la Spec 010. Con los planes 020-023 completados, la deuda técnica de backend identificada tras el MVP de frontend queda resuelta.
+
+**Siguiente paso:**
+- [ ] Frontend-web: consumir los endpoints de backend ya cerrados (Notifications, User/Registro, Finance, Investments) — la deuda técnica de backend que los bloqueaba está resuelta.
+
+---
+
+## 2026-07-06 — Frontend-Web: diseño de la Iteración 2 — integración con el Backend (Spec 011, Plan 024)
+
+### Fase: Diseño
+
+**Módulo**: frontend-web
+
+**Actividades realizadas:**
+- Spec `docs/superpowers/specs/011-2026-07-06-frontend-web-backend-integracion-design.md` y plan `docs/superpowers/plans/024-2026-07-06-frontend-web-backend-integracion.md`: cierran, desde el lado del Frontend-Web, la deuda técnica de backend registrada en `docs/04-backend-tech-debt.md` (puntos 1-4, ya resueltos por los planes 020-023).
+- Plan estructurado en 9 tareas ordenadas por prioridad, cada una **1 rama `feature/024-frontend-integracion-taskN` = 1 PR = revisión humana**, cubriendo Notifications, Finance (2 gráficas nativas), Auth (moneda + perfil), paginación reutilizable, Investments (renombrar/borrar cartera, holdings `*Original`, summary global) y las pantallas nuevas de "Mercado" (Companies + Valuations).
+
+**Decisiones clave (spec 011 §4):**
+- **Nav "Mercado"**: Companies/Valuations (catálogo global, sin `IdUser`) reciben una entrada propia de navegación (`/market`); Contactos/Emails (vistas de administración) se acceden desde el `ProfileDropdown`, no desde el nav principal.
+- **Perfil** sale de "fuera de alcance MVP": dos PRs adyacentes (T3a moneda en registro, T3b perfil leer/editar).
+- **Gráficas de Finance = 2 gráficas nativas** sobre ventana de 4 años: la Gráfica A actual (barras por categoría × año) **no cambia de aspecto ni componente**; solo se reescribe el cuerpo de `useCategoryChart` para tirar de `by-category` (4 llamadas, una por año), lo que además **arregla un bug real** (el límite de 100 filas del paginado impedía agregar los 4 años completos en cliente). Gráfica B (nueva): barras apiladas por mes, `monthly` filtrado solo por Tipo.
+- **Renombrar/borrar cartera** en la cabecera de la vista de detalle; el borrado respeta los guards fiscales del backend (409 si hay holdings abiertos).
+- **Holdings `*Original`**: se materializan los campos que el `PerformanceTab` ya pintaba con fallback `—`; `GET /portfolios/summary` alimenta el mini-resumen del Dashboard.
+- **Selector de empresa (añadir holding)** pasa a combobox con typeahead sobre `GET /companies?pageSize=100` filtrado en cliente (deuda documentada: sin `?search=` server-side).
+- **Deuda que queda** (documentada, sin botones muertos): Companies sin `PUT/DELETE`; Valuations sin `GET{id}` ni `DELETE`; búsqueda server-side de empresas pendiente.
+
+**Resultado / Estado:**
+- Spec 011 y plan 024 aprobados y mergeados (PR #160).
+- Arranca la ejecución tarea a tarea con revisión humana entre tareas.
+
+**Siguiente paso:**
+- [ ] Task 1 — Contactos + Emails a endpoints reales (módulo Notifications).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 1 — Contactos + Emails a endpoints reales (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Notifications)
+
+**Actividades realizadas:**
+- `useContacts`/`useEmails` migrados de `localStorage`/mock en memoria a TanStack Query real contra `GET/POST /contacts` y `GET /emails`. Nuevos `types/notifications.ts` y `services/notificationService.ts`. `contact-form.tsx` pasa a `POST /contacts` real (toast de éxito/error); `contacts/page.tsx` y `emails/page.tsx` añaden estados de carga (Skeleton) y error, además del vacío ya existente. Retirados los restos de mock (`loadContacts`/`saveContact`/`ContactSubmission`/`LS_KEY`).
+- TDD estricto: tests reescritos primero (`tests/unit/useContacts.test.tsx`, `useEmails.test.tsx`), verificados en rojo (7/7 fallando por el motivo correcto — los hooks viejos no llamaban al service) antes de implementar.
+
+**Decisiones / Problemas encontrados:**
+- **Los DTO reales del backend difieren de lo asumido en el plan** (verificado contra `Controllers/Notifications/*` y `Application/Notifications/DTOs/*` antes de escribir los tipos, como manda la norma del plan): `EmailLogListItemDto` no tiene `body` ni `status`, usa `recipient`/`sentAt` (no `toAddress`/`createdAt`) y `type` viaja como **número crudo** (Dapper, sin `JsonStringEnumConverter`: 1=Welcome, 2=Contact). `GET /contacts` y `GET /emails` están **paginados** (el plan no lo contemplaba); de momento se piden con `pageSize=100` sin controles de paginación en la UI — el componente reutilizable llega en la Task 5.
+- **Gap preexistente detectado (no introducido en esta tarea)**: `eslint` no está instalado como dependencia en `frontend-web` pese a existir el script `lint` en `package.json` — `npm run lint` no es ejecutable. Confirmado con `git diff` que `package.json`/`pnpm-lock.yaml` no se han tocado. Decisión consensuada con el humano: se deja como deuda aparte, fuera de alcance de este plan.
+
+**Resultado / Estado:**
+- Task 1 completada y mergeada (PR #161). `typecheck` limpio, 221/221 tests unitarios en verde.
+
+**Siguiente paso:**
+- [x] Task 2 — Finance: migrar Gráfica A al backend (fix del límite de 100) + añadir Gráfica B (módulo Finance).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 2 — Finance: Gráfica A al backend + Gráfica B nueva (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Finance)
+
+**Actividades realizadas:**
+- Verificados contra `TransactionsController.cs` (`GET /transactions/by-category`, `GET /transactions/monthly`) y sus DTOs (`CategoryTotalDto`, `MonthlyChartPointDto`) antes de tocar tipos — a diferencia de la Task 1, aquí el plan **acertó exactamente** la forma real (`CategoryTotal { idMainCategory, mainCategory: string, total }`, rango del enum `MainCategory` 1-7 gasto / 10-13 ingreso).
+- **Gráfica A**: se conservan intactos `category-bars.tsx`, la pestaña y `aggregateByCategory.ts` (función pura, queda como fallback/tests); solo se reescribe el cuerpo de `useCategoryChart` (misma firma, mismo output `CategoryAggregation`) para hacer **4 llamadas a `by-category`** (una por año) vía `useQueries`, en vez de agregar en cliente sobre `useTransactions` con `pageSize=5000` — esto **arregla un bug real**: el backend topa la paginación en 100 filas, así que la agregación en cliente nunca veía los 4 años completos.
+- **Gráfica B** (nueva): `useMonthlySeries` — una llamada a `monthly` por cada `MainCategory` del tipo elegido (7 gasto / 4 ingreso, vía `CATEGORIES_BY_TYPE` derivado del enum).
+- `expenses/page.tsx`: añadido selector de año de referencia (máx = año actual) que alimenta ambas gráficas; Gráfica A intacta debajo del selector, Gráfica B nueva debajo de esa.
+- TDD estricto: `tests/unit/useCategoryChart.test.tsx` (reescrito, no existía como fichero dedicado hasta ahora) y `tests/unit/useMonthlySeries.test.tsx` (nuevo), verificados en rojo antes de implementar.
+
+**Decisiones / Problemas encontrados:**
+- **Fix a mis propios tests, no al código de producción**: dos aserciones esperaban en una condición (`years`) que no dependía de los datos async, dejando pasar el resto de expects antes de que la promesa resolviera. Corregido esperando en la condición real (`rows`/`points`).
+- **`expensesPage.test.tsx` roto por el cambio de hook**: `useCategoryChart`/`useMonthlySeries` llaman a `useQueries` de TanStack Query directamente (antes `useCategoryChart` delegaba en `useTransactions`, ya mockeado en ese test) → hacía falta un `QueryClientProvider` real. Añadidos mocks de ambos hooks en `expensesPage.test.tsx` (mismo patrón que el `useCategories` ya mockeado), ya que esa suite no ejercita la pestaña de Gráficas.
+- **Rediseño de la Gráfica B tras revisión humana del PR #162**: la primera implementación (`monthly-stacked-bars.tsx`) mostraba **una sola gráfica** con los 12 meses × 4 años en el eje X y las categorías **apiladas** como segmentos — no era el diseño esperado. Corregido a **una gráfica por categoría** (desagregada, `monthly-category-bars.tsx`), cada una con los 12 meses en el eje X y **una barra por año agrupada** (no apilada) dentro de cada mes — mismo patrón visual que `category-bars.tsx` pero con los ejes girados (categoría↔mes). `expenses/page.tsx` renderiza ahora una rejilla de N gráficas (una por `MainCategory` del tipo) en vez de una única gráfica combinada.
+
+**Resultado / Estado:**
+- Task 2 completada y mergeada (PR #162, PR #163 con el ajuste de rejilla). `typecheck` limpio, 229/229 tests unitarios en verde.
+
+**Siguiente paso:**
+- [x] Task 3 — Moneda base obligatoria en Registro (módulo Auth).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 3 — Moneda base obligatoria en Registro (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth)
+
+**Actividades realizadas:**
+- Verificado contra `RegisterCommand(Email, Password, FullName, BaseCurrency)` y `AuthResponseDto` en el backend antes de tocar tipos. `baseCurrency` añadido a `RegisterDto` (types/auth.ts) y a `registerSchema` (`z.enum`, obligatorio, sin default) con TDD (test en rojo → schema → verde).
+- Selector de moneda (`<Select>` shadcn + `Controller` de react-hook-form, mismo patrón que el `Select` de moneda ya existente en `transaction-sheet.tsx`) añadido en `register-form.tsx` entre email y contraseña.
+- **Centralizado el catálogo de monedas**: existía duplicado (`transaction-sheet.tsx` tenía su propio `const CURRENCIES = [...] as const`; iba a añadir una tercera copia en el formulario de registro). Movido a `types/enums.ts` como `export const CURRENCIES = [...] as const`, con `Currency` derivado de él (`typeof CURRENCIES[number]`) — patrón TS para tener a la vez el tipo y el array iterable en runtime (un union type de TS, a diferencia de un enum de C#, no existe en el JS compilado). `transaction-sheet.tsx` y `registerSchema` importan ahora la misma constante.
+
+**Decisiones / Problemas encontrados:**
+- **Discrepancia plan vs. backend real**: el contexto del plan afirmaba "`AuthResponse` ya devuelve `currency`" — verificado que `AuthResponseDto` real es `(AccessToken, ExpiresAt, Email, FullName)`, **sin** campo de moneda. El frontend ya lo tenía documentado correctamente como deuda pendiente (`currency?: Currency` opcional con comentario TODO en `types/auth.ts`/`AuthProvider.tsx`), así que no hizo falta cambiar nada ahí — el alcance de esta tarea es solo el campo del *request*, no la respuesta.
+- **Bug real encontrado vía E2E (no solo ajuste de test)**: el panel flotante de login/registro (`navbar-public.tsx`) cierra al detectar un click "fuera" de su contenedor (`authAreaRef`, con un listener `mousedown` sobre `document`). El desplegable del nuevo `<Select>` de moneda se pinta en un **Portal** (Base UI lo monta fuera del árbol DOM del panel, directo en `<body>`, para no quedar recortado por `overflow`). Sin más, elegir cualquier moneda se interpretaba como "click fuera" y **cerraba el panel entero** antes de poder enviar el formulario — un bug que afectaría a cualquier usuario real intentando registrarse, no solo a los tests E2E que lo destaparon (`registro exitoso → redirige` y `login exitoso → redirige` colgaban 30s esperando un botón "Crear cuenta" que ya no existía). Corregido en `handleOutside` ignorando los clicks dentro de `[data-slot="select-content"]` (el marcador que pone el propio componente Select en su desplegable).
+- **Zod `.refine()` de nivel-objeto no corre si el `.object()` base ya falló**: el test E2E "contraseñas no coinciden" dejó de pasar al añadir `baseCurrency` obligatorio, porque sin moneda el objeto completo ya es inválido y Zod **no evalúa** el `.refine((data) => data.password === data.confirmPassword)` — así que el error de "no coinciden" nunca se generaba. Ajustado ese test para también seleccionar moneda antes de comprobar el error de contraseñas.
+- Ajustados los 3 specs Playwright que registran un usuario (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts`) para seleccionar `EUR` tras "Repetir contraseña".
+
+**Resultado / Estado:**
+- Task 3 completada y mergeada (PR #164). `typecheck` limpio, 231/231 tests unitarios en verde, E2E local (`login.spec.ts` 9/9, `create-expense.spec.ts` 1/1, `sell-holding.spec.ts` 1/1) en verde contra backend+frontend ya en marcha.
+- **Fix de seguimiento en el mismo PR**: React avisaba de que el `<Select>` de moneda pasaba de "no controlado" a "controlado" (por diseño, `field.value` empieza en `undefined` — sin preselección). Corregido con `value={field.value ?? ''}` (`''` no coincide con ningún `<SelectItem>`, así que la UX no cambia; el componente es controlado desde el primer render).
+
+**Siguiente paso:**
+- [x] Task 4 — Perfil: GET/PUT /users/me (módulo Auth).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 4 — Perfil: GET/PUT /users/me (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth)
+
+**Actividades realizadas:**
+- Verificado `UsersController.cs` + `UserProfileDto(IdUser, Email, FullName, BaseCurrency, LastLoginDate)` antes de tocar tipos: es un DTO de query Dapper, `BaseCurrency` es `string` en C# (no pasa por el enum), aunque se sigue tipando `Currency` en TS porque el valor de runtime es siempre un código válido — como ya advertía el plan.
+- Nuevos `types/users.ts`, `services/userService.ts`, `hooks/useProfile.ts` (`useProfile` + `useUpdateProfile`, esta última con `setQueryData` en vez de invalidar, porque `PUT /users/me` ya devuelve el `UserProfile` completo actualizado). TDD: `tests/unit/useProfile.test.tsx` en rojo (mockeando `@/services/userService`, no `@/lib/api`, mismo patrón que Tasks 1/2) antes de implementar.
+- `profile/page.tsx` reescrita: `InfoRow` mock → `useProfile()` con estados carga/error; formulario pre-rellenado vía `useEffect` + `reset()` cuando llegan los datos async (mismo patrón que `transaction-sheet.tsx` al abrir en modo edición). `onSubmit` llama `useUpdateProfile().mutate(...)` con `toast.error(ApiError.message)` en fallo. Retirados los comentarios `TODO (deuda técnica)`.
+
+**Decisiones / Problemas encontrados:**
+- **Bug de sincronización encontrado antes de escribir código** (aviso del humano, no mío): `ProfileDropdown`/navbar pintan el `fullName` que vive en `AuthProvider` (estado en memoria + `localStorage.bs_full_name`), **no** el de esta query nueva. Sin engancharlo, tras editar el nombre en `/profile` la cabecera seguiría mostrando el nombre viejo hasta el próximo login o refresco de token — un cabo suelto que no estaba en el plan original. Añadido `tokenStore.updateFullName(fullName)` (mismo patrón read-modify-write que `incrementRefreshCount`, ya existente) y `useAuth().updateFullName(fullName)` (actualiza `tokenStore` + el `user` en memoria de `AuthProvider`), llamado en el `onSuccess` de `useUpdateProfile`. TDD en ambas capas (`tokenStore.test.ts`, `authProvider.test.tsx`) antes de implementar.
+- Sin E2E: el perfil no está en la lista de flujos críticos del `AGENTS.md` del módulo (login, crear gasto, ver gráficas, vender holding); cubierto solo con unitarios (hooks + hidratación de `AuthProvider`).
+
+**Resultado / Estado:**
+- Task 4 completada y mergeada (PR #165). `typecheck` limpio, 239/239 tests unitarios en verde.
+
+**Siguiente paso:**
+- [x] Task 5 — Componente de paginación reutilizable + lista de carteras (transversal).
+
+---
+
+## 2026-07-07 — Frontend-Web: Task 5 — Paginación reutilizable + lista de carteras (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (transversal)
+
+**Actividades realizadas:**
+- `types/pagination.ts` (`PageMeta` compartido, reexportado desde `transactions.ts` para no romper imports existentes). `components/ui/pagination.tsx` (TDD: 7 tests en rojo → componente → verde) extraído tal cual del bloque inline que ya vivía en `expenses/page.tsx`.
+- Verificado `GET /portfolios` real: ya aceptaba `page`/`pageSize` y devolvía `meta` — el frontend simplemente lo ignoraba hasta ahora. `portfolioService.list({page,pageSize})` migrado a `api.getWithMeta` (mismo patrón que `transactionService.list`); `usePortfolios({page,pageSize})` con `queryKey: ['portfolios', page, pageSize]`.
+- `investments/page.tsx`: estado `page` + `<Pagination>`. `expenses/page.tsx`: bloque de paginación inline (duplicado histórico) sustituido por el componente.
+
+**Decisiones / Problemas encontrados:**
+- **Consumidor no listado en el plan roto por el cambio de firma**: `dashboard/page.tsx` también llamaba a `usePortfolios()` (sin argumentos, esperando un array plano) para el mini-resumen de inversiones — el `tsc --noEmit` lo cazó de inmediato. Es un widget de resumen (no un listado), así que se ajustó a `usePortfolios({ page: 1, pageSize: 100 })` + `.items`, sin `<Pagination>` propia — mismo criterio que Contactos/Emails en la Task 1 (pageSize alto para vistas que no necesitan paginar de verdad).
+- Tests existentes adaptados a la nueva firma/shape (`usePortfolios.test.tsx`, `portfolioService.test.ts`): no es TDD de comportamiento nuevo, es la misma disciplina que en Task 2 con `expensesPage.test.tsx` — el mock pasa de devolver un array a `{ items, meta }`.
+- E2E completo en local (no solo el subconjunto afectado): 11/11 en verde (`login.spec.ts`, `create-expense.spec.ts`, `sell-holding.spec.ts` — esta última ejercita `investments/page.tsx` al crear la cartera de la venta).
+
+**Resultado / Estado:**
+- Task 5 completada y mergeada (PR #166). `typecheck` limpio, 246/246 tests unitarios en verde, 11/11 E2E local en verde.
+
+**Siguiente paso:**
+- [x] Task 6 — Renombrar / borrar cartera (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 6 — Renombrar / borrar cartera (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `PUT/DELETE /portfolios/{id}` en `PortfoliosController.cs` antes de tocar tipos: **desviación real del plan** — `RenamePortfolioCommand : IRequest` (sin genérico), el endpoint devuelve `ApiResponse.Success()` sin `data`, no un `Portfolio` como asumía el snippet. `rename`/`remove` en `portfolioService.ts` tipados `Promise<void>`.
+- Verificada la `queryKey` real del detalle (`usePortfolioDetail` en `useHoldings.ts`): `['portfolios', id]` — el snippet del plan apuntaba `['portfolio', id]` (singular) como aproximación a verificar; usada la real en `usePortfolioMutations.ts` (`useRenamePortfolio`, `useDeletePortfolio`, TDD). Ambas invalidan el detalle y la lista de carteras (`['portfolios']` prefijo).
+- `investments/[id]/page.tsx`: `DropdownMenu` (⋯, mismo componente que `profile-dropdown.tsx`) junto al botón "Añadir holding" con "Renombrar" (modal centrado, nombre precargado) y "Eliminar" (modal de confirmación, navega a `/investments` al éxito). El 409 del guard fiscal (holdings abiertos) llega como `ApiError.message` y se muestra tal cual, sin reinterpretarlo.
+
+**Decisiones / Problemas encontrados:**
+- **Ajuste de composición sobre el plan**: el `DropdownMenuTrigger` de Base UI ya es en sí mismo el elemento interactivo (confirmado mirando cómo lo usa `profile-dropdown.tsx`: children directos, sin envolver un `<Button>`). En vez de anidar `<Button variant="outline" size="icon">` dentro con un `render` prop (sin verificar si `Menu.Trigger` soporta ese patrón de composición), se estiliza el propio trigger con `buttonVariants({ variant: 'outline', size: 'icon' })` — mismo resultado visual, sin apostar por una API no confirmada.
+- Sin sorpresas de diseño visual: el patrón de modal centrado y el `DropdownMenu` ya estaban establecidos en el codebase (`CreatePortfolioModal`, `profile-dropdown.tsx`); esta tarea fue puro cableado siguiendo esos patrones.
+
+**Resultado / Estado:**
+- Task 6 completada. `typecheck` limpio, 251/251 tests unitarios en verde. E2E `sell-holding.spec.ts` (ejercita `investments/[id]/page.tsx`) en verde tras el cambio de cabecera.
+
+**Siguiente paso:**
+- [ ] Feedback adicional del humano sobre el PR #167 (ver entrada siguiente).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 6 (revisión) — iconos en listado + fix de parpadeo móvil
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments, Transactions)
+
+**Actividades realizadas (feedback del humano sobre el PR #167, antes de mergear):**
+1. **Renombrar/borrar también desde el listado de carteras** (`investments/page.tsx`): extraídos `RenamePortfolioModal`/`DeletePortfolioModal` de `investments/[id]/page.tsx` a `components/investments/portfolio-action-modals.tsx` (compartidos entre el listado y el detalle, en vez de duplicar el código de los modales). `DeletePortfolioModal` gana un callback opcional `onDeleted` — el detalle navega a `/investments` al borrar, el listado no necesita navegar (la lista se refresca sola vía invalidación de query).
+   - `PortfolioCard` deja de ser un `<button>` — un `<button>` (editar/borrar) dentro de otro `<button>` (la card) es HTML inválido y el navegador rompe el anidado. Pasa a ser un `<div role="button" tabIndex={0}>` con `onKeyDown` (Enter/Espacio) para no perder accesibilidad de teclado. Los iconos de editar/borrar llevan `stopPropagation()` para no disparar la navegación de la card al clicar.
+2. **Parpadeo en móvil al elegir empresa en "Añadir holding"**: diagnosticado como un conflicto de "modales anidados" — `Select` de Base UI es `modal={true}` por defecto (bloquea scroll de página + interacción exterior), y al estar anidado dentro de un `Dialog` (también modal), el desbloqueo de scroll del `Select` al cerrarse pisaba momentáneamente el bloqueo del `Dialog` padre, causando un parpadeo visible — más notorio en móvil por el redimensionado de la barra de direcciones. Corregido con `modal={false}` en el `Select` del combobox de empresa (`investments/[id]/page.tsx`) y, proactivamente, en los 4 `<Select>` de `transaction-sheet.tsx` (mismo patrón exacto: Select anidado en Dialog, aunque no reportado explícitamente para ese formulario).
+
+**Decisiones / Problemas encontrados:**
+- Verificado en el código fuente de `@base-ui/react` (`SelectRoot.js`, `SelectRoot.d.ts`) que `modal: true` es el default documentado ("document page scroll is locked and pointer interactions on outside elements are disabled") — no fue necesario reproducir visualmente el bug para confirmar la causa raíz, la lectura del código y el comportamiento reportado (desaparición momentánea) encajaban con precisión.
+- Test nuevo (`investmentsPage.test.tsx`, no existía cobertura previa para esta página) verificando que los iconos de editar/borrar abren su modal **sin** disparar la navegación de la card (`router.push` no debe llamarse).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 254/254 tests unitarios en verde (+3 nuevos), 11/11 E2E local en verde (incluye `create-expense.spec.ts`, que ejercita los 4 Selects corregidos de `transaction-sheet.tsx`).
+- Añadido al mismo PR #167, mergeado.
+
+**Investigación adicional del parpadeo (post-merge, antes de Task 7):** `modal={false}` no lo arregló.
+Con "Paint flashing" de DevTools se confirmó que el problema real es el propio popup del `Select`: en
+su primer render sube desde abajo ocupando casi toda la pantalla y luego se reajusta a su altura
+correcta (no es la página entera repintándose, es el popup con una altura inicial incorrecta).
+Descartado que fuera cosa de `next dev`: se reproduce igual con `next build && next start` en local.
+**Pero no se reproduce en un iPhone 13 real (Chrome)**, ni siquiera en la release de producción
+anterior a estos cambios (el `Select` de empresa ya existía desde el MVP). Conclusión: parece un
+artefacto de la emulación de móvil de Chrome DevTools, no un bug real en dispositivo — **aparcado por
+decisión del humano** ("al final de la iteración lo miraré con calma"), sin más cambios de código
+por ahora. Queda `modal={false}` en los Select afectados (correcto igualmente, evita un doble
+bloqueo de scroll real aunque no fuera la causa de este síntoma concreto).
+
+**Siguiente paso:**
+- [x] Task 7 — Holdings `*Original` + summary global en Dashboard (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 7 — Holdings `*Original` + summary global en Dashboard (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `HoldingPerformanceDto` real: los 4 campos `*Original` son **no-nullable** en el backend (confirmado, no solo "probablemente presentes" como decía el `TODO`) — retirados el comentario de deuda técnica y los `?`/fallbacks `—` en `types/portfolios.ts` y en el grid de `PerformanceTab` (`investments/[id]/page.tsx`), que pasa de 3×2 a 3×3 celdas añadiendo "Valor mercado original".
+- `usePortfoliosSummary()` (TDD) contra `GET /portfolios/summary` (`portfolioService.summary()`). **Desviación del plan**: `InvestmentsSummaryDto` real tiene un campo `PortfolioCount` que el snippet no incluía — añadido a `PortfoliosSummary`.
+- `dashboard/page.tsx`: el mini-resumen de inversiones usaba `derivePortfolioTotals` (suma en cliente sobre `usePortfolios`, no sobre `/portfolios/{id}/performance` como sugería el contexto del plan) — sustituido por `usePortfoliosSummary()`. `portfolioCur` pasa a leer `invSummary.baseCurrency` en vez de `portfolios[0].realizedPnLCurrency` (no depende de que haya al menos 1 cartera en la página cargada).
+
+**Decisiones / Problemas encontrados:**
+- **Limpieza de código muerto confirmada con el humano antes de ejecutar**: al dejar de usarse, `derivePortfolioTotals`/`PortfolioTotals` (`lib/dashboard/derive.ts`) se quedaban sin consumidores. Antes de borrar, el humano preguntó explícitamente si eso significaba perder el rendimiento total de cartera en el Dashboard — aclarado que no: el dato se sigue mostrando, solo cambia de dónde sale (antes sumado en el navegador, ahora servido ya calculado por el backend). Confirmado el borrado (a diferencia de `aggregateByCategory.ts` en la Task 2, que sí se mantuvo por decisión explícita).
+- **E2E inicialmente en rojo por servidor de desarrollo frío, no por el código**: `sell-holding.spec.ts` falló 3 veces seguidas con timeouts crecientes (`waitForURL` a `/dashboard`, luego a `/investments/{id}`, luego el toast de venta) porque no había ningún `next dev` corriendo de fondo — Playwright arrancaba uno nuevo en frío cada vez y Turbopack compila cada ruta bajo demanda en su primera visita (con aviso explícito de "Slow filesystem detected" en los logs). Cada reintento llegaba más lejos según se iban precompilando rutas; con el dev server ya caliente, la suite completa (11/11) pasó en verde. Ninguno de los cambios de esta tarea tocaba las rutas que fallaban (registro, creación de cartera) — quedó descartado como regresión real.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 253/253 tests unitarios en verde (+3 nuevos de `usePortfoliosSummary`, -4 de `derivePortfolioTotals` retirado), 11/11 E2E local en verde.
+- Añadido al mismo PR #168.
+
+**Rediseño de la card de holding en Performance (feedback del humano sobre el PR #168, antes de mergear):** iterado en varias rondas cortas hasta llegar a: cabecera con ticker+moneda+"N acciones" agrupados a la izquierda y la rentabilidad pegada al borde derecho (el valor `+X,XX %` con el mismo tamaño/color que los valores del grid, la palabra "Rentabilidad" en gris pequeño a juego con "acciones"); el grid pasa de 3×3 a solo 2 filas (base siempre, original solo si `buyOriginalCurrency !== baseCurrency` — si coinciden sería literalmente repetir la fila anterior). Cambio puramente presentacional (sin tocar hooks/tipos/servicios); verificado con `typecheck` + suite completa + E2E de venta de holding en cada ronda.
+
+**Siguiente paso:**
+- [x] Task 8 — Pantallas "Mercado": Companies (listado/detalle/crear) + combobox (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 8 — Pantallas "Mercado" (Companies) + combobox de empresa (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `CompaniesController.cs` antes de tocar tipos: **desviación real del plan** — `GET /companies/{id}` devuelve la misma `CompanyListItemDto` que el listado (no un `Company` distinto). `Company` pasa a ser el DTO de comando (`POST /companies` → `CompanyDto`), mismo patrón `comando vs query` que `Portfolio`/`PortfolioListItem`. `Sector` (11 valores) y `Market` (14 valores) verificados campo a campo contra los enums reales y centralizados en `types/enums.ts` (patrón `as const` + tipo derivado, igual que `CURRENCIES`); traducción de `Sector` en `lib/investments/labels.ts` nuevo.
+- `companyService.ts`, `useCompaniesList`/`useCompanyDetail`/`useCreateCompany` (TDD). `components/ui/combobox.tsx` (genérico, shadcn `Command`+`Popover`) y `components/market/company-combobox.tsx` (fuente `useCompanies()`, 10 resultados iniciales, filtro cliente por ticker/nombre). Sustituido el `<Select>` de empresa en `AddHoldingModal` por el combobox.
+- Páginas `/market` (listado paginado + modal "Nueva empresa") y `/market/[id]` (detalle con breadcrumb `← Mercado` — **confirmado con el humano** antes de escribir el fichero que sigue el patrón maestro-detalle de página completa, no modal, igual que `/investments/[id]`). Entrada de nav "Mercado" en `navbar-private.tsx`.
+
+**Decisiones / Problemas encontrados:**
+- **Query key factory** (`lib/queryKeys.ts`) tras pregunta del humano sobre duplicación: `usePortfolios.ts` y `usePortfolioMutations.ts` ya declaraban cada uno su propia `PORTFOLIOS_KEY = ['portfolios']` por separado — divergencia real, no hipotética. Creados `portfolioKeys`/`companyKeys`; retrofit de los 5 hooks de portfolios/companies existentes (refactor puro, mismos valores de key, toda la suite sigue en verde sin tocar los tests). Deuda anotada en el propio fichero: `useProfile`, `useCategoryChart`/`useMonthlySeries`, `useTransactions` se migran cuando se toquen.
+- **`npx shadcn@latest add command` se quedó colgado** esperando confirmación interactiva para sobrescribir `button.tsx` (ya personalizado con variantes propias) — sin stdin disponible en un proceso de fondo, no se pudo responder; por defecto respondió "no" y completó sin escribir `command.tsx`. Escrito a mano (wrapper de `cmdk`, que sí quedó instalado como dependencia por el intento del CLI).
+- **jsdom no implementa `ResizeObserver` ni `Element.scrollIntoView`**, que `cmdk` usa internamente — sin polyfill, cualquier test que montara el combobox lanzaba `ReferenceError`/`TypeError` en el segundo test en adelante (no en el primero, "solo mostrar placeholder", que no llega a montar la lista). Añadidos stubs mínimos en `tests/setup.ts`.
+- **"10 resultados iniciales" del combobox**: resuelto con un prop `initialResultsLimit` en el combobox base — mientras no hay texto escrito se recorta la lista antes de pintarla; en cuanto hay búsqueda, se pasa la lista completa y el filtro propio de `cmdk` hace el resto (compara contra `item.label`, no `item.value` — el id real viaja por closure en `onSelect`, no por el argumento que devuelve `cmdk`).
+- E2E: tras sustituir el `<Select>` por el combobox, `sell-holding.spec.ts` rompió en el paso "seleccionar empresa" (buscaba `data-testid="select-company"`, que el combobox no exponía) — añadido un prop `data-testid` pasante en el combobox base. Un fallo puntual de `login.spec.ts` (panel de registro sin cerrar) no se reprodujo en un rerun aislado — descartado como flake, no relacionado con esta tarea.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 261/261 tests unitarios en verde (+8 nuevos: `useCompaniesList`/`useCompanyDetail`/`useCreateCompany`/`company-combobox`), 11/11 E2E local en verde.
+
+### Addendum — Centralización de `DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE`
+
+Pregunta del humano tras revisar la PR: ¿`PAGE_SIZE = 20` es un estándar de todas las parrillas?
+¿Lo centralizamos junto con el `100` de las vistas "todo sin paginar"? Verificado por grep: sí,
+son los dos únicos valores usados en todo el frontend (20 para listados reales con `<Pagination>`,
+100 para vistas que piden "todo lo razonable"). Añadidos `DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE` en
+`types/pagination.ts` (mismo patrón que `types/enums.ts`: el fichero de tipos también aloja las
+constantes runtime relacionadas) y sustituidos los 6 literales sueltos: `investments/page.tsx`,
+`market/page.tsx`, `expenses/page.tsx` (los tres `= 20`), `dashboard/page.tsx`, `holdingsService.ts`
+y `notificationService.ts` (los tres `= 100`, este último eliminando su propio alias local
+`LIST_PAGE_SIZE`). Refactor puro, sin cambio de comportamiento. `typecheck` limpio, 261/261 tests
+unitarios y 11/11 E2E en verde tras el cambio.
+
+**Siguiente paso:**
+- [x] Task 9 — Valuations: listado + crear + gráfico de serie (módulo Investments).
+
+---
+
+## 2026-07-08 — Frontend-Web: Task 9 — Valuations (listado, alta y gráfico de serie) (Plan 024)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Investments)
+
+**Actividades realizadas:**
+- Verificado `CompaniesController.cs`/DTOs reales con subagente antes de tocar tipos (varias desviaciones del borrador del plan, ver abajo). Tipos añadidos: `ValuationPeriod` en `types/enums.ts` (es un enum de dominio, mismo tratamiento que `Sector`/`Market`, no un DTO de recurso); `Valuation`, `CreateValuationDto`, `PagedValuations`, `ValuationSeriesPoint`, `ValuationSeriesSummary`, `ValuationSeries` en `types/companies.ts` (`ValuationListItem` ya existía de Task 8).
+- `companyService.ts` (`listValuations`/`createValuation`/`valuationSeries`), `hooks/useValuations.ts` (TDD: test RED confirmado antes de crear el fichero, 5 tests). `valuationKeys` añadido a `lib/queryKeys.ts`, invalidación por prefijo (`valuationKeys.all(id)`/`seriesAll(id)`) para cubrir todas las páginas y periodos cacheados sin enumerar cada combinación.
+- `components/market/valuation-series-chart.tsx`: `LineChart` de Recharts + selector de periodo (segmented control) + fila de summary (mínimo/máximo/último/variación %). Integrado en `/market/[id]` junto con el modal "Nueva valoración" y el listado paginado (tabla desktop / tarjetas móvil, mismo patrón que `expenses/page.tsx`).
+
+**Decisiones / Problemas encontrados:**
+- **Desviaciones reales confirmadas contra el backend** (no asumidas del borrador del plan): la lista de valoraciones (`ValuationListItemDto`, Dapper) trae la moneda como `priceCurrency: string`, mientras que el DTO de creación (`ValuationDto`) la trae como `currency` (enum tipado) — mismo concepto, dos nombres/formas distintas entre endpoints hermanos. El body de `POST /companies/{id}/valuations` **no lleva `currency`**: la hereda la empresa (`Company.Currency`), el backend construye el `Money` con ella. El summary de la serie es `{ first, last, min, max, changePct }` — el plan olvidaba `first`. Y lo más relevante: `ValuationPeriod` es un enum de .NET (valor subyacente = nº de meses) cuyo query param `?period=` acepta el **nombre del miembro** (`ThreeMonths`, `OneYear`…), no abreviaturas tipo `'3m'/'1y'` como asumía el plan — de haberlo dado por bueno sin verificar, todas las llamadas a la serie habrían devuelto 400.
+- **No existe la variable CSS `--chart-line`** que mencionaba el plan; el gráfico de línea usa `var(--chart-5)`, la misma que ya usan `portfolio-chart.tsx` (landing) y el balance acumulado del Dashboard — consistente con "azul celeste apagado" del design system.
+- **`npm run lint` no es ejecutable**: `eslint` no está declarado como dependencia en `package.json` — deuda preexistente del proyecto, no introducida por esta tarea (no se tocó `package.json`); se documenta pero no se investiga a fondo por estar fuera del alcance de Task 9.
+- Verificación visual manual en navegador (dev server :3000 + backend real :5285): creada una empresa nueva, confirmado el estado vacío del gráfico/listado, dada de alta una valoración vía el modal y confirmado que el summary, la fila de la tabla y el selector de periodo reflejan el dato correctamente. Guion de smoke ad hoc descartado tras la verificación (no forma parte de la suite).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 266/266 tests unitarios en verde (+5 nuevos: `useValuations`), 11/11 E2E local en verde. `npm run lint` no ejecutable (deuda preexistente, ver arriba).
+
+**Siguiente paso:**
+- [x] Revisar y mergear PR de Task 9. Plan 024 completo (9/9 tareas) tras el merge.
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 1 — Favicon propio + retirada de Vercel Analytics (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web
+
+**Contexto**: primera tarea del plan 025, que corrige los hallazgos de la ronda de pruebas manuales
+(`docs/guia-pruebas-manuales-frontend.md`). Este bug (#2 del registro) eran tres 404 de consola en
+cada arranque: `icon.svg`, `icon-light-32x32.png` (referenciados en `metadata.icons` de `layout.tsx`
+pero sin los ficheros correspondientes en `public/`, que ni siquiera existe) y
+`/_vercel/insights/script.js` (Vercel Analytics activo en producción sin proyecto desplegado en
+Vercel).
+
+**Actividades realizadas:**
+- Creado `src/app/icon.svg` (32×32, fondo azul primario `#2f80d6`, trazo blanco con forma de línea
+  de cotización) — Next.js App Router lo detecta automáticamente como favicon file-based, sin
+  necesidad de declararlo en `metadata`.
+- `layout.tsx`: retirado el `import { Analytics } from '@vercel/analytics/next'`, el bloque
+  `metadata.icons` (apuntaba a PNGs inexistentes) y el `<Analytics />` condicional a producción.
+- `pnpm remove @vercel/analytics` — dependencia fuera de `package.json`/`pnpm-lock.yaml`.
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan: los tres cambios eran mecánicos y ya estaban acotados con precisión
+  en el plan tras la lectura previa del código real.
+
+**Resultado / Estado:**
+- `typecheck` y `next build` limpios; `/icon.svg` aparece en el listado de rutas del build,
+  confirmando que Next lo generó como favicon. Grep de `vercel` en `src/` sin resultados.
+  Verificación visual manual del humano: favicon nuevo visible en la pestaña, sin 404 de los tres
+  assets/script.
+
+**Siguiente paso:**
+- [x] Task 2 — Fecha por defecto de "Nueva transacción" = periodo visible (Plan 025).
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 2 — Fecha por defecto de "Nueva transacción" (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Finance)
+
+**Contexto**: bug #4 del registro de la ronda de pruebas manuales — al crear una transacción con la
+parrilla filtrada a un mes distinto del actual, la fecha por defecto (siempre "hoy") caía fuera del
+filtro visible y la transacción parecía "desaparecer" tras crearla.
+
+**Actividades realizadas:**
+- TDD: `tests/unit/dates.test.ts` (RED confirmado — `@/lib/dates` no existía) → creado
+  `src/lib/dates.ts` con `todayISO()` y `defaultTransactionDate(viewedYear, viewedMonth, today?)`
+  (GREEN, 4 tests). Es el primer fichero de esta nueva utilidad centralizada de fechas que irán
+  ampliando las Tasks 3 y 4 del plan (`isNotFuture`, `formatDateTimeUtc`).
+- `transaction-sheet.tsx`: nuevo prop opcional `defaultDate` que sustituye a `todayISO()` en los dos
+  puntos donde se inicializaba la fecha en modo creación (`defaultValues` y el `reset()` del
+  `useEffect` que se dispara al abrir el modal). El helper local `todayISO()` del propio fichero se
+  mantiene como fallback cuando no se pasa `defaultDate` (edición, u otros consumidores del sheet).
+- `expenses/page.tsx`: pasa `defaultDate={defaultTransactionDate(year, month)}` al `<TransactionSheet>`,
+  usando el `year`/`month` ya existentes en el estado de la página (el filtro visible de la parrilla).
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan. Único añadido no explicitado en el plan: se incluyó `defaultDate` en
+  el array de dependencias del `useEffect` de reset del sheet (coherente con el resto de deps ya
+  listadas ahí — `open`, `transaction`, `reset`, `defaultCurrency`).
+
+**Resultado / Estado:**
+- `typecheck` limpio, 270/270 tests unitarios en verde (+4 nuevos de `dates.ts`). Verificación visual
+  manual del humano: en mes actual la fecha por defecto sigue siendo hoy; en un mes anterior es el
+  día 1 de ese mes, y la transacción creada con esa fecha aparece correctamente en la lista filtrada.
+
+**Siguiente paso:**
+- [x] Task 3 — Prohibir fechas futuras en compra/venta/valoración (backend + frontend) (Plan 025).
+
+---
+
+## 2026-07-09 — Backend + Frontend-Web: Task 3 — Prohibir fechas futuras en compra/venta/valoración (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: backend (Investments) + frontend-web (Investments)
+
+**Contexto**: bugs #5 y #6 del registro de la ronda de pruebas manuales — los formularios de compra
+de holding, venta de holding y alta de valoración aceptaban fechas futuras. Transacciones se
+excluyen a propósito (un pago emitido a fecha futura es un caso de negocio válido — no se aborda
+Saldo real vs. corriente).
+
+**Actividades realizadas (3A · backend):**
+- TDD por validador: test RED (`Validate_BuyDateInFuture_HasError` fallando) → regla
+  `RuleFor(x => x.BuyDate).LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow))` en
+  `AddHoldingCommandValidator`, y la misma regla (adaptada) en `SellSharesCommandValidator` y
+  `AddValuationCommandValidator` → GREEN. 6 tests unitarios nuevos en
+  `tests/BigSchool.Application.Tests/Validators/Investments/` (13/13 en el namespace, 119/119 en
+  toda la suite de `Application.Tests`).
+- 3 tests E2E nuevos (`Post_FutureBuyDate_Returns400`, `Sell_FutureSellDate_Returns400`,
+  `Post_Valuation_FutureDate_Returns400`) en `PostHoldingTests.cs`/`PostSaleTests.cs`/
+  `AddValuationTests.cs`, reutilizando el arrange del test principal de cada fichero — verifican
+  `400` con `Code == "VALIDATION_ERROR"` y el `Field` correcto. Suite de integración de Investments:
+  73/73 en verde.
+
+**Actividades realizadas (3B · frontend):**
+- Ampliado `lib/dates.ts` con `isNotFuture(iso, today?)` (TDD: RED confirmado, luego GREEN — 7 tests
+  en `dates.test.ts`).
+- `investments/[id]/page.tsx`: `todayISO`/`isNotFuture` importados de `lib/dates` (se elimina el
+  `todayISO()` local); `.refine(isNotFuture, ...)` en `buyDate` y `sellDate`; `max={todayISO()}` en
+  ambos `<Input type="date">`.
+- `market/[id]/page.tsx`: mismo tratamiento en el campo `date` del formulario de valoración.
+
+**Decisiones / Problemas encontrados:**
+- **Desviación de nomenclatura de tests** (corrección del humano antes de escribir el primer test):
+  el borrador del plan usaba nombres tipo `BuyDate_today_is_valid`; se ajustó a la convención real
+  ya presente en `Validators/Investments/` (`Validate_<Escenario>_NoError`/`HasError`, ver
+  `RenamePortfolioCommandValidatorTests.cs`).
+- Sin más desviaciones: el resto del plan (reglas de validador, tests E2E, guards de frontend) se
+  ejecutó tal cual estaba escrito, incluido reutilizar el arrange exacto de cada fichero E2E
+  existente.
+- E2E local: un fallo de timeout en el registro durante la corrida completa (11 tests) — mismo flake
+  observado en tareas anteriores de esta sesión, no relacionado con este cambio (los inputs de fecha
+  de `sell-holding.spec.ts` usan la fecha de "hoy" dinámica, no una fecha fija que pudiera quedar
+  invalidada por el nuevo guard). Pasó en un rerun aislado.
+
+**Resultado / Estado:**
+- Backend: 119/119 (`Application.Tests`) + 73/73 (`Integration.Tests` · Investments) en verde.
+- Frontend: `typecheck` limpio, 273/273 tests unitarios en verde (+3 nuevos), 11/11 E2E local en
+  verde (tras el rerun del flake). Verificación visual manual del humano: calendario bloqueado a
+  futuro y error de Zod en compra/venta/valoración; transacciones siguen aceptando fecha futura sin
+  cambios.
+
+**Siguiente paso:**
+- [x] Task 4 — Etiqueta UTC en fechas-hora de Perfil/Emails/Contactos (Plan 025).
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 4 — Etiqueta UTC en fechas-hora (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (Auth, Notifications)
+
+**Contexto**: bug #3 del registro de la ronda de pruebas manuales — "Último acceso" (Perfil), la
+fecha de envío en Emails y la fecha de recepción en Contactos se mostraban con `toLocaleString`
+sin indicar zona horaria, aunque el backend las persiste en UTC (`DateTime.UtcNow` en
+`User.LastLoginDate`, `EmailLog.SentAt`, `Contact.CreatedAt` — verificado en el código real antes
+de escribir el plan). Solución acordada: mostrar la hora UTC tal cual, etiquetada " UTC" (sin
+conversión de zona).
+
+**Actividades realizadas:**
+- TDD: ampliado `dates.test.ts` con `describe('formatDateTimeUtc', ...)` (RED: 2 fallos, función no
+  exportada) → añadido `formatDateTimeUtc(iso)` a `lib/dates.ts` (GREEN, 9 tests en el fichero).
+  Fuerza el sufijo `Z` si no viene en el string (los timestamps de MySQL datetime pueden llegar
+  "naive", sin zona, y `new Date()` los interpretaría como hora local si no se corrige) y formatea
+  con `Intl.DateTimeFormat({ timeZone: 'UTC' })` + el sufijo " UTC" literal.
+- `profile/page.tsx`: `formatLastLogin` pasa a delegar en `formatDateTimeUtc`.
+- `emails/page.tsx` y `contacts/page.tsx`: eliminada la función local `formatDate` (duplicada en
+  los tres ficheros, sin etiqueta) y sustituida por `formatDateTimeUtc` en el único punto de uso de
+  cada uno.
+
+**Decisiones / Problemas encontrados:**
+- Ninguna desviación del plan.
+
+**Resultado / Estado:**
+- `typecheck` limpio, 275/275 tests unitarios en verde (+2 nuevos de `formatDateTimeUtc`). Ningún
+  E2E toca estas tres pantallas, así que no se reejecutó la suite E2E (fuera del alcance real de
+  este cambio). Verificación visual manual del humano: Perfil, Emails y Contactos muestran la
+  fecha-hora etiquetada " UTC".
+
+**Siguiente paso:**
+- [x] Task 5 — Refrescar el contenido de la página de Alcance (Plan 025). Última tarea del plan.
+
+---
+
+## 2026-07-09 — Frontend-Web: Task 5 — Refresco de la página de Alcance (Plan 025)
+
+### Fase: Implementación
+
+**Módulo**: frontend-web (landing pública)
+
+**Contexto**: bug #1 del registro de la ronda de pruebas manuales — `/scope` describía la
+iteración 1 (contacto/emails en `localStorage`, `/users/me`/`/contacts`/`/emails` listados como
+"trabajo futuro" cuando ya son backend real de la iteración 2) y no mencionaba Mercado ni
+Valoraciones (Tasks 8-9 del plan 024). Última tarea del plan 025.
+
+**Actividades realizadas:**
+- Reescritos los arrays `mvpFeatures` y `futureWork` de `scope/page.tsx`: retiradas las menciones a
+  `localStorage` en contacto/emails/perfil (ahora "contra backend"/"contra endpoint real"); añadidas
+  Mercado y Valoraciones al área "Inversiones"; retirados de `futureWork` los tres puntos ya
+  implementados (`/users/me`, `POST /contact`, `GET /emails`), sustituidos por una card
+  "Inversiones" con la deuda real vigente (editar/borrar empresa, ver/borrar valoración, búsqueda
+  server-side, envío real de emails).
+- **Petición explícita del humano durante la revisión visual**: añadida una card "Arquitectura" que
+  no estaba en el borrador del plan, con DDD/CQRS/Clean Architecture (4 capas)/Monolito Modular por
+  Bounded Context en el backend, y una línea del patrón de capas del propio frontend (types → services
+  → hooks TanStack Query → páginas) — la página no mencionaba nada de arquitectura hasta ahora.
+
+**Decisiones / Problemas encontrados:**
+- Única desviación: la card "Arquitectura" añadida a petición del humano (ver arriba). El resto del
+  contenido se aplicó tal cual estaba redactado en el plan, ya validado por el humano antes de
+  ejecutar la tarea ("Sí, redacta tú, yo reviso y comentamos").
+
+**Resultado / Estado:**
+- `typecheck` limpio. Verificación visual manual del humano en `/scope`: contenido coherente con la
+  app real, incluida la card nueva de Arquitectura.
+
+**Plan 025 completo: 5/5 tareas mergeadas.** Cierra la ronda de correcciones QA post-pruebas
+manuales (`docs/guia-pruebas-manuales-frontend.md`).

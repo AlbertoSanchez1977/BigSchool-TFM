@@ -1,11 +1,10 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Infrastructure;
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Application.SharedKernel.Configuration;
+using BigSchool.Application.SharedKernel.Infrastructure;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
+using BigSchool.Infrastructure.SharedKernel.Services;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -33,47 +32,26 @@ try
             ?? new ExchangeRateSettings { BaseUrl = "https://api.frankfurter.app" };
     });
 
-    // Autofac como DI container (simplified: one RegisterAssemblyTypes per layer)
+    // Autofac como DI container: un módulo por módulo funcional (SharedKernel/Auth/Finance/Investments)
     builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
-        // Domain layer (excluir entidades — solo servicios de dominio)
-        containerBuilder.RegisterAssemblyTypes(typeof(BigSchool.Domain.Entities.BaseEntity).Assembly)
-            .Where(t => !t.Namespace!.Contains("Entities") && !t.Namespace!.Contains("Enums") && !t.Namespace!.Contains("Exceptions"))
-            .AsImplementedInterfaces();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.SharedKernel.DI.SharedKernelModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Auth.DI.AuthModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Finance.DI.FinanceModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Investments.DI.InvestmentsModule>();
+        containerBuilder.RegisterModule<BigSchool.Infrastructure.Notifications.DI.NotificationsModule>();
 
-        // Application layer
-        containerBuilder.RegisterAssemblyTypes(typeof(AppSettings).Assembly)
-            .AsImplementedInterfaces();
-
-        // Infrastructure layer
-        containerBuilder.RegisterAssemblyTypes(typeof(BigSchoolDbContext).Assembly)
-            .AsImplementedInterfaces();
-
-        // WebApi layer
-        containerBuilder.RegisterAssemblyTypes(typeof(Program).Assembly)
-            .AsImplementedInterfaces();
-
-        // DbContext
-        containerBuilder.Register(ctx =>
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<BigSchoolDbContext>();
-            var configuration = ctx.Resolve<Microsoft.Extensions.Configuration.IConfiguration>();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString!));
-            var mediator = ctx.Resolve<IMediator>();
-            return new BigSchoolDbContext(optionsBuilder.Options, mediator);
-        })
-        .AsSelf()
-        .As<BigSchool.Domain.Interfaces.IUnitOfWork>()
-        .InstancePerLifetimeScope();
+        // WebApi layer (filtros/servicios propios de la capa web; los controllers los descubre MVC)
+        containerBuilder.RegisterAssemblyTypes(typeof(Program).Assembly).AsImplementedInterfaces();
     });
 
     // MediatR con CustomMediatR (dispatch secuencial por defecto: SyncContinueOnException)
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(AppSettings).Assembly);
-        cfg.AddOpenBehavior(typeof(BigSchool.Application.Behaviors.ValidationBehavior<,>));
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.ValidationBehavior<,>));
+        cfg.AddOpenBehavior(typeof(BigSchool.Application.SharedKernel.Behaviors.OutboxDispatchBehavior<,>));
     });
     builder.Services.AddTransient<IMediator, CustomMediatR>();
 
@@ -117,7 +95,7 @@ try
     builder.Services.AddHttpClient();
 
     // Dapper: DateOnly no tiene soporte nativo en Dapper; MySQL DATE → DateTime, necesita handler
-    Dapper.SqlMapper.AddTypeHandler(new BigSchool.Infrastructure.Persistence.DateOnlyTypeHandler());
+    Dapper.SqlMapper.AddTypeHandler(new BigSchool.Infrastructure.SharedKernel.Persistence.DateOnlyTypeHandler());
 
     // Controllers — JsonStringEnumConverter: acepta nombres string ("USD") e ints (840) para enums
     builder.Services.AddControllers()

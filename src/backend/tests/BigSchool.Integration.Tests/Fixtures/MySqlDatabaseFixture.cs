@@ -1,4 +1,4 @@
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using Dapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +59,9 @@ public sealed class MySqlDatabaseFixture : IAsyncLifetime
         await using var conn = new MySqlConnection(ConnectionString);
         await conn.OpenAsync();
         await conn.ExecuteAsync("SET FOREIGN_KEY_CHECKS = 0;");
+        await conn.ExecuteAsync("DELETE FROM OutboxMessages;");
+        await conn.ExecuteAsync("DELETE FROM EmailLogs;");
+        await conn.ExecuteAsync("DELETE FROM Contacts;");
         await conn.ExecuteAsync("DELETE FROM Disposals;");
         await conn.ExecuteAsync("DELETE FROM Holdings;");
         await conn.ExecuteAsync("DELETE FROM Portfolios;");

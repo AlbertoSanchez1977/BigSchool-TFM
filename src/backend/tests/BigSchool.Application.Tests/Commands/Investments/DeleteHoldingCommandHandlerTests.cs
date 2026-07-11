@@ -1,13 +1,13 @@
-using BigSchool.Application.Commands.Investments.DeleteHolding;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
-using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.Interfaces;
-using BigSchool.Domain.ValueObjects;
+using BigSchool.Application.Investments.Commands.DeleteHolding;
+using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Domain.SharedKernel.Exceptions;
+using BigSchool.Domain.SharedKernel.Interfaces;
+using BigSchool.Domain.SharedKernel.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Investments.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
 

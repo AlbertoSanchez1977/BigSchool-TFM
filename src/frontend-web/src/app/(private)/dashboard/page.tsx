@@ -14,17 +14,18 @@ import { Button }  from '@/components/ui/button'
 import { useSummary }      from '@/hooks/useSummary'
 import { useMonthlyChart } from '@/hooks/useMonthlyChart'
 import { usePortfolios }   from '@/hooks/usePortfolios'
+import { usePortfoliosSummary } from '@/hooks/usePortfoliosSummary'
 import { useTransactions } from '@/hooks/useTransactions'
 import {
   deriveMonthlyPoints,
   deriveCumulativeBalance,
   deriveSavingsRate,
-  derivePortfolioTotals,
 } from '@/lib/dashboard/derive'
 import {
   MAIN_CATEGORY_LABEL,
   formatAmount, formatPct, colorPnL, signPnL,
 } from '@/lib/transactions/labels'
+import { MAX_PAGE_SIZE } from '@/types/pagination'
 
 const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 const MONTH_NAMES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -87,10 +88,16 @@ export default function DashboardPage() {
   const from = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
   const to   = today.toISOString().split('T')[0]
 
-  const { data: summary,    isLoading: summaryLoading    } = useSummary(from, to)
-  const { data: rawPoints,  isLoading: chartLoading      } = useMonthlyChart(currentYear)
-  const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios()
-  const { data: recentTxns, isLoading: txnsLoading       } = useTransactions({ page: 1, pageSize: 5 })
+  const { data: summary,       isLoading: summaryLoading    } = useSummary(from, to)
+  const { data: rawPoints,     isLoading: chartLoading      } = useMonthlyChart(currentYear)
+  // El mini-resumen quiere todas las carteras del usuario; pageSize alto en vez de
+  // paginar aquí (es un widget de dashboard, no un listado — la Pagination real vive en /investments).
+  const { data: portfoliosPage, isLoading: portfoliosLoading } = usePortfolios({ page: 1, pageSize: MAX_PAGE_SIZE })
+  const portfolios = portfoliosPage?.items
+  // Agregado real del backend (GET /portfolios/summary) — sustituye la suma en cliente
+  // que antes hacía derivePortfolioTotals sobre la lista de carteras.
+  const { data: invSummary, isLoading: invSummaryLoading } = usePortfoliosSummary()
+  const { data: recentTxns,    isLoading: txnsLoading       } = useTransactions({ page: 1, pageSize: 5 })
 
   // Solo mostramos hasta el mes actual — meses futuros ni barras ni línea plana
   const monthlyPoints    = useMemo(
@@ -101,14 +108,13 @@ export default function DashboardPage() {
     () => deriveCumulativeBalance(rawPoints ?? []).slice(0, currentMonth),
     [rawPoints, currentMonth]
   )
-  const portfolioTotals  = useMemo(() => derivePortfolioTotals(portfolios ?? []), [portfolios])
   const savingsRate      = useMemo(
     () => summary ? deriveSavingsRate(summary.totalIncome, summary.totalExpense) : null,
     [summary]
   )
 
   const cur         = summary?.baseCurrency ?? 'EUR'
-  const portfolioCur = portfolios?.[0]?.realizedPnLCurrency ?? cur
+  const portfolioCur = invSummary?.baseCurrency ?? cur
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:px-8">
@@ -256,7 +262,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {portfoliosLoading ? (
+        {portfoliosLoading || invSummaryLoading ? (
           <Skeleton className="h-24 rounded-lg" />
         ) : !portfolios || portfolios.length === 0 ? (
         <div
@@ -276,27 +282,25 @@ export default function DashboardPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Valor de mercado</p>
                 <p className="text-sm font-semibold tabular-nums">
-                  {formatAmount(portfolioTotals.marketValue, portfolioCur)}
+                  {formatAmount(invSummary?.marketValue ?? 0, portfolioCur)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Coste base</p>
                 <p className="text-sm font-semibold tabular-nums">
-                  {formatAmount(portfolioTotals.costBasis, portfolioCur)}
+                  {formatAmount(invSummary?.costBasis ?? 0, portfolioCur)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">PnL total</p>
-                <p className={`text-sm font-semibold tabular-nums ${colorPnL(portfolioTotals.totalPnL)}`}>
-                  {signPnL(portfolioTotals.totalPnL)}{formatAmount(portfolioTotals.totalPnL, portfolioCur)}
+                <p className={`text-sm font-semibold tabular-nums ${colorPnL(invSummary?.totalPnL ?? 0)}`}>
+                  {signPnL(invSummary?.totalPnL ?? 0)}{formatAmount(invSummary?.totalPnL ?? 0, portfolioCur)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Rentabilidad</p>
-                <p className={`text-sm font-semibold tabular-nums ${colorPnL(portfolioTotals.returnPct ?? 0)}`}>
-                  {portfolioTotals.returnPct !== null
-                    ? `${signPnL(portfolioTotals.returnPct)}${formatPct(portfolioTotals.returnPct, 2)}`
-                    : '—'}
+                <p className={`text-sm font-semibold tabular-nums ${colorPnL(invSummary?.returnPct ?? 0)}`}>
+                  {signPnL(invSummary?.returnPct ?? 0)}{formatPct(invSummary?.returnPct ?? 0, 2)}
                 </p>
               </div>
             </div>

@@ -50,4 +50,15 @@ describe('tokenStore', () => {
     expect(() => tokenStore.incrementRefreshCount()).not.toThrow()
     expect(tokenStore.load()).toBeNull()
   })
+
+  it('updateFullName actualiza solo fullName, preservando el resto de campos', () => {
+    tokenStore.save(SAMPLE)
+    tokenStore.updateFullName('Nuevo Nombre')
+    expect(tokenStore.load()).toEqual({ ...SAMPLE, fullName: 'Nuevo Nombre' })
+  })
+
+  it('updateFullName no lanza error si no hay sesión guardada', () => {
+    expect(() => tokenStore.updateFullName('Nuevo Nombre')).not.toThrow()
+    expect(tokenStore.load()).toBeNull()
+  })
 })

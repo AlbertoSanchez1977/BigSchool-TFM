@@ -13,9 +13,10 @@ public abstract class AuthEndpointTestBase : IntegrationTestBase
     protected const string DefaultPassword = "Secret123!";
 
     // Registra un usuario vía el endpoint REAL y devuelve la respuesta HTTP (sin assertions).
-    protected Task<HttpResponseMessage> RegisterRawAsync(string email, string password, string fullName)
+    // baseCurrency default EUR: no rompe los tests existentes que no la especifican.
+    protected Task<HttpResponseMessage> RegisterRawAsync(string email, string password, string fullName, string baseCurrency = "EUR")
         => Factory.CreateClient().PostAsJsonAsync("/api/v1/auth/register",
-            new { email, password, fullName });
+            new { email, password, fullName, baseCurrency });
 
     // Registra y devuelve el AuthResponse deserializado (asume éxito).
     protected async Task<AuthResponse> RegisterAsync(string email, string fullName = "E2E User")

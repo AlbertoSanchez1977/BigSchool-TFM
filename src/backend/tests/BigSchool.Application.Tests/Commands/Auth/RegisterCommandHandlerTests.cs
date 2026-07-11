@@ -1,12 +1,13 @@
-using BigSchool.Application.Commands.Auth.Register;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.Interfaces;
+using BigSchool.Application.Auth.Commands.Register;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.Auth.Exceptions;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Application.Tests.Commands.Auth;
 
@@ -37,7 +38,7 @@ public class RegisterCommandHandlerTests
         _userRepoMock.Setup(r => r.ExistsWithEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var command = new RegisterCommand("new@test.com", "Password1!", "John Doe");
+        var command = new RegisterCommand("new@test.com", "Password1!", "John Doe", Currency.EUR);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.AccessToken.Should().Be("token123");
@@ -52,7 +53,7 @@ public class RegisterCommandHandlerTests
         _userRepoMock.Setup(r => r.ExistsWithEmailAsync("existing@test.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var command = new RegisterCommand("existing@test.com", "Password1!", "User");
+        var command = new RegisterCommand("existing@test.com", "Password1!", "User", Currency.EUR);
         var act = () => _handler.Handle(command, CancellationToken.None);
 
         await act.Should().ThrowAsync<EmailAlreadyExistsDomainException>();

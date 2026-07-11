@@ -36,10 +36,24 @@ describe('registerSchema', () => {
     email: 'alberto@bigschool.com',
     password: 'Segura123!',
     confirmPassword: 'Segura123!',
+    baseCurrency: 'EUR',
   }
 
   it('acepta datos correctos', () => {
     expect(registerSchema.safeParse(VALID).success).toBe(true)
+  })
+
+  it('rechaza registro sin moneda base', () => {
+    const { baseCurrency: _omit, ...withoutCurrency } = VALID
+    const result = registerSchema.safeParse(withoutCurrency)
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0].path).toContain('baseCurrency')
+  })
+
+  it('rechaza una moneda que no está en el catálogo soportado', () => {
+    const result = registerSchema.safeParse({ ...VALID, baseCurrency: 'ARS' })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0].path).toContain('baseCurrency')
   })
 
   it('rechaza email inválido', () => {

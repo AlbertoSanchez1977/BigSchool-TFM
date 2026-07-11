@@ -30,6 +30,18 @@ vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({ data: [] }),
 }))
 
+// useCategoryChart/useMonthlySeries usan useQueries de TanStack Query directamente
+// (no pasan por un hook ya mockeado como useTransactions), así que sin este mock
+// harían falta un QueryClientProvider real. Esta suite no ejercita la pestaña de
+// Gráficas, así que basta con un valor neutro.
+vi.mock('@/hooks/useCategoryChart', () => ({
+  useCategoryChart: () => ({ data: { years: [], rows: [] }, isLoading: false, isError: false }),
+}))
+
+vi.mock('@/hooks/useMonthlySeries', () => ({
+  useMonthlySeries: () => ({ data: [], isLoading: false, isError: false }),
+}))
+
 import ExpensesPage from '@/app/(private)/expenses/page'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

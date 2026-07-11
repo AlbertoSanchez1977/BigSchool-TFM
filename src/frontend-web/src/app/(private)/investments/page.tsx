@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, TrendingUp, ChevronRight } from 'lucide-react'
+import { Pencil, Plus, TrendingUp, ChevronRight, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
+import { Pagination } from '@/components/ui/pagination'
+import {
+  RenamePortfolioModal, DeletePortfolioModal,
+} from '@/components/investments/portfolio-action-modals'
+import { DEFAULT_PAGE_SIZE } from '@/types/pagination'
 import { usePortfolios, useCreatePortfolio } from '@/hooks/usePortfolios'
 import { formatAmount } from '@/lib/transactions/labels'
 import type { PortfolioListItem } from '@/types/portfolios'
@@ -86,58 +91,115 @@ function CreatePortfolioModal({ open, onClose }: { open: boolean; onClose: () =>
 
 // ── Card de cartera (alargada, horizontal) ───────────────────────────────────
 // Muestra los KPIs principales y actúa como enlace a la vista de holdings.
+// No es un <button> (como antes) porque ahora aloja botones propios (editar/borrar):
+// un <button> dentro de otro <button> es HTML inválido y el navegador lo "arregla"
+// rompiendo el anidado, así que el contenedor pasa a ser un <div role="button"> con
+// soporte de teclado (Enter/Espacio) para no perder accesibilidad.
 
 function PortfolioCard({ portfolio }: { portfolio: PortfolioListItem }) {
   const router = useRouter()
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const currency = portfolio.realizedPnLCurrency || 'EUR'
 
   const pnlClass = (v: number) => (v >= 0 ? 'text-positive' : 'text-negative')
   const pnlSign  = (v: number) => (v >= 0 ? '+' : '')
 
+  function goToDetail() {
+    router.push(`/investments/${portfolio.idPortfolio}`)
+  }
+
   return (
-    <button
-      type="button"
-      data-testid="portfolio-card"
-      onClick={() => router.push(`/investments/${portfolio.idPortfolio}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-card px-5 py-4 text-left transition-colors hover:bg-muted/50"
-    >
-      {/* Nombre e icono */}
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-          <TrendingUp className="h-4 w-4 text-primary" />
-        </span>
-        <span className="font-medium">{portfolio.name}</span>
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        data-testid="portfolio-card"
+        onClick={goToDetail}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
+        }}
+        className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-card px-5 py-4 text-left transition-colors hover:bg-muted/50"
+      >
+        {/* Nombre e icono */}
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </span>
+          <span className="truncate font-medium">{portfolio.name}</span>
+        </div>
+
+        {/* KPIs: valor de mercado + PnLs */}
+        <div className="flex items-center gap-6 text-right">
+          {/* Valor de mercado */}
+          <div className="hidden sm:block">
+            <p className="text-xs text-muted-foreground">Valor mercado</p>
+            <p className="text-sm font-semibold tabular-nums">
+              {formatAmount(portfolio.marketValue, currency)}
+            </p>
+          </div>
+
+          {/* PnL no realizado */}
+          <div className="hidden md:block">
+            <p className="text-xs text-muted-foreground">No realizado</p>
+            <p className={`text-sm font-medium tabular-nums ${pnlClass(portfolio.unrealizedPnL)}`}>
+              {pnlSign(portfolio.unrealizedPnL)}{formatAmount(portfolio.unrealizedPnL, currency)}
+            </p>
+          </div>
+
+          {/* PnL total */}
+          <div>
+            <p className="text-xs text-muted-foreground">PnL total</p>
+            <p className={`text-sm font-medium tabular-nums ${pnlClass(portfolio.totalPnL)}`}>
+              {pnlSign(portfolio.totalPnL)}{formatAmount(portfolio.totalPnL, currency)}
+            </p>
+          </div>
+
+          {/* Editar / Borrar — stopPropagation para no disparar la navegación de la card */}
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Renombrar cartera"
+              data-testid="btn-rename-portfolio"
+              onClick={(e) => { e.stopPropagation(); setRenameOpen(true) }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Eliminar cartera"
+              data-testid="btn-delete-portfolio"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); setDeleteOpen(true) }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </div>
       </div>
 
-      {/* KPIs: valor de mercado + PnLs */}
-      <div className="flex items-center gap-6 text-right">
-        {/* Valor de mercado */}
-        <div className="hidden sm:block">
-          <p className="text-xs text-muted-foreground">Valor mercado</p>
-          <p className="text-sm font-semibold tabular-nums">
-            {formatAmount(portfolio.marketValue, currency)}
-          </p>
-        </div>
-
-        {/* PnL no realizado */}
-        <div className="hidden md:block">
-          <p className="text-xs text-muted-foreground">No realizado</p>
-          <p className={`text-sm font-medium tabular-nums ${pnlClass(portfolio.unrealizedPnL)}`}>
-            {pnlSign(portfolio.unrealizedPnL)}{formatAmount(portfolio.unrealizedPnL, currency)}
-          </p>
-        </div>
-
-        {/* PnL total */}
-        <div>
-          <p className="text-xs text-muted-foreground">PnL total</p>
-          <p className={`text-sm font-medium tabular-nums ${pnlClass(portfolio.totalPnL)}`}>
-            {pnlSign(portfolio.totalPnL)}{formatAmount(portfolio.totalPnL, currency)}
-          </p>
-        </div>
-
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-      </div>
-    </button>
+      {renameOpen && (
+        <RenamePortfolioModal
+          portfolioId={portfolio.idPortfolio}
+          currentName={portfolio.name}
+          open={renameOpen}
+          onClose={() => setRenameOpen(false)}
+        />
+      )}
+      {deleteOpen && (
+        <DeletePortfolioModal
+          portfolioId={portfolio.idPortfolio}
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+        />
+      )}
+    </>
   )
 }
 
@@ -145,7 +207,9 @@ function PortfolioCard({ portfolio }: { portfolio: PortfolioListItem }) {
 
 export default function InvestmentsPage() {
   const [modalOpen, setModalOpen] = useState(false)
-  const { data: portfolios, isLoading, isError } = usePortfolios()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isError } = usePortfolios({ page, pageSize: DEFAULT_PAGE_SIZE })
+  const portfolios = data?.items
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
@@ -199,11 +263,22 @@ export default function InvestmentsPage() {
 
       {/* Lista de cards */}
       {!isLoading && !isError && portfolios && portfolios.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {portfolios.map((p) => (
-            <PortfolioCard key={p.idPortfolio} portfolio={p} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            {portfolios.map((p) => (
+              <PortfolioCard key={p.idPortfolio} portfolio={p} />
+            ))}
+          </div>
+          {data && (
+            <Pagination
+              page={page}
+              pageSize={DEFAULT_PAGE_SIZE}
+              totalCount={data.meta.totalCount}
+              totalPages={data.meta.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
       )}
 
       {/* Modal de creación — montado condicionalmente */}

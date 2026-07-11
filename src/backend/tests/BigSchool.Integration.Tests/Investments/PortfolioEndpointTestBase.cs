@@ -1,9 +1,8 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
-using BigSchool.Infrastructure.Persistence;
+using BigSchool.Domain.Auth.Entities;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using BigSchool.Integration.Tests.Fixtures;
 using Dapper;
 using MediatR;
@@ -11,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using MySqlConnector;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Integration.Tests.Investments;
 
@@ -130,7 +130,8 @@ public abstract class PortfolioEndpointTestBase : IntegrationTestBase
 
     protected record HoldingPerformanceResponse(
         int IdHolding, int IdCompany, string Ticker, decimal OpenShares,
-        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL, decimal UnrealizedPnLPct);
+        decimal CostBasis, decimal MarketValue, decimal UnrealizedPnL, decimal UnrealizedPnLPct,
+        string BuyOriginalCurrency, decimal CostBasisOriginal, decimal MarketValueOriginal, decimal UnrealizedPnLOriginal);
 
     protected record PerformanceResponse(
         int IdPortfolio, string Name, string BaseCurrency,

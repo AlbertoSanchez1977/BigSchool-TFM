@@ -21,13 +21,15 @@
 # ═════════════════════════════════════════════════════════════════════════════
 
 ### 01 Registro — crear cuenta demo (ejecutar UNA sola vez)
+# baseCurrency es OBLIGATORIA (Plan 021 Tarea 1): EUR|USD|GBP|CHF|JPY; inmutable tras el registro.
 POST {{baseUrl}}/api/v1/auth/register
 Content-Type: application/json
 
 {
   "email": "demo@bigschool.com",
   "password": "Demo2026!",
-  "fullName": "Usuario Demo"
+  "fullName": "Usuario Demo",
+  "baseCurrency": "EUR"
 }
 
 ###
@@ -180,21 +182,22 @@ Authorization: Bearer {{token}}
 # IDs 5-9 añadidos por seed.sql (NVDA, ITX, IBE, AMZN, TSLA).
 # ═════════════════════════════════════════════════════════════════════════════
 
-### 16 Listar todas las empresas (con última cotización por empresa)
-# Respuesta: [{ idCompany, name, ticker, sector, market, currency, lastPrice, lastValuationDate }]
-GET {{baseUrl}}/api/v1/companies
+### 16 Listar empresas — paginado (page/pageSize, defaults 1/20)
+# Respuesta: { data: [{ idCompany, name, ticker, sector, market, currency, lastPrice, lastValuationDate }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+GET {{baseUrl}}/api/v1/companies?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
 
-### 17 Listar empresas — filtro por sector
-GET {{baseUrl}}/api/v1/companies?sector=Technology
+### 17 Listar empresas — filtro por sector (+ paginación)
+GET {{baseUrl}}/api/v1/companies?sector=Technology&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
 
-### 18 Listar empresas — filtro por mercado
-GET {{baseUrl}}/api/v1/companies?market=NASDAQ
+### 18 Listar empresas — filtro por mercado (+ paginación)
+GET {{baseUrl}}/api/v1/companies?market=NASDAQ&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
@@ -223,10 +226,11 @@ Authorization: Bearer {{token}}
 
 ###
 
-### 21 Historial de cotizaciones de una empresa (orden fecha DESC)
-# Respuesta: [{ idValuation, idCompany, price, priceCurrency, date, source }]
-# Devuelve lista vacía si la empresa no existe o no tiene valoraciones.
-GET {{baseUrl}}/api/v1/companies/1/valuations
+### 21 Historial de cotizaciones de una empresa — paginado (page/pageSize, defaults 1/20), orden fecha DESC
+# Respuesta: { data: [{ idValuation, idCompany, price, priceCurrency, date, source }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+# Devuelve lista vacía (totalCount: 0) si la empresa no existe o no tiene valoraciones.
+GET {{baseUrl}}/api/v1/companies/1/valuations?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
@@ -271,9 +275,11 @@ Authorization: Bearer {{token}}
 #                NVDA=5(USD) ITX=6(EUR)  IBE=7(EUR) AMZN=8(USD) TSLA=9(USD)
 # ═════════════════════════════════════════════════════════════════════════════
 
-### 23 Listar carteras — MarketValue consolidado en EUR (Dapper + última cotización)
-# Respuesta: [{ idPortfolio, name, baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL }]
-GET {{baseUrl}}/api/v1/portfolios
+### 23 Listar carteras — paginado (page/pageSize, defaults 1/20); MarketValue consolidado en EUR (Dapper + última cotización)
+# Respuesta: { data: [{ idPortfolio, name, baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+# totalCount cuenta carteras, no holdings.
+GET {{baseUrl}}/api/v1/portfolios?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###
@@ -371,7 +377,9 @@ Authorization: Bearer {{token}}
 
 ### 30 Performance de la cartera — realizado + no realizado consolidados en EUR
 # Respuesta: { marketValue, costBasis, unrealizedPnL, realizedPnL, totalPnL, returnPct,
-#              holdings: [{ticker, openShares, costBasis, marketValue, unrealizedPnL, unrealizedPnLPct}] }
+#              holdings: [{ticker, openShares, costBasis, marketValue, unrealizedPnL, unrealizedPnLPct,
+#                          buyOriginalCurrency, costBasisOriginal, marketValueOriginal, unrealizedPnLOriginal}] }
+# Los campos *Original (Plan 023 Tarea 1) son el mismo cálculo en moneda de la empresa (sin conversión FX).
 # Nota: solo holdings con OpenShares > 0 aparecen en la lista de hijos.
 GET {{baseUrl}}/api/v1/portfolios/1/performance
 Authorization: Bearer {{token}}
@@ -395,6 +403,174 @@ Authorization: Bearer {{token}}
 # El holding deja de aparecer en GET /portfolios/{id} y en /performance.
 # Cambiar 5 por el IdHolding a eliminar (aquí elimina el lote NVDA).
 DELETE {{baseUrl}}/api/v1/portfolios/1/holdings/5
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# NOTIFICATIONS — Contactos y bandeja de emails (Plan 020 / Spec 007)
+#
+# EmailType: 1=Welcome | 2=Contact
+# Flujo A (Contacto): POST público (33) → Contact + EmailLog (Type=Contact, IdUser=null)
+#                     en la MISMA transacción (UoW componible, DomainEvent → command atómico).
+# Flujo B (Welcome): se dispara automáticamente al ejecutar "01 Registro" vía
+#                    IntegrationEvent + Outbox → EmailLog (Type=Welcome, IdUser=<nuevo usuario>).
+#                    No tiene endpoint propio; se ve reflejado en 35/36.
+# Visibilidad de /emails: el usuario ve sus propios EmailLogs (IdUser=@user) + los globales
+# (IdUser IS NULL, p.ej. los acuses de Contact). Un EmailLog de OTRO usuario → 404 en /emails/{id}.
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 33 Crear contacto — endpoint público (sin token); genera acuse por email automáticamente
+POST {{baseUrl}}/api/v1/contacts
+Content-Type: application/json
+
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "message": "Hola, tengo una duda sobre mi cuenta."
+}
+
+###
+
+### 34 Listar contactos — bandeja global paginada (requiere token; cualquier usuario autenticado ve TODOS los contactos)
+GET {{baseUrl}}/api/v1/contacts?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+### 35 Listar mis emails — paginado, con visibilidad (propios + globales)
+# Respuesta: { data: [{ idEmailLog, idUser, recipient, subject, type, sentAt }],
+#              meta: { page, pageSize, totalCount, totalPages } }
+GET {{baseUrl}}/api/v1/emails?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+### 36 Detalle de un email — incluye Body; 404 si no es visible para el usuario (p.ej. welcome ajeno)
+# Cambiar 1 por el IdEmailLog real (p.ej. el welcome generado al ejecutar "01 Registro").
+GET {{baseUrl}}/api/v1/emails/1
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# USERS — Perfil (Plan 021 / Spec 008)
+#
+# email y baseCurrency son INMUTABLES tras el registro (no se pueden cambiar por aquí).
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 37 Mi perfil — lectura (Dapper)
+# Respuesta: { idUser, email, fullName, baseCurrency, lastLoginDate }
+GET {{baseUrl}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+###
+
+### 38 Actualizar mi perfil — cambia fullName y, opcionalmente, password (re-hash Argon2)
+# password es OPCIONAL: si se omite, solo cambia fullName. Si se envía, re-hashea y
+# el login siguiente debe usar la nueva contraseña (la vieja deja de funcionar).
+PUT {{baseUrl}}/api/v1/users/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fullName": "Usuario Demo Actualizado",
+  "password": null
+}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# FINANCE — Subcategorías + agregaciones (Plan 022 / Spec 009)
+#
+# SubCategory ya es AR independiente de Finanzas (ex-Finanzas → Finance): unicidad por
+# nombre+MainCategory entre las propias del usuario y las globales predefinidas del seed;
+# borrado solo permitido al propietario (nunca predefinidas ni globales).
+# by-category/monthly comparten la validación de rango: from ≤ to y span ≤ 4 años → 400 si no.
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 39 Crear subcategoría propia — 409 si ya existe (propia o global) con ese nombre+categoría
+POST {{baseUrl}}/api/v1/categories/sub
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "mainCategory": "Luxuries",
+  "name": "Cine"
+}
+
+###
+
+### 40 Borrar subcategoría propia — soft-delete (IdStatus=Deleted)
+# Cambiar 1 por el IdSubCategory devuelto en 39. 404 si no existe, es global/predefinida o de otro usuario.
+DELETE {{baseUrl}}/api/v1/categories/sub/1
+Authorization: Bearer {{token}}
+
+###
+
+### 41 Totales por categoría — agrupa por MainCategory sobre BaseAmount
+# Filtros opcionales: type (Income|Expense), from, to. Sin ellos: todas las transacciones del usuario.
+GET {{baseUrl}}/api/v1/transactions/by-category?type=Expense
+Authorization: Bearer {{token}}
+
+###
+
+### 42 Totales por mes — agrupa año-mes (Income/Expense) sobre BaseAmount
+# Filtros opcionales: from, to, category (IdMainCategory), type. monthly-chart?year= (dashboard) no se toca.
+GET {{baseUrl}}/api/v1/transactions/monthly?from=2026-01-01&to=2026-12-31
+Authorization: Bearer {{token}}
+
+###
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INVESTMENTS — Serie de valoraciones, rename/delete de cartera, summary (Plan 023 / Spec 010)
+#
+# period (enum ValuationPeriod, valor = nº de meses): ThreeMonths(3)|SixMonths(6)|OneYear(12)|
+#   ThreeYears(36)|FiveYears(60). Acepta nombre o valor numérico por query (?period=OneYear o ?period=12).
+# La serie está anclada a la ÚLTIMA valoración de la empresa (no a "hoy"); moneda de la empresa, sin FX.
+# DELETE /portfolios/{id}: 409 PORTFOLIO_HAS_OPEN_POSITIONS si hay holdings con OpenShares>0;
+#   409 PORTFOLIO_WITHIN_FISCAL_GRACE si la última venta fue hace <5 años; si no, soft-delete (200).
+# ═════════════════════════════════════════════════════════════════════════════
+
+### 43 Serie de cotización de una empresa — último año, anclada a la última valoración
+# Respuesta: { currency, points: [{date, price}], summary: {first, last, min, max, changePct} }
+GET {{baseUrl}}/api/v1/companies/1/valuations/series?period=OneYear
+Authorization: Bearer {{token}}
+
+###
+
+### 44 Serie de cotización — periodo inválido → 400 (IsInEnum)
+GET {{baseUrl}}/api/v1/companies/1/valuations/series?period=99
+Authorization: Bearer {{token}}
+
+###
+
+### 45 Renombrar cartera (PUT) — siempre permitido si el nombre no está vacío
+PUT {{baseUrl}}/api/v1/portfolios/2
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Cartera renombrada"
+}
+
+###
+
+### 46 Borrar cartera (DELETE) — soft-delete con guards fiscales
+# 409 PORTFOLIO_HAS_OPEN_POSITIONS si la cartera 1 (con holdings abiertos) se intenta borrar así.
+# Para probar el camino 200, usar una cartera sin holdings o con ventas de hace >5 años.
+DELETE {{baseUrl}}/api/v1/portfolios/1
+Authorization: Bearer {{token}}
+
+###
+
+### 47 Resumen global de inversiones — agregado de todas las carteras del usuario en moneda base
+# Respuesta: { baseCurrency, marketValue, costBasis, unrealizedPnL, realizedPnL, totalPnL, returnPct, portfolioCount }
+GET {{baseUrl}}/api/v1/portfolios/summary
 Authorization: Bearer {{token}}
 
 ###

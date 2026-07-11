@@ -1,22 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, UserPen } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
 import { profileSchema, type ProfileFormValues } from '@/lib/schemas/profile'
-
-// ── Contratos de backend (deuda técnica) ──────────────────────────────────────
-// GET  /users/me → { idUser, email, fullName, baseCurrency, lastLoginDate }
-//   Mock actual: datos derivados de useAuth (email, fullName) + placeholders.
-// PUT  /users/me { fullName, password? } → UserProfile
-//   Sin backend: feedback optimista; no persiste fuera de la sesión actual.
+import { ApiError } from '@/lib/apiClient'
+import { formatDateTimeUtc } from '@/lib/dates'
 
 // ── Fila de información de solo lectura ───────────────────────────────────────
 
@@ -29,10 +28,17 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+function formatLastLogin(iso: string | null): string {
+  if (!iso) return 'Nunca'
+  return formatDateTimeUtc(iso)
+}
+
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { updateFullName } = useAuth()
+  const { data: profile, isLoading, isError } = useProfile()
+  const updateProfile = useUpdateProfile()
   const [saved, setSaved] = useState(false)
 
   const {
@@ -42,19 +48,31 @@ export default function ProfilePage() {
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      fullName: user?.fullName ?? '',
-      password: '',
-      confirmPassword: '',
-    },
+    defaultValues: { fullName: '', password: '', confirmPassword: '' },
   })
 
-  function onSubmit(_values: ProfileFormValues) {
-    // TODO (deuda técnica backend): PUT /users/me { fullName, password? }
-    // En producción actualiza BD y devuelve el UserProfile actualizado.
-    // Aquí solo mostramos feedback optimista.
-    setSaved(true)
-    reset({ fullName: _values.fullName, password: '', confirmPassword: '' })
+  // El formulario se rellena cuando llegan los datos reales (useProfile es async;
+  // en el primer render aún no hay `profile`, así que no puede ir en defaultValues).
+  useEffect(() => {
+    if (profile) reset({ fullName: profile.fullName, password: '', confirmPassword: '' })
+  }, [profile, reset])
+
+  function onSubmit(values: ProfileFormValues) {
+    setSaved(false)
+    updateProfile.mutate(
+      { fullName: values.fullName, password: values.password || null },
+      {
+        onSuccess: (updated) => {
+          // ProfileDropdown/navbar leen el fullName de AuthProvider (localStorage +
+          // memoria), no de esta query — sin esto seguirían mostrando el nombre viejo
+          // hasta el próximo login/refresh de token.
+          updateFullName(updated.fullName)
+          setSaved(true)
+          reset({ fullName: updated.fullName, password: '', confirmPassword: '' })
+        },
+        onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Error al guardar los cambios'),
+      },
+    )
   }
 
   return (
@@ -78,11 +96,27 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <InfoRow label="Email" value={user?.email ?? '—'} />
-            {/* TODO (deuda técnica backend): baseCurrency y lastLoginDate
-                vienen de GET /users/me → { idUser, email, fullName, baseCurrency, lastLoginDate } */}
-            <InfoRow label="Moneda base" value={user?.currency ?? 'EUR'} />
-            <InfoRow label="Último acceso" value="Pendiente de backend" />
+            {isLoading && (
+              <div className="space-y-2.5" data-testid="loading-state">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-4 w-2/3" />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && isError && (
+              <p data-testid="error-state" className="text-sm text-destructive">
+                No se pudo cargar tu perfil. Inténtalo de nuevo más tarde.
+              </p>
+            )}
+
+            {!isLoading && !isError && profile && (
+              <>
+                <InfoRow label="Email" value={profile.email} />
+                <InfoRow label="Moneda base" value={profile.baseCurrency} />
+                <InfoRow label="Último acceso" value={formatLastLogin(profile.lastLoginDate)} />
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -150,7 +184,7 @@ export default function ProfilePage() {
                 <Button
                   type="submit"
                   className="gap-2"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || updateProfile.isPending}
                 >
                   Guardar cambios
                 </Button>

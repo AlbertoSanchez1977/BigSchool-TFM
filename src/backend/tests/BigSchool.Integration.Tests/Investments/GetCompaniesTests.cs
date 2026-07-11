@@ -56,4 +56,40 @@ public class GetCompaniesTests : CompanyEndpointTestBase
         var response = await client.GetAsync("/api/v1/companies");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task Get_Paginado_DevuelvePaginaYMeta_SinSolape()
+    {
+        var (userId, email) = await SeedUserAsync();
+        var client = AuthenticatedClient(userId, email);
+        await CreateCompanyViaApiAsync(client, new { name = "Extra A", ticker = "PGA1", currency = "EUR" });
+        await CreateCompanyViaApiAsync(client, new { name = "Extra B", ticker = "PGB1", currency = "EUR" });
+        var total = SeededCompaniesCount + 2;
+
+        var r1 = await client.GetAsync("/api/v1/companies?page=1&pageSize=2");
+        r1.StatusCode.Should().Be(HttpStatusCode.OK);
+        var e1 = await r1.Content.ReadFromJsonAsync<ApiEnvelope<List<CompanyListItemResponse>>>();
+        e1!.Data!.Should().HaveCount(2);
+        e1.Meta!.Page.Should().Be(1);
+        e1.Meta.PageSize.Should().Be(2);
+        e1.Meta.TotalCount.Should().Be(total);
+
+        var r2 = await client.GetAsync("/api/v1/companies?page=2&pageSize=2");
+        var e2 = await r2.Content.ReadFromJsonAsync<ApiEnvelope<List<CompanyListItemResponse>>>();
+        e2!.Data!.Should().HaveCount(2);
+        e1.Data!.Select(c => c.IdCompany).Should().NotIntersectWith(e2.Data!.Select(c => c.IdCompany));
+    }
+
+    [Fact]
+    public async Task Get_PageSizeSobreMax_SeCapAa100()
+    {
+        var (userId, email) = await SeedUserAsync();
+        var client = AuthenticatedClient(userId, email);
+
+        var resp = await client.GetAsync("/api/v1/companies?pageSize=500");
+
+        var env = await resp.Content.ReadFromJsonAsync<ApiEnvelope<List<CompanyListItemResponse>>>();
+        env!.Meta!.PageSize.Should().Be(100);
+        env.Meta.TotalCount.Should().Be(SeededCompaniesCount);
+    }
 }

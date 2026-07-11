@@ -3,6 +3,7 @@ import type {
   PortfolioDetail, HoldingDto, AddHoldingDto, UpdateHoldingNotesDto,
 } from '@/types/portfolios'
 import type { CompanyListItem } from '@/types/companies'
+import { MAX_PAGE_SIZE } from '@/types/pagination'
 
 export const holdingsService = {
 
@@ -11,9 +12,11 @@ export const holdingsService = {
     return api.get<PortfolioDetail>(`/portfolios/${id}`)
   },
 
-  // GET /companies → CompanyListItemDto[] (para el selector al añadir un holding)
+  // GET /companies?pageSize=100 (para el combobox de "añadir holding").
+  // Deuda documentada: sin ?search server-side, el combobox filtra en cliente sobre
+  // este máximo de 100 — si el catálogo lo supera, el filtro queda incompleto (spec 011 §6).
   async listCompanies(): Promise<CompanyListItem[]> {
-    return api.get<CompanyListItem[]>('/companies')
+    return api.get<CompanyListItem[]>(`/companies?pageSize=${MAX_PAGE_SIZE}`)
   },
 
   // POST /portfolios/{id}/holdings → HoldingDto (AddHoldingRequest)

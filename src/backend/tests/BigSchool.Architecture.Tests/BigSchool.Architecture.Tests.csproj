@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
+    <PackageReference Include="xunit" Version="$(xUnitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioVersion)" />
+    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
+    <PackageReference Include="NetArchTest.Rules" Version="$(NetArchTestVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BigSchool.Domain\BigSchool.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BigSchool.Application\BigSchool.Application.csproj" />
+    <ProjectReference Include="..\..\src\BigSchool.Infrastructure\BigSchool.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BigSchool.WebApi\BigSchool.WebApi.csproj" />
+  </ItemGroup>
+
+</Project>

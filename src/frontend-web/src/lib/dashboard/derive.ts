@@ -1,20 +1,10 @@
 import type { MonthlyChartPoint } from '@/types/transactions'
-import type { PortfolioListItem }  from '@/types/portfolios'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 export type MonthlyPoint = { month: number; income: number; expense: number }
 
 export type CumulativePoint = { month: number; balance: number }
-
-export type PortfolioTotals = {
-  marketValue:   number
-  costBasis:     number
-  unrealizedPnL: number
-  totalPnL:      number
-  realizedPnL:   number
-  returnPct:     number | null
-}
 
 // ── deriveMonthlyPoints ───────────────────────────────────────────────────────
 // Expande los puntos del backend (solo meses con transacciones) a los 12 meses
@@ -49,29 +39,4 @@ export function deriveCumulativeBalance(points: MonthlyChartPoint[]): Cumulative
 export function deriveSavingsRate(income: number, expense: number): number | null {
   if (income <= 0) return null
   return ((income - expense) / income) * 100
-}
-
-// ── derivePortfolioTotals ─────────────────────────────────────────────────────
-// Agrega los valores monetarios de todas las carteras.
-// Asume que todas las carteras usan la misma moneda base del usuario.
-// returnPct es null si costBasis = 0 (carteras vacías / sin coste registrado).
-
-export function derivePortfolioTotals(portfolios: Pick<
-  PortfolioListItem,
-  'marketValue' | 'costBasis' | 'unrealizedPnL' | 'totalPnL' | 'realizedPnL'
->[]): PortfolioTotals {
-  const sum = <K extends keyof typeof portfolios[0]>(key: K) =>
-    portfolios.reduce((acc, p) => acc + (p[key] as number), 0)
-
-  const costBasis = sum('costBasis')
-  const totalPnL  = sum('totalPnL')
-
-  return {
-    marketValue:   sum('marketValue'),
-    costBasis,
-    unrealizedPnL: sum('unrealizedPnL'),
-    totalPnL,
-    realizedPnL:   sum('realizedPnL'),
-    returnPct:     costBasis > 0 ? (totalPnL / costBasis) * 100 : null,
-  }
 }

@@ -1,7 +1,7 @@
 import { api } from '@/lib/api'
 import type {
   TransactionListItem, Transaction, TransactionFilters,
-  PagedTransactions, Summary, MonthlyChartPoint,
+  PagedTransactions, Summary, MonthlyChartPoint, CategoryTotal,
   CreateTransactionDto, UpdateTransactionDto,
 } from '@/types/transactions'
 import type { TransactionType, MainCategory, Currency } from '@/types/enums'
@@ -92,6 +92,19 @@ export const transactionService = {
   // GET /transactions/monthly-chart?year=N → MonthlyChartPointDto[]
   async monthlyChart(year: number): Promise<MonthlyChartPoint[]> {
     return api.get<MonthlyChartPoint[]>(`/transactions/monthly-chart?year=${year}`)
+  },
+
+  // GET /transactions/by-category?from&to&type → CategoryTotalDto[] (agregado en SQL)
+  async byCategory(from: string, to: string, type: TransactionType): Promise<CategoryTotal[]> {
+    const qs = new URLSearchParams({ from, to, type }).toString()
+    return api.get<CategoryTotal[]>(`/transactions/by-category?${qs}`)
+  },
+
+  // GET /transactions/monthly?from&to&category&type → MonthlyChartPointDto[]
+  async monthly(from: string, to: string, type: TransactionType, category?: MainCategory): Promise<MonthlyChartPoint[]> {
+    const p = new URLSearchParams({ from, to, type })
+    if (category) p.set('category', category)
+    return api.get<MonthlyChartPoint[]>(`/transactions/monthly?${p.toString()}`)
   },
 
   // POST /transactions — devuelve TransactionDto (enums como string, sin necesidad de mapeo numérico)

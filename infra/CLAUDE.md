@@ -1,1 +1,1 @@
-Usar: infra\AGENTS.md
+AGENTS.md

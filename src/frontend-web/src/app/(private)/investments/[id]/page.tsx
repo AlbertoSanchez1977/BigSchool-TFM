@@ -7,27 +7,32 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import {
-  ChevronLeft, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
+  ChevronLeft, MoreVertical, Pencil, Plus, StickyNote, Trash2, TrendingUp, TrendingDown, Minus, DollarSign,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   usePortfolioDetail, useAddHolding, useUpdateHoldingNotes, useDeleteHolding,
 } from '@/hooks/useHoldings'
 import { usePerformance, useSellShares } from '@/hooks/usePerformance'
-import { useCompanies } from '@/hooks/useCompanies'
+import {
+  RenamePortfolioModal, DeletePortfolioModal,
+} from '@/components/investments/portfolio-action-modals'
+import { CompanyCombobox } from '@/components/market/company-combobox'
 import { formatAmount, formatPct, colorPnL, signPnL } from '@/lib/transactions/labels'
+import { todayISO, isNotFuture } from '@/lib/dates'
 import type { HoldingListItem, HoldingPerformance } from '@/types/portfolios'
 
 // ── Schemas Zod ───────────────────────────────────────────────────────────────
@@ -36,7 +41,9 @@ const addHoldingSchema = z.object({
   idCompany: z.number({ error: 'Selecciona una empresa' }).int().positive('Selecciona una empresa'),
   shares:    z.number({ error: 'Las acciones deben ser un número' }).positive('Debe ser mayor que cero'),
   buyPrice:  z.number({ error: 'El precio debe ser un número' }).positive('Debe ser mayor que cero'),
-  buyDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  buyDate:   z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido')
+    .refine(isNotFuture, 'La fecha de compra no puede ser futura'),
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type AddHoldingForm = z.infer<typeof addHoldingSchema>
@@ -50,16 +57,12 @@ type EditNotesForm = z.infer<typeof editNotesSchema>
 const sellSchemaBase = z.object({
   shares:    z.number({ error: 'Las acciones deben ser un número' }).positive('Debe ser mayor que cero'),
   sellPrice: z.number({ error: 'El precio debe ser un número' }).positive('Debe ser mayor que cero'),
-  sellDate:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  sellDate:  z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido')
+    .refine(isNotFuture, 'La fecha de venta no puede ser futura'),
   notes:     z.string().max(500, 'Máximo 500 caracteres').nullable().optional(),
 })
 type SellForm = z.infer<typeof sellSchemaBase>
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function todayISO() {
-  return new Date().toISOString().split('T')[0]
-}
 
 function Field({
   label, htmlFor, error, children,
@@ -80,8 +83,7 @@ function Field({
 function AddHoldingModal({
   portfolioId, open, onClose,
 }: { portfolioId: number; open: boolean; onClose: () => void }) {
-  const addMutation            = useAddHolding(portfolioId)
-  const { data: companies = [] } = useCompanies()
+  const addMutation = useAddHolding(portfolioId)
 
   const form = useForm<AddHoldingForm>({
     resolver: zodResolver(addHoldingSchema),
@@ -119,32 +121,10 @@ function AddHoldingModal({
               control={form.control}
               name="idCompany"
               render={({ field }) => (
-                <Select
-                  value={field.value != null ? String(field.value) : ''}
-                  onValueChange={(v) => field.onChange(Number(v))}
-                >
-                  <SelectTrigger id="idCompany" className="w-full" data-testid="select-company">
-                    <SelectValue placeholder="Selecciona empresa…">
-                      {(v: string) => {
-                        const c = companies.find((co) => String(co.idCompany) === v)
-                        return c ? `${c.ticker} — ${c.name}` : 'Selecciona empresa…'
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    {companies.map((c) => (
-                      <SelectItem key={c.idCompany} value={String(c.idCompany)}>
-                        <span className="font-mono text-xs text-muted-foreground">{c.ticker}</span>
-                        {' '}{c.name}
-                        {c.lastPrice != null && (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            · {formatAmount(c.lastPrice, c.currency)}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CompanyCombobox
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                />
               )}
             />
           </Field>
@@ -173,7 +153,7 @@ function AddHoldingModal({
           <Field label="Fecha de compra" htmlFor="buyDate"
             error={form.formState.errors.buyDate?.message}>
             <Input
-              id="buyDate" type="date"
+              id="buyDate" type="date" max={todayISO()}
               data-testid="input-buy-date"
               {...form.register('buyDate')}
             />
@@ -331,7 +311,7 @@ function SellSharesModal({
           <Field label="Fecha de venta" htmlFor="sell-date"
             error={form.formState.errors.sellDate?.message}>
             <Input
-              id="sell-date" type="date"
+              id="sell-date" type="date" max={todayISO()}
               data-testid="input-sell-date"
               {...form.register('sellDate')}
             />
@@ -519,67 +499,75 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
         ))}
       </div>
 
-      {/* Cards por holding — 3 columnas: base | original | mercado+% */}
-      {/* Los campos *Original provienen de HoldingPerformance (deuda técnica backend pendiente) */}
+      {/* Cards por holding — cabecera (ticker · rentabilidad · acciones) + grid base/original */}
       {perf.holdings.length > 0 ? (
         <div className="flex flex-col gap-3">
           {perf.holdings.map((h: HoldingPerformance) => {
-            const origCur    = h.buyOriginalCurrency ?? cur
-            const hasCostOrig = h.costBasisOriginal != null
-            const hasPnlOrig  = h.unrealizedPnLOriginal != null
+            const origCur = h.buyOriginalCurrency
+            const hasOriginal = origCur !== cur
 
             return (
               <div key={h.idHolding} className="rounded-lg border border-border bg-card p-4">
-                {/* Cabecera */}
+                {/* Cabecera: ticker + moneda + acciones agrupados a la izquierda;
+                    rentabilidad sola, pegada al borde derecho. Mismo tamaño de texto
+                    que "acciones" — el color (colorPnL) ya la distingue visualmente. */}
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-semibold">{h.ticker}</span>
-                    {origCur !== cur && (
+                    {hasOriginal && (
                       <span className="text-xs text-muted-foreground">{origCur}</span>
                     )}
+                    <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{h.openShares} acciones</span>
+                  <span>
+                    <span className={`text-sm font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
+                      {signPnL(h.unrealizedPnLPct)}{formatPct(h.unrealizedPnLPct, 2)}
+                    </span>
+                    <span className="text-xs text-muted-foreground"> Rentabilidad</span>
+                  </span>
                 </div>
 
-                {/* Grid 3 col × 2 filas */}
+                {/* Fila base — siempre visible */}
                 <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Coste base</p>
                     <p className="font-medium tabular-nums">{formatAmount(h.costBasis, cur)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Coste original</p>
-                    <p className="font-medium tabular-nums">
-                      {hasCostOrig ? formatAmount(h.costBasisOriginal!, origCur) : '—'}
-                    </p>
-                  </div>
-                  <div>
                     <p className="text-xs text-muted-foreground">Valor mercado</p>
                     <p className="font-medium tabular-nums">{formatAmount(h.marketValue, cur)}</p>
                   </div>
-
                   <div>
                     <p className="text-xs text-muted-foreground">PnL base</p>
                     <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnL)}`}>
                       {signPnL(h.unrealizedPnL)}{formatAmount(h.unrealizedPnL, cur)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">PnL original</p>
-                    {hasPnlOrig ? (
-                      <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLOriginal!)}`}>
-                        {signPnL(h.unrealizedPnLOriginal!)}{formatAmount(h.unrealizedPnLOriginal!, origCur)}
-                      </p>
-                    ) : (
-                      <p className="font-medium text-muted-foreground">—</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rentabilidad</p>
-                    <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLPct)}`}>
-                      {signPnL(h.unrealizedPnLPct)}{formatPct(h.unrealizedPnLPct, 2)}
-                    </p>
-                  </div>
+
+                  {/* Fila original — solo si la moneda de la empresa difiere de la base
+                      (si coinciden, sería literalmente repetir la fila anterior) */}
+                  {hasOriginal && (
+                    <>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Coste original</p>
+                        <p className="font-medium tabular-nums">
+                          {formatAmount(h.costBasisOriginal, origCur)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Valor mercado original</p>
+                        <p className="font-medium tabular-nums">
+                          {formatAmount(h.marketValueOriginal, origCur)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">PnL original</p>
+                        <p className={`font-medium tabular-nums ${colorPnL(h.unrealizedPnLOriginal)}`}>
+                          {signPnL(h.unrealizedPnLOriginal)}{formatAmount(h.unrealizedPnLOriginal, origCur)}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )
@@ -595,13 +583,18 @@ function PerformanceTab({ portfolioId, enabled }: { portfolioId: number; enabled
 }
 
 // ── Página principal ──────────────────────────────────────────────────────────
+// RenamePortfolioModal / DeletePortfolioModal viven en
+// components/investments/portfolio-action-modals.tsx (compartidos con el listado).
 
 export default function HoldingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const portfolioId = Number(id)
+  const router = useRouter()
 
-  const [addOpen, setAddOpen] = useState(false)
-  const [tab, setTab]         = useState<'holdings' | 'performance'>('holdings')
+  const [addOpen, setAddOpen]       = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [tab, setTab]               = useState<'holdings' | 'performance'>('holdings')
 
   const { data: portfolio, isLoading, isError } = usePortfolioDetail(portfolioId)
 
@@ -632,17 +625,44 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
           {isLoading && <Skeleton className="h-6 w-32 shrink-0" />}
         </div>
 
-        {tab === 'holdings' && (
-          <Button
-            onClick={() => setAddOpen(true)}
-            data-testid="btn-add-holding"
-            aria-label="Añadir holding"
-            className="shrink-0"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Añadir holding</span>
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {tab === 'holdings' && (
+            <Button
+              onClick={() => setAddOpen(true)}
+              data-testid="btn-add-holding"
+              aria-label="Añadir holding"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Añadir holding</span>
+            </Button>
+          )}
+
+          {portfolio && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Más acciones"
+                data-testid="btn-portfolio-menu"
+                className={buttonVariants({ variant: 'outline', size: 'icon' })}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setRenameOpen(true)} data-testid="menu-rename-portfolio">
+                  <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Renombrar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  data-testid="menu-delete-portfolio"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs: Holdings | Performance ─────────────────────────────────── */}
@@ -717,12 +737,28 @@ export default function HoldingsPage({ params }: { params: Promise<{ id: string 
         </TabsContent>
       </Tabs>
 
-      {/* Modal añadir holding — montado condicionalmente */}
+      {/* Modales — montados condicionalmente */}
       {addOpen && (
         <AddHoldingModal
           portfolioId={portfolioId}
           open={addOpen}
           onClose={() => setAddOpen(false)}
+        />
+      )}
+      {renameOpen && portfolio && (
+        <RenamePortfolioModal
+          portfolioId={portfolioId}
+          currentName={portfolio.name}
+          open={renameOpen}
+          onClose={() => setRenameOpen(false)}
+        />
+      )}
+      {deleteOpen && (
+        <DeletePortfolioModal
+          portfolioId={portfolioId}
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => router.push('/investments')}
         />
       )}
     </div>

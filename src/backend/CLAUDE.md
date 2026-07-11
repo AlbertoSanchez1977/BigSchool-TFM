@@ -1,1 +1,1 @@
-Usar: src\backend\AGENTS.md
+AGENTS.md

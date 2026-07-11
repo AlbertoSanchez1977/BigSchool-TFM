@@ -53,7 +53,7 @@ function setupFetchError(status = 401) {
 
 // Componente auxiliar que expone el contexto en el DOM para assertions
 function AuthConsumer() {
-  const { user, token, isLoading, login, logout, refresh } = useAuth()
+  const { user, token, isLoading, login, logout, refresh, updateFullName } = useAuth()
   return (
     <div>
       <span data-testid="loading">{isLoading ? 'loading' : 'ready'}</span>
@@ -65,6 +65,7 @@ function AuthConsumer() {
       </button>
       <button onClick={logout}>Logout</button>
       <button onClick={() => void refresh()}>Refresh</button>
+      <button onClick={() => updateFullName('Nombre Actualizado')}>UpdateFullName</button>
     </div>
   )
 }
@@ -127,6 +128,29 @@ describe('AuthProvider', () => {
       expect(stored?.email).toBe(authResp.email)
       expect(stored?.refreshCount).toBe(0)
       expect(stored?.sessionStartedAt).toBeGreaterThan(0)
+    })
+  })
+
+  describe('updateFullName', () => {
+    it('actualiza el fullName en el estado y en localStorage sin tocar el resto de la sesión', async () => {
+      tokenStore.save({
+        accessToken: 'tok',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        email: 'u@b.com',
+        fullName: 'Nombre Viejo',
+        sessionStartedAt: Date.now(),
+        refreshCount: 2,
+      })
+      render(<AuthConsumer />, { wrapper: Wrapper })
+      await waitFor(() => expect(screen.getByTestId('fullName').textContent).toBe('Nombre Viejo'))
+
+      fireEvent.click(screen.getByText('UpdateFullName'))
+
+      await waitFor(() => expect(screen.getByTestId('fullName').textContent).toBe('Nombre Actualizado'))
+      const stored = tokenStore.load()
+      expect(stored?.fullName).toBe('Nombre Actualizado')
+      expect(stored?.accessToken).toBe('tok') // el resto de la sesión no se toca
+      expect(stored?.refreshCount).toBe(2)
     })
   })
 

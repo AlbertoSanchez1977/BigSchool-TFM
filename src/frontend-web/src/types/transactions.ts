@@ -1,4 +1,7 @@
 import type { Currency, MainCategory, TransactionType } from './enums'
+import type { PageMeta } from './pagination'
+
+export type { PageMeta } from './pagination'
 
 // ── Raw shape of TransactionListItemDto (GET /transactions, GET /transactions/{id}) ──
 // El backend usa Dapper para leer directamente de BD:
@@ -38,12 +41,8 @@ export interface Transaction {
 }
 
 // ── Paginación ────────────────────────────────────────────────────────────────
-export interface PageMeta {
-  page: number
-  pageSize: number
-  totalCount: number
-  totalPages: number
-}
+// PageMeta vive en types/pagination.ts (compartido con portfolios/companies/valuations);
+// se reexporta aquí para no romper los imports existentes.
 
 export interface PagedTransactions {
   items: Transaction[]
@@ -87,4 +86,12 @@ export interface MonthlyChartPoint {
   month: number
   income: number
   expense: number
+}
+
+// GET /api/v1/transactions/by-category → CategoryTotalDto (Dapper: mainCategory YA viene
+// como nombre string — el handler hace `((MainCategory)IdMainCategory).ToString()`).
+export interface CategoryTotal {
+  idMainCategory: number
+  mainCategory: MainCategory
+  total: number
 }

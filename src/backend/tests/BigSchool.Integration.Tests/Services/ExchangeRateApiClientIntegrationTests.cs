@@ -1,9 +1,7 @@
 using System.Text.Json;
-using BigSchool.Application.Configuration;
-using BigSchool.Application.Interfaces;
-using BigSchool.Domain.Enums;
-using BigSchool.Infrastructure.Persistence;
-using BigSchool.Infrastructure.Services;
+using BigSchool.Application.SharedKernel.Configuration;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Infrastructure.SharedKernel.Persistence;
 using BigSchool.Integration.Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
@@ -12,6 +10,7 @@ using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
 using Xunit;
+using BigSchool.Infrastructure.SharedKernel.Services;
 
 namespace BigSchool.Integration.Tests.Services;
 

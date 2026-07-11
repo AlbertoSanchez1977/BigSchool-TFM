@@ -1,72 +1,60 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
+
+const mockListEmails = vi.fn()
+
+vi.mock('@/services/notificationService', () => ({
+  notificationService: {
+    listEmails: (...args: unknown[]) => mockListEmails(...args),
+  },
+}))
+
 import { useEmails } from '@/hooks/useEmails'
 
-// TODO (deuda técnica backend): GET /emails
-// WHERE idUser = @currentUserId OR idUser IS NULL
-// → EmailLogDto[] donde idUser IS NOT NULL = email del usuario (bienvenida)
-//                       idUser IS NULL     = emails genéricos (contacto)
+function makeWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  }
+}
 
-const MOCK_USER = { email: 'alberto@bigschool.com', fullName: 'Alberto Sánchez' }
+function EmailsHarness() {
+  const { emails, isLoading, isError } = useEmails()
+  if (isLoading) return <span data-testid="loading" />
+  if (isError) return <span data-testid="error" />
+  return (
+    <ul>
+      {emails.map((e) => (
+        <li key={e.idEmailLog} data-testid="row">{e.subject}</li>
+      ))}
+    </ul>
+  )
+}
 
 describe('useEmails', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => vi.resetAllMocks())
 
-  it('devuelve lista vacía cuando no hay usuario', () => {
-    const { result } = renderHook(() => useEmails(null))
-    expect(result.current.emails).toHaveLength(0)
+  it('devuelve estado de carga antes de resolver', () => {
+    mockListEmails.mockReturnValue(new Promise(() => {}))
+    render(<EmailsHarness />, { wrapper: makeWrapper() })
+    expect(screen.getByTestId('loading')).toBeTruthy()
   })
 
-  it('devuelve isLoading=false (datos locales, sin fetch async)', () => {
-    const { result } = renderHook(() => useEmails(null))
-    expect(result.current.isLoading).toBe(false)
+  it('devuelve los emails del backend cuando resuelve (bienvenida + contacto)', async () => {
+    mockListEmails.mockResolvedValue([
+      { idEmailLog: 1, idUser: 7, recipient: 'ana@x.com', subject: 'Bienvenido a BigSchool', type: 1, sentAt: '2026-07-01T09:00:00' },
+      { idEmailLog: 2, idUser: null, recipient: 'soporte@bigschool.com', subject: 'Nuevo mensaje de contacto', type: 2, sentAt: '2026-07-02T09:00:00' },
+    ])
+    render(<EmailsHarness />, { wrapper: makeWrapper() })
+    await waitFor(() => expect(screen.getAllByTestId('row')).toHaveLength(2))
+    expect(mockListEmails).toHaveBeenCalled()
   })
 
-  it('incluye el email de bienvenida (idUser asociado) cuando hay usuario', () => {
-    const { result } = renderHook(() => useEmails(MOCK_USER))
-    const welcome = result.current.emails.find(e => e.type === 'welcome')
-    expect(welcome).toBeDefined()
-  })
-
-  it('el email de bienvenida va dirigido al email del usuario', () => {
-    const { result } = renderHook(() => useEmails(MOCK_USER))
-    const welcome = result.current.emails.find(e => e.type === 'welcome')
-    expect(welcome?.to).toBe(MOCK_USER.email)
-  })
-
-  it('incluye emails de contacto (idUser NULL) de localStorage', () => {
-    const stored = [
-      {
-        id: '1', fullName: 'Alberto', email: 'alberto@bigschool.com',
-        message: 'Consulta sobre las inversiones.', submittedAt: '2026-06-28T10:00:00.000Z',
-      },
-    ]
-    localStorage.setItem('contact_submissions', JSON.stringify(stored))
-
-    const { result } = renderHook(() => useEmails(MOCK_USER))
-    const contacts = result.current.emails.filter(e => e.type === 'contact')
-    expect(contacts).toHaveLength(1)
-  })
-
-  it('el total de emails = 1 bienvenida + N contactos localStorage', () => {
-    const stored = [
-      { id: '1', fullName: 'A', email: 'a@b.com', message: 'Primera consulta enviada', submittedAt: '2026-06-28T10:00:00.000Z' },
-      { id: '2', fullName: 'B', email: 'b@c.com', message: 'Segunda consulta enviada', submittedAt: '2026-06-29T10:00:00.000Z' },
-    ]
-    localStorage.setItem('contact_submissions', JSON.stringify(stored))
-
-    const { result } = renderHook(() => useEmails(MOCK_USER))
-    expect(result.current.emails).toHaveLength(3) // 1 welcome + 2 contact
-  })
-
-  it('cada EmailLog tiene id, type, to, subject, preview, sentAt', () => {
-    const { result } = renderHook(() => useEmails(MOCK_USER))
-    const email = result.current.emails[0]
-    expect(email).toHaveProperty('id')
-    expect(email).toHaveProperty('type')
-    expect(email).toHaveProperty('to')
-    expect(email).toHaveProperty('subject')
-    expect(email).toHaveProperty('preview')
-    expect(email).toHaveProperty('sentAt')
+  it('devuelve isError=true cuando el service lanza un error', async () => {
+    mockListEmails.mockRejectedValue(new Error('network'))
+    render(<EmailsHarness />, { wrapper: makeWrapper() })
+    await waitFor(() => expect(screen.getByTestId('error')).toBeTruthy())
   })
 })

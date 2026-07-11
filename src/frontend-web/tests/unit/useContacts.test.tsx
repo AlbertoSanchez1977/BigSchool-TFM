@@ -1,55 +1,80 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
-import { useContacts } from '@/hooks/useContacts'
+import { render, screen, waitFor, renderHook } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 
-// jsdom proporciona localStorage en el entorno de test.
-// Limpiamos entre tests para evitar estado compartido.
+// Mockeamos el service (no fetch/api directamente) para aislar el hook,
+// igual que en useTransactions.test.tsx. Equivale a mockear un repositorio
+// inyectado en un servicio de aplicación C#.
+const mockListContacts = vi.fn()
+const mockCreateContact = vi.fn()
+
+vi.mock('@/services/notificationService', () => ({
+  notificationService: {
+    listContacts: (...args: unknown[]) => mockListContacts(...args),
+    createContact: (...args: unknown[]) => mockCreateContact(...args),
+  },
+}))
+
+import { useContacts, useCreateContact } from '@/hooks/useContacts'
+
+function makeWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  }
+}
+
+function ContactsHarness() {
+  const { contacts, isLoading, isError } = useContacts()
+  if (isLoading) return <span data-testid="loading" />
+  if (isError) return <span data-testid="error" />
+  return (
+    <ul>
+      {contacts.map((c) => (
+        <li key={c.idContact} data-testid="row">{c.fullName}</li>
+      ))}
+    </ul>
+  )
+}
 
 describe('useContacts', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => vi.resetAllMocks())
 
-  it('devuelve lista vacía cuando no hay nada en localStorage', () => {
-    const { result } = renderHook(() => useContacts())
-    expect(result.current.contacts).toHaveLength(0)
+  it('devuelve estado de carga antes de resolver', () => {
+    mockListContacts.mockReturnValue(new Promise(() => {}))
+    render(<ContactsHarness />, { wrapper: makeWrapper() })
+    expect(screen.getByTestId('loading')).toBeTruthy()
   })
 
-  it('devuelve los contactos almacenados en localStorage', () => {
-    const stored = [
-      {
-        id: 'abc-1',
-        fullName: 'Alberto Sánchez',
-        email: 'a@b.com',
-        message: 'Tengo una pregunta',
-        submittedAt: '2026-06-28T10:00:00.000Z',
-      },
-    ]
-    localStorage.setItem('contact_submissions', JSON.stringify(stored))
-
-    const { result } = renderHook(() => useContacts())
-    expect(result.current.contacts).toHaveLength(1)
-    expect(result.current.contacts[0].fullName).toBe('Alberto Sánchez')
+  it('devuelve los contactos del backend cuando resuelve', async () => {
+    mockListContacts.mockResolvedValue([
+      { idContact: 1, fullName: 'Ana', email: 'a@x.com', message: 'hola', createdAt: '2026-07-06T10:00:00' },
+    ])
+    render(<ContactsHarness />, { wrapper: makeWrapper() })
+    await waitFor(() => expect(screen.getByTestId('row')).toBeTruthy())
+    expect(screen.getByText('Ana')).toBeTruthy()
+    expect(mockListContacts).toHaveBeenCalled()
   })
 
-  it('devuelve lista vacía si el JSON almacenado es inválido', () => {
-    localStorage.setItem('contact_submissions', 'no-es-json')
-    const { result } = renderHook(() => useContacts())
-    expect(result.current.contacts).toHaveLength(0)
+  it('devuelve isError=true cuando el service lanza un error', async () => {
+    mockListContacts.mockRejectedValue(new Error('network'))
+    render(<ContactsHarness />, { wrapper: makeWrapper() })
+    await waitFor(() => expect(screen.getByTestId('error')).toBeTruthy())
   })
+})
 
-  it('cada contacto tiene las propiedades esperadas', () => {
-    const stored = [
-      { id: '1', fullName: 'Test', email: 't@t.com', message: 'Hola mundo', submittedAt: '2026-06-28' },
-      { id: '2', fullName: 'Test2', email: 't2@t.com', message: 'Otro mensaje', submittedAt: '2026-06-29' },
-    ]
-    localStorage.setItem('contact_submissions', JSON.stringify(stored))
+describe('useCreateContact', () => {
+  beforeEach(() => vi.resetAllMocks())
 
-    const { result } = renderHook(() => useContacts())
-    expect(result.current.contacts).toHaveLength(2)
-    const first = result.current.contacts[0]
-    expect(first).toHaveProperty('id')
-    expect(first).toHaveProperty('fullName')
-    expect(first).toHaveProperty('email')
-    expect(first).toHaveProperty('message')
-    expect(first).toHaveProperty('submittedAt')
+  it('llama a notificationService.createContact con los datos del formulario', async () => {
+    mockCreateContact.mockResolvedValue({ idContact: 1 })
+    const { result } = renderHook(() => useCreateContact(), { wrapper: makeWrapper() })
+
+    result.current.mutate({ fullName: 'Ana', email: 'a@x.com', message: 'hola' })
+
+    await waitFor(() => expect(mockCreateContact).toHaveBeenCalledWith({
+      fullName: 'Ana', email: 'a@x.com', message: 'hola',
+    }))
   })
 })

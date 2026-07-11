@@ -1,6 +1,6 @@
 -- BigSchool-TFM: Inicialización de Base de Datos
 -- ESTRATEGIA: Este script crea el schema COMPLETO en estado final (Plans 2A + 2B) y registra
--- las 4 migraciones EF Core en __EFMigrationsHistory para que dotnet run arranque sin conflictos.
+-- las migraciones EF Core en __EFMigrationsHistory para que dotnet run arranque sin conflictos.
 --
 -- En docker-compose la BD 'bigschool' la crea MySQL via MYSQL_DATABASE.
 -- Ejecución manual: descomenta la siguiente línea.
@@ -25,7 +25,10 @@ INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VAL
     ('20260620085001_CreateTransactions',         '8.0.11'),
     ('20260621101518_CreateCompanies',            '8.0.11'),
     ('20260621173448_AddSectorMarketEnums',       '8.0.11'),
-    ('20260621184811_CreatePortfolios',           '8.0.11');
+    ('20260621184811_CreatePortfolios',           '8.0.11'),
+    ('20260702164337_AddOutboxMessage',           '8.0.11'),
+    ('20260704144600_AddNotificationsModule',     '8.0.11'),
+    ('20260705113440_RemodelSubCategoryAggregate', '8.0.11');
 
 -- ============================================================
 -- Tabla: Users
@@ -51,6 +54,10 @@ CREATE TABLE IF NOT EXISTS `Users` (
 -- Tabla: SubCategories
 -- EF Core: InitialCreate + HasData (28 subcategorías globales, IDs 1-28 explícitos)
 -- ATENCIÓN: El orden de IDs difiere del viejo init.sql (Lujos empiezan en 11, ONG en 19).
+-- RemodelSubCategoryAggregate (Spec 009 / Plan 022 Tarea 1): SubCategory pasa a ser AR
+-- independiente de Finance (ya no hija de User) → se suelta la FK/índice hacia Users.
+-- IdUser sigue siendo NULL = global, pero como referencia blanda (SIN FK dura), igual que
+-- EmailLogs.IdUser.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `SubCategories` (
     `IdSubCategory`  INT          AUTO_INCREMENT,
@@ -60,10 +67,7 @@ CREATE TABLE IF NOT EXISTS `SubCategories` (
     `IdStatus`       SMALLINT     NOT NULL DEFAULT 2,
     `CreatedAt`      DATETIME(6)  NOT NULL,
     `IdUser`         INT          NULL,
-    PRIMARY KEY (`IdSubCategory`),
-    KEY `IX_SubCategories_IdUser` (`IdUser`),
-    CONSTRAINT `FK_SubCategories_Users_IdUser`
-        FOREIGN KEY (`IdUser`) REFERENCES `Users` (`IdUser`) ON DELETE CASCADE
+    PRIMARY KEY (`IdSubCategory`)
 ) CHARACTER SET utf8mb4;
 
 -- Espejo exacto de EF Core HasData (InitialCreate migration, timestamp 2026-01-01 UTC)
@@ -296,6 +300,57 @@ CREATE TABLE IF NOT EXISTS `Disposals` (
     KEY `IX_Disposals_IdHolding` (`IdHolding`),
     CONSTRAINT `FK_Disposals_Holdings_IdHolding`
         FOREIGN KEY (`IdHolding`) REFERENCES `Holdings` (`IdHolding`) ON DELETE CASCADE
+) CHARACTER SET utf8mb4;
+
+-- ============================================================
+-- Tabla: OutboxMessages
+-- EF Core: AddOutboxMessage (Spec 0 / Plan 018 Tarea 7) — espejo exacto de migración
+-- 20260702164337. Infraestructura pura (SharedKernel): outbox transaccional de
+-- IntegrationEvents, drenado post-commit por OutboxDispatcher. Sin consumidores todavía
+-- (se estrenan en Spec 007).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `OutboxMessages` (
+    `IdOutboxMessage` BIGINT        NOT NULL AUTO_INCREMENT,
+    `EventId`         CHAR(36)      CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+    `Type`            VARCHAR(512)  CHARACTER SET utf8mb4 NOT NULL,
+    `Payload`         JSON          NOT NULL,
+    `OccurredOn`      DATETIME(6)   NOT NULL,
+    `ProcessedOn`     DATETIME(6)   NULL,
+    `Error`           VARCHAR(2048) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_OutboxMessages` PRIMARY KEY (`IdOutboxMessage`),
+    UNIQUE KEY `IX_OutboxMessages_EventId` (`EventId`),
+    KEY `IX_OutboxMessages_ProcessedOn` (`ProcessedOn`)
+) CHARACTER SET utf8mb4;
+
+-- ============================================================
+-- Tablas: Contacts + EmailLogs
+-- EF Core: AddNotificationsModule (Spec 007 / Plan 020 Tarea 3) — espejo exacto de
+-- migración 20260704144600. EmailLogs.IdUser es una referencia "blanda" (SIN FK):
+-- mantiene limpia la frontera de módulo Auth/Notifications. Visibilidad por query
+-- en la Application layer: IdUser = @user OR IdUser IS NULL (welcome propio + globales).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `Contacts` (
+    `IdContact` INT           NOT NULL AUTO_INCREMENT,
+    `FullName`  VARCHAR(200)  CHARACTER SET utf8mb4 NOT NULL,
+    `Email`     VARCHAR(255)  CHARACTER SET utf8mb4 NOT NULL,
+    `Message`   VARCHAR(2000) CHARACTER SET utf8mb4 NOT NULL,
+    `IdStatus`  SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt` DATETIME(6)   NOT NULL,
+    CONSTRAINT `PK_Contacts` PRIMARY KEY (`IdContact`)
+) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `EmailLogs` (
+    `IdEmailLog` INT           NOT NULL AUTO_INCREMENT,
+    `IdUser`     INT           NULL,
+    `Recipient`  VARCHAR(255)  CHARACTER SET utf8mb4 NOT NULL,
+    `Subject`    VARCHAR(300)  CHARACTER SET utf8mb4 NOT NULL,
+    `Body`       VARCHAR(4000) CHARACTER SET utf8mb4 NOT NULL,
+    `Type`       SMALLINT      NOT NULL,
+    `SentAt`     DATETIME(6)   NOT NULL,
+    `IdStatus`   SMALLINT      NOT NULL DEFAULT 2,
+    `CreatedAt`  DATETIME(6)   NOT NULL,
+    CONSTRAINT `PK_EmailLogs` PRIMARY KEY (`IdEmailLog`),
+    KEY `IX_EmailLogs_IdUser` (`IdUser`)
 ) CHARACTER SET utf8mb4;
 
 -- ============================================================

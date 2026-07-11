@@ -26,12 +26,12 @@ function makeWrapper() {
 
 // ── Harness para usePortfolios ────────────────────────────────────────────────
 function PortfoliosHarness() {
-  const { data, isLoading, isError } = usePortfolios()
+  const { data, isLoading, isError } = usePortfolios({ page: 1, pageSize: 20 })
   if (isLoading) return <span data-testid="loading" />
   if (isError)   return <span data-testid="error" />
   return (
     <ul>
-      {(data ?? []).map((p) => (
+      {(data?.items ?? []).map((p) => (
         <li key={p.idPortfolio} data-testid="portfolio-row">{p.name}</li>
       ))}
     </ul>
@@ -53,15 +53,19 @@ describe('usePortfolios', () => {
   })
 
   it('devuelve la lista de carteras cuando el service resuelve', async () => {
-    mockList.mockResolvedValue([
-      { idPortfolio: 1, name: 'Mi cartera', realizedPnL: 0, realizedPnLCurrency: 'EUR',
-        marketValue: 10000, costBasis: 9500, unrealizedPnL: 500, totalPnL: 500 },
-    ])
+    mockList.mockResolvedValue({
+      items: [
+        { idPortfolio: 1, name: 'Mi cartera', realizedPnL: 0, realizedPnLCurrency: 'EUR',
+          marketValue: 10000, costBasis: 9500, unrealizedPnL: 500, totalPnL: 500 },
+      ],
+      meta: { page: 1, pageSize: 20, totalCount: 1, totalPages: 1 },
+    })
 
     render(<PortfoliosHarness />, { wrapper: makeWrapper() })
 
     await waitFor(() => expect(screen.getByTestId('portfolio-row')).toBeTruthy())
     expect(screen.getByText('Mi cartera')).toBeTruthy()
+    expect(mockList).toHaveBeenCalledWith({ page: 1, pageSize: 20 })
   })
 
   it('devuelve isError cuando el service lanza error', async () => {

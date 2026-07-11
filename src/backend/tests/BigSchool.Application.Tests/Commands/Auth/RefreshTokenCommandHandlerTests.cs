@@ -1,10 +1,10 @@
-using BigSchool.Application.Commands.Auth.Refresh;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Application.Interfaces.Services;
-using BigSchool.Domain.Entities;
+using BigSchool.Application.Auth.Commands.Refresh;
+using BigSchool.Domain.Auth.Entities;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Auth.Interfaces.Repositories;
+using BigSchool.Application.Auth.Interfaces.Services;
 
 namespace BigSchool.Application.Tests.Commands.Auth;
 

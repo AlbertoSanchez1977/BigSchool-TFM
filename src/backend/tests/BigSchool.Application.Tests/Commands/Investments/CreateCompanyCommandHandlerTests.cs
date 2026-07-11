@@ -1,12 +1,13 @@
-using BigSchool.Application.Commands.Investments.CreateCompany;
-using BigSchool.Application.Interfaces.Repositories;
-using BigSchool.Domain.Entities;
-using BigSchool.Domain.Enums;
-using BigSchool.Domain.Exceptions;
-using BigSchool.Domain.Interfaces;
+using BigSchool.Application.Investments.Commands.CreateCompany;
+using BigSchool.Domain.Investments.Entities;
+using BigSchool.Domain.Investments.Enums;
+using BigSchool.Domain.SharedKernel.Enums;
+using BigSchool.Domain.Investments.Exceptions;
+using BigSchool.Domain.SharedKernel.Interfaces;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using BigSchool.Application.Investments.Interfaces.Repositories;
 
 namespace BigSchool.Application.Tests.Commands.Investments;
 public class CreateCompanyCommandHandlerTests
